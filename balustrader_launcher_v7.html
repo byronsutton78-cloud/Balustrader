@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Balustrader — Product Launcher</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --gold:#c8a028;
+  --gold-dim:#8a6d18;
+  --gold-glow:rgba(200,160,40,0.15);
+  --bg:#111010;
+  --bg2:#161514;
+  --bg3:#1c1b19;
+  --surface:#1e1d1b;
+  --border:#2a2826;
+  --border-lit:#3a3830;
+  --text:#e8e4dc;
+  --text-dim:#888278;
+  --text-muted:#4a4640;
+  --green:#27ae60;
+  --green-dim:rgba(39,174,96,0.12);
+  --blue:#3a7bd5;
+  --orange:#e67e22;
+  --purple:#8e44ad;
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+}
+
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:0;
+  opacity:0.6;
+}
+
+/* ── HEADER ── */
+header{
+  position:relative;z-index:10;
+  padding:18px 24px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(180deg,#0d0c0b 0%,transparent 100%);
+}
+
+.logo-block{display:flex;align-items:center;gap:16px}
+
+.logo-mark{
+  width:44px;height:44px;
+  border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;flex-shrink:0;
+}
+.logo-mark::before{content:'';position:absolute;inset:3px;border:1px solid var(--gold-dim)}
+.logo-mark svg{width:22px;height:22px;fill:var(--gold)}
+
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:4px;color:var(--text);line-height:1}
+.logo-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:3px}
+
+.header-right{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);text-align:right;line-height:2}
+.header-right span{color:var(--text-dim)}
+
+/* ── MAIN ── */
+main{position:relative;z-index:10;flex:1;padding:24px 24px 40px;max-width:1280px;width:100%;margin:0 auto}
+
+.section-label{
+  font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:12px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.section-note{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:24px}
+
+/* ── PRODUCT GROUP ── */
+.product-group{margin-bottom:40px}
+
+.group-header{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:16px;padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+}
+.group-icon{font-size:18px;width:32px;text-align:center}
+.group-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--text)}
+.group-desc{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-left:auto}
+
+/* ── MOUNT CARDS ROW ── */
+.mount-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;min-width:0}
+.mount-row .card{min-width:0}
+
+/* ── CARD ── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:2px;
+  padding:22px 22px 18px;
+  display:flex;flex-direction:column;gap:12px;
+  position:relative;overflow:hidden;
+  transition:border-color 0.2s,transform 0.2s,box-shadow 0.2s;
+  cursor:pointer;text-decoration:none;color:inherit;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--card-accent,var(--gold));
+  transform:scaleX(0);transform-origin:left;
+  transition:transform 0.25s ease;
+}
+.card:hover{border-color:var(--border-lit);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px var(--border-lit)}
+.card:hover::before{transform:scaleX(1)}
+
+.card.active-card{border-color:var(--gold-dim);background:linear-gradient(135deg,var(--surface) 0%,#201e18 100%)}
+
+.card.locked{cursor:not-allowed;opacity:0.38}
+.card.locked:hover{transform:none;box-shadow:none;border-color:var(--border)}
+.card.locked::before{display:none}
+
+/* Card top */
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.mount-badge{
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;
+  padding:3px 8px;border-radius:1px;border:1px solid var(--gold-dim);
+  background:var(--gold-glow);color:var(--gold);white-space:nowrap;
+}
+.status-badge{
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;
+  padding:3px 8px;border-radius:1px;white-space:nowrap;
+}
+.status-badge.ready{background:var(--green-dim);color:var(--green);border:1px solid rgba(39,174,96,0.25)}
+.status-badge.skeleton{background:rgba(200,160,40,0.08);color:var(--gold-dim);border:1px solid rgba(200,160,40,0.2)}
+.status-badge.soon{background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border)}
+
+.card-mount-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;color:var(--text)}
+
+.card-details{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.8}
+.card-details span{color:var(--text-dim)}
+
+.card-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-top:12px;border-top:1px solid var(--border);margin-top:auto;
+}
+.card-post{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)}
+.card-action{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--gold);display:flex;align-items:center;gap:6px;text-transform:uppercase}
+.card.locked .card-action{color:var(--text-muted)}
+.arrow{display:inline-block;transition:transform 0.2s}
+.card:hover .arrow{transform:translateX(4px)}
+
+/* ── AI APP CARD (full width) ── */
+.ai-card-wrap{margin-top:8px}
+.ai-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:2px;
+  padding:22px 28px;
+  display:flex;align-items:center;gap:28px;
+  position:relative;overflow:hidden;
+  opacity:0.38;cursor:not-allowed;
+}
+.ai-card-icon{font-size:28px;flex-shrink:0}
+.ai-card-body{flex:1}
+.ai-card-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text-muted);margin-bottom:4px}
+.ai-card-desc{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.8}
+.ai-card-badge{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:1px;background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border)}
+
+/* ── BG ACCENTS ── */
+.bg-accent{position:fixed;bottom:-200px;right:-200px;width:500px;height:500px;border:1px solid var(--border);border-radius:50%;opacity:0.25;pointer-events:none;z-index:1}
+.bg-accent2{position:fixed;top:-100px;left:-100px;width:350px;height:350px;border:1px solid var(--border);border-radius:50%;opacity:0.15;pointer-events:none;z-index:1}
+
+/* ── FOOTER ── */
+footer{
+  position:relative;z-index:10;
+  border-top:1px solid var(--border);
+  padding:14px 48px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:#0d0c0b;
+}
+.footer-left{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)}
+.footer-right{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)}
+.footer-right span{color:var(--gold)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.product-group{animation:fadeUp 0.4s ease both}
+.product-group:nth-child(1){animation-delay:0.05s}
+.product-group:nth-child(2){animation-delay:0.12s}
+.product-group:nth-child(3){animation-delay:0.19s}
+.product-group:nth-child(4){animation-delay:0.26s}
+
+@media(max-width:768px){
+  header{padding:18px 20px;flex-direction:column;align-items:flex-start;gap:10px}
+  main{padding:24px 20px 40px}
+  .mount-row{grid-template-columns:1fr}
+  footer{padding:12px 20px;flex-direction:column;gap:4px;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-accent"></div>
+<div class="bg-accent2"></div>
+
+<header>
+  <div class="logo-block">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="2" width="2" height="20"/>
+        <rect x="19" y="2" width="2" height="20"/>
+        <rect x="3" y="4" width="18" height="1.5"/>
+        <rect x="3" y="8" width="18" height="1"/>
+        <rect x="3" y="12" width="18" height="1"/>
+        <rect x="3" y="16" width="18" height="1"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-sub">Internal Tool — Phase 1</div>
+      <div class="logo-text">Balustrader</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span>Drawing &amp; Quoting System</span><br>
+    Grade 304 / 316 · SS &amp; Glass<br>
+    Cape Town · South Africa
+  </div>
+</header>
+
+<main>
+  <div class="section-label">Job details — fill in before opening tool</div>
+  <div style="display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:16px 20px;align-items:flex-end">
+    <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px">
+      <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">Client Name</label>
+      <input id="jobClient" placeholder="e.g. John Smith" style="background:var(--bg2);border:1px solid var(--border-lit);color:var(--text);padding:7px 10px;font-family:'DM Mono',monospace;font-size:11px;border-radius:2px;outline:none"/>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;flex:0.6;min-width:100px">
+      <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">Quote No</label>
+      <input id="jobQuote" placeholder="e.g. Q-0042" style="background:var(--bg2);border:1px solid var(--border-lit);color:var(--text);padding:7px 10px;font-family:'DM Mono',monospace;font-size:11px;border-radius:2px;outline:none"/>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;flex:0.6;min-width:100px">
+      <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">Job Card No</label>
+      <input id="jobCardNo" placeholder="e.g. JC-0042" style="background:var(--bg2);border:1px solid var(--border-lit);color:var(--text);padding:7px 10px;font-family:'DM Mono',monospace;font-size:11px;border-radius:2px;outline:none"/>
+    </div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);padding-bottom:4px">These fields auto-fill the drilling sheet header.</div>
+  </div>
+
+  <div class="section-label">Select a product and mount type to open the drawing tool</div>
+  <div class="section-note">All active products open the drawing tool with the correct settings pre-selected</div>
+
+  <!-- ── 8 LINE HORIZONTAL ── -->
+  <div class="product-group">
+    <div class="group-header">
+      <div class="group-icon">▬</div>
+      <div class="group-title">8 Line Horizontal</div>
+    </div>
+    <div class="mount-row">
+
+      <div class="card active-card" onclick="launch('8line','top')" style="--card-accent:#c8a028">
+        <div class="card-top">
+          <span class="mount-badge">Top Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Core Drill</div>
+        <div class="card-details">
+          Post height: <span>1000mm</span><br>
+          100mm below slab · grout fixed<br>
+          Core barrel · non-shrink grout
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('8line','side')" style="--card-accent:#c8a028">
+        <div class="card-top">
+          <span class="mount-badge">Side Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">SDS + Epoxy</div>
+        <div class="card-details">
+          Post height: <span>1150mm</span><br>
+          200mm below finished floor level<br>
+          M10 threaded rod × 2 per post
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('8line','flange')" style="--card-accent:#c8a028">
+        <div class="card-top">
+          <span class="mount-badge">Flange Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Flange Plate</div>
+        <div class="card-details">
+          Post height: <span>900mm</span><br>
+          On 4mm flange · surface fixed<br>
+          Coach screw / rawl bolt / epoxy
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 9 LINE CABLE ── -->
+  <div class="product-group">
+    <div class="group-header">
+      <div class="group-icon">〰</div>
+      <div class="group-title">9 Line Cable</div>
+    </div>
+    <div class="mount-row">
+
+      <div class="card active-card" onclick="launch('cable','top')" style="--card-accent:#3a7bd5">
+        <div class="card-top">
+          <span class="mount-badge">Top Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Core Drill</div>
+        <div class="card-details">
+          Post height: <span>1000mm</span><br>
+          100mm below slab · grout fixed<br>
+          Swage fittings · 4mm 1×19 Grade 316
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('cable','side')" style="--card-accent:#3a7bd5">
+        <div class="card-top">
+          <span class="mount-badge">Side Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">SDS + Epoxy</div>
+        <div class="card-details">
+          Post height: <span>1150mm</span><br>
+          200mm below finished floor level<br>
+          Swage fittings · 4mm 1×19 Grade 316
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('cable','flange')" style="--card-accent:#3a7bd5">
+        <div class="card-top">
+          <span class="mount-badge">Flange Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Flange Plate</div>
+        <div class="card-details">
+          Post height: <span>900mm</span><br>
+          On 4mm flange · surface fixed<br>
+          Swage fittings · 4mm 1×19 Grade 316
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── GLASS & STAINLESS ── -->
+  <div class="product-group">
+    <div class="group-header">
+      <div class="group-icon">▭</div>
+      <div class="group-title">Glass &amp; Stainless Steel</div>
+    </div>
+    <div class="mount-row">
+
+      <div class="card active-card" onclick="launch('glass','top')" style="--card-accent:#8e44ad">
+        <div class="card-top">
+          <span class="mount-badge">Top Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Core Drill</div>
+        <div class="card-details">
+          Post height: <span>1000mm (with rail) · 1100mm (no rail)</span><br>
+          100mm below slab · grout fixed<br>
+          D-clamps · max panel 1200mm
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('glass','side')" style="--card-accent:#8e44ad">
+        <div class="card-top">
+          <span class="mount-badge">Side Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">SDS + Epoxy</div>
+        <div class="card-details">
+          Post height: <span>1150mm (with rail) · 1250mm (no rail)</span><br>
+          200mm below finished floor level<br>
+          D-clamps · max panel 1200mm
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('glass','flange')" style="--card-accent:#8e44ad">
+        <div class="card-top">
+          <span class="mount-badge">Flange Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Flange Plate</div>
+        <div class="card-details">
+          Post height: <span>900mm (with rail) · 1000mm (no rail)</span><br>
+          On 4mm flange · surface fixed<br>
+          D-clamps · max panel 1200mm
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── VERTICAL BALUSTRADE ── -->
+  <div class="product-group">
+    <div class="group-header">
+      <div class="group-icon">⏐</div>
+      <div class="group-title">Vertical Balustrade</div>
+    </div>
+    <div class="mount-row">
+
+      <div class="card active-card" onclick="launch('vertical','top')" style="--card-accent:#27ae60">
+        <div class="card-top">
+          <span class="mount-badge">Top Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Core Drill</div>
+        <div class="card-details">
+          Post height: <span>1000mm</span><br>
+          2-hole stanchion · 25.1mm sub-rails<br>
+          16mm vertical infills · max 100mm gap
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('vertical','side')" style="--card-accent:#27ae60">
+        <div class="card-top">
+          <span class="mount-badge">Side Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">SDS + Epoxy</div>
+        <div class="card-details">
+          Post height: <span>1150mm</span><br>
+          2-hole stanchion · 25.1mm sub-rails<br>
+          16mm vertical infills · stop-start corners
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('vertical','flange')" style="--card-accent:#27ae60">
+        <div class="card-top">
+          <span class="mount-badge">Flange Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Flange Plate</div>
+        <div class="card-details">
+          Post height: <span>900mm</span><br>
+          2-hole stanchion · 25.1mm sub-rails<br>
+          16mm vertical infills · max 100mm gap
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── AI QUOTING APP (LOCKED) ── -->
+  <div class="section-label" style="margin-top:8px">Coming soon</div>
+  <div class="ai-card-wrap">
+    <div class="ai-card">
+      <div class="ai-card-icon">🤖</div>
+      <div class="ai-card-body">
+        <div class="ai-card-title">AI Quoting App</div>
+        <div class="ai-card-desc">
+          Upload site sketch or PDF · AI reads layout · generates job card + drilling sheet automatically<br>
+          Chat-based review · Sage copy output · Job history
+        </div>
+      </div>
+      <span class="ai-card-badge">In Development</span>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v7</div>
+  <div class="footer-right">Built for <span>Balustrader</span> · Cape Town · South Africa</div>
+</footer>
+
+<script>
+function launch(product, mount) {
+  try {
+    localStorage.setItem('bl_product', product);
+    localStorage.setItem('bl_mount', mount);
+    localStorage.setItem('bl_client', document.getElementById('jobClient').value||'');
+    localStorage.setItem('bl_quote',  document.getElementById('jobQuote').value||'');
+    localStorage.setItem('bl_jobno',  document.getElementById('jobCardNo').value||'');
+  } catch(e) {}
+  window.open('balustrader_drawing_tool_v9.html', '_blank');
+}
+</script>
+
+</body>
+</html>

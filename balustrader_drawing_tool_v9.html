@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Balustrader Drawing Tool v9</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ── DARK MODE (default) ── */
+:root{
+  --bg:#1a1a1a;--bg2:#111;--bg3:#0d0d0d;--bg4:#222;--bg5:#2e2e2e;
+  --border:#2a2a2a;--border2:#444;--border3:#555;
+  --text:#e0e0e0;--text2:#ccc;--text3:#888;--text4:#666;
+  --accent:#c8a028;--accent-text:#111;
+  --danger:#c0392b;--danger-text:#e07060;
+  --canvas-bg:#1a1a1a;
+  --grid1:rgba(255,255,255,0.025);--grid2:rgba(255,255,255,0.08);
+  --popup-shadow:rgba(0,0,0,0.8);
+  --row-border:#1f1f1f;
+}
+
+/* ── LIGHT MODE ── */
+body.light{
+  --bg:#f0f2f5;--bg2:#ffffff;--bg3:#e8eaed;--bg4:#e0e2e5;--bg5:#d0d2d5;
+  --border:#ccc;--border2:#bbb;--border3:#999;
+  --text:#1a1a1a;--text2:#333;--text3:#666;--text4:#999;
+  --accent:#b8860b;--accent-text:#fff;
+  --danger:#c0392b;--danger-text:#c0392b;
+  --canvas-bg:#ffffff;
+  --grid1:rgba(0,0,0,0.06);--grid2:rgba(0,0,0,0.15);
+  --popup-shadow:rgba(0,0,0,0.2);
+  --row-border:#e0e0e0;
+}
+
+html,body{height:100%;margin:0;overflow:hidden}
+body{font-family:'Courier New',monospace;background:var(--bg);color:var(--text);padding:8px 10px 0 10px;height:100vh;display:flex;flex-direction:column;box-sizing:border-box;transition:background 0.2s,color 0.2s}
+#pageContent{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.toolbar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;align-items:center}
+.tool-btn{padding:5px 12px;border-radius:3px;border:1px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-size:11px;font-family:'Courier New',monospace;font-weight:500;white-space:nowrap;transition:background 0.12s}
+.tool-btn:hover{background:var(--bg5);border-color:var(--border3)}
+.tool-btn.active{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:bold}
+.tool-btn.danger{border-color:var(--danger);color:var(--danger-text)}
+.tool-btn.danger:hover{background:var(--danger);color:#fff}
+.tool-btn.mode-btn{font-size:13px;padding:5px 10px}
+.sep{width:1px;background:var(--border);margin:0 2px;height:20px}
+.instr{font-size:11px;color:var(--text3);margin-bottom:6px;padding:6px 10px;background:var(--bg2);border-radius:3px;border:1px solid var(--border);line-height:1.5}
+.main-wrap{display:flex;flex-direction:column;flex:1;min-height:0}
+.canvas-wrap{position:relative;border:1px solid var(--border);border-radius:4px;background:var(--canvas-bg);overflow:hidden;flex:1;min-height:0}
+canvas{display:block;width:100%;height:100%}
+/* ── TAB PANELS — full height ── */
+.tab-panel{display:none;flex:1;min-height:0;overflow-y:auto;background:var(--bg2);flex-direction:column}
+.tab-panel.active{display:flex}
+.popup{position:absolute;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:12px 14px;display:none;z-index:100;width:210px;box-shadow:0 4px 20px var(--popup-shadow)}
+.popup h4{font-size:11px;font-weight:bold;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.popup label{font-size:10px;color:var(--text3);display:block;margin-bottom:2px;margin-top:6px;text-transform:uppercase;letter-spacing:0.5px}
+.popup input,.popup select{width:100%;padding:5px 7px;border:1px solid var(--border2);border-radius:3px;font-size:12px;background:var(--bg);color:var(--text);outline:none;font-family:'Courier New',monospace}
+.popup input:focus,.popup select:focus{border-color:var(--accent)}
+.popup-btns{display:flex;gap:5px;margin-top:10px}
+.btn-save{flex:1;padding:6px;border-radius:3px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-text);cursor:pointer;font-size:11px;font-weight:bold;font-family:'Courier New',monospace}
+.btn-cancel{padding:6px 8px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-del{padding:6px 8px;border-radius:3px;border:1px solid var(--danger);background:transparent;color:var(--danger-text);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn-calc{flex:1;padding:10px;border-radius:3px;border:1px solid #27ae60;background:#1a5c33;color:#bef0d0;cursor:pointer;font-size:12px;font-family:'Courier New',monospace;font-weight:bold}
+.btn-calc:hover{background:#27ae60;color:#fff}
+.btn-secondary{padding:10px 14px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Courier New',monospace}
+.btn-secondary:hover{background:var(--bg4);color:var(--text2)}
+.btn-danger-sm{padding:10px 14px;border-radius:3px;border:1px solid var(--danger);background:transparent;color:var(--danger-text);cursor:pointer;font-size:12px;font-family:'Courier New',monospace}
+.btn-danger-sm:hover{background:var(--danger);color:#fff}
+/* ── BOTTOM TABS ── */
+.tab-bar{display:flex;gap:0;border-top:2px solid var(--border2);background:var(--bg2);flex-shrink:0}
+.tab-btn{flex:1;padding:9px 10px;border:none;border-right:1px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer;font-family:'Courier New',monospace;font-size:11px;font-weight:500;text-align:center;transition:background 0.12s,color 0.12s}
+.tab-btn:last-child{border-right:none}
+.tab-btn:hover{background:var(--bg3);color:var(--text)}
+.tab-btn.active{background:var(--bg3);color:var(--accent);border-top:2px solid var(--accent);margin-top:-2px}
+.tab-btn.ds-tab{color:#7ab8e8}
+.jc-panel{display:block;font-size:11px}
+.jc-header{display:none}
+.jc-body{padding:10px 12px;}
+.jc-section{margin-bottom:12px}
+.jc-section-title{font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.jc-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--row-border);font-size:11px;gap:8px}
+.jc-row:last-child{border-bottom:none}
+.jc-row .val{font-weight:bold;color:var(--accent);white-space:nowrap}
+.jc-total{display:flex;justify-content:space-between;padding:6px 0;font-weight:bold;font-size:13px;border-top:1px solid var(--border2);margin-top:4px;color:var(--accent)}
+.jc-alert{background:rgba(192,57,43,0.15);border:1px solid var(--danger);border-radius:3px;padding:6px 8px;font-size:10px;color:var(--danger-text);margin-bottom:8px}
+.jc-footer{padding:8px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;position:sticky;bottom:0;background:var(--bg2);min-width:240px}
+.btn-copy{width:100%;padding:7px;border-radius:3px;border:1px solid #2980b9;background:#1a3a5c;color:#aad4f5;cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-copy:hover{background:#2980b9;color:#fff}
+.btn-claude{width:100%;padding:7px;border-radius:3px;border:1px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-claude:hover{background:var(--bg5)}
+
+/* toolbar selects */
+.tb-select{background:var(--bg);border:1px solid var(--border3);color:var(--text);padding:4px 8px;font-family:'Courier New',monospace;font-size:11px;border-radius:3px;cursor:pointer}
+
+#skOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.80);z-index:999;align-items:center;justify-content:center}
+#skOverlay.open{display:flex}
+.sk-box{background:#111;border:2px solid #c8a028;border-radius:8px;padding:26px 30px;max-width:420px;width:92%;text-align:center;font-family:'Courier New',monospace}
+.sk-title{color:#c8a028;font-size:12px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+.sk-msg{color:#aaa;font-size:12px;line-height:1.7;margin-bottom:8px;min-height:36px}
+.sk-spinner{width:30px;height:30px;border:3px solid #333;border-top-color:#c8a028;border-radius:50%;animation:skspin 0.8s linear infinite;margin:10px auto;display:none}
+.sk-notes{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4px;padding:9px 11px;font-size:11px;color:#777;text-align:left;max-height:110px;overflow-y:auto;margin:10px 0;white-space:pre-wrap;display:none}
+.sk-btns{display:flex;gap:8px;margin-top:12px;justify-content:center;display:none}
+@keyframes skspin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="mountWarning" style="display:none;background:#7a4a00;border:1px solid #c8a028;border-radius:3px;padding:6px 12px;margin-bottom:6px;font-size:11px;color:#f0d080;display:none;justify-content:space-between;align-items:center">
+  <span>⚠ Mount type changed — please check end types on all runs</span>
+  <button onclick="dismissMountWarning()" style="background:none;border:none;color:#f0d080;cursor:pointer;font-size:13px;padding:0 0 0 10px">✕</button>
+</div>
+<div class="instr" id="instr">Balustrader — Select a tool then click and drag to draw.</div>
+<div class="toolbar">
+  <button class="tool-btn active" id="tool-run" onclick="setTool('run')">📏 Run</button>
+  <button class="tool-btn" id="tool-stairs" onclick="setTool('stairs')">🪜 Stairs</button>
+  <div class="sep"></div>
+  <button class="tool-btn" id="tool-select" onclick="setTool('select')">✏️ Select/Edit</button>
+  <button class="tool-btn" id="tool-pan" onclick="setTool('pan')">🖐 Pan</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="zoomIn()">＋ Zoom</button>
+  <button class="tool-btn" onclick="zoomOut()">－ Zoom</button>
+  <button class="tool-btn" onclick="resetView()">⌂ Reset</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="undo()">↩ Undo</button>
+  <button class="tool-btn danger" onclick="clearCanvas()">🗑 Clear all</button>
+  <div class="sep"></div>
+  <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;">
+    Product:
+    <select id="productSelect" onchange="onMountChange();filterCornerOptions();" class="tb-select">
+      <option value="8line">8 Line Horizontal</option>
+      <option value="vertical">Vertical Balustrade</option>
+      <option value="cable">9 Line Cable</option>
+      <option value="glass">Glass &amp; Stainless</option>
+    </select>
+  </label>
+  <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;">
+    Mount:
+    <select id="mountSelect" onchange="onMountChange()" class="tb-select">
+      <option value="top">Top Mount — core drill</option>
+      <option value="side">Side Mount — SDS + epoxy</option>
+      <option value="flange">Flange Mount — flange plate</option>
+    </select>
+  </label>
+  <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;">
+    Post:
+    <select id="postSizeSelect" class="tb-select">
+      <option value="round38">Round 38.1mm</option>
+      <option value="round50">Round 50mm</option>
+      <option value="sq40">Square 40×40</option>
+      <option value="sq50">Square 50×50</option>
+    </select>
+  </label>
+  <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;">
+    Material:
+    <select id="materialSelect" class="tb-select">
+      <option value="316-180">316-180</option>
+      <option value="316-mirror">316-Mirror</option>
+      <option value="304-180">304-180</option>
+      <option value="304-mirror">304-Mirror</option>
+      <option value="mild">Mild Steel</option>
+    </select>
+  </label>
+  <div class="sep"></div>
+  <button class="tool-btn mode-btn" id="modeToggle" onclick="toggleMode()" title="Toggle light/dark mode">☀️</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="document.getElementById('skFileIn').click()" style="border-color:#2e7a2e;color:#4caf50;font-weight:bold">🤖 Read Sketch</button>
+  <input type="file" id="skFileIn" accept="image/*" style="display:none" onchange="readSketch(this)"/>
+</div>
+
+<div id="skOverlay">
+  <div class="sk-box">
+    <div class="sk-title">🤖 AI Sketch Reader</div>
+    <div class="sk-spinner" id="skSpinner"></div>
+    <div class="sk-msg" id="skMsg">Ready</div>
+    <div class="sk-notes" id="skNotes"></div>
+    <div class="sk-btns" id="skBtns">
+      <button class="btn-save" onclick="applySketch()">✔ Draw it</button>
+      <button class="btn-cancel" onclick="closeSkOverlay()">✖ Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="pageContent">
+
+<!-- ── TAB CONTENT AREA ── -->
+<div id="mainWrap" class="main-wrap">
+
+  <!-- CANVAS TAB PANEL — split view: canvas left, job card right -->
+  <div id="panel-canvas" class="tab-panel active" style="flex-direction:row;gap:0">
+
+    <!-- LEFT: Canvas + calculate bar -->
+    <div style="display:flex;flex-direction:column;flex:1;min-width:0;min-height:0">
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="canvas"></canvas>
+
+    <div class="popup" id="selectPopup">
+      <h4 id="selectTitle">Edit line</h4>
+      <label>Dimension (mm)</label>
+      <input type="text" id="selDim" placeholder="e.g. 5300" autocomplete="off"/>
+      <label>Label (optional)</label>
+      <input type="text" id="selLabel" placeholder="e.g. Leg A" autocomplete="off"/>
+      <div id="stairDirRow" style="display:none">
+        <label>Stair direction</label>
+        <select id="selDir"><option value="LH">LH — Left hand up</option><option value="RH">RH — Right hand up</option><option value="standalone">Standalone</option></select>
+        <label>Top connection type</label>
+        <select id="selTopType"><option value="turn">Turns 90° (Type 3)</option><option value="inline">Continues straight (Type 7)</option></select>
+      </div>
+      <div id="selEndsRow" style="display:none">
+        <label id="selStartLbl">Start end ➜ (where arrow begins)</label>
+        <select id="selStartEnd">
+          <option value="wall">Wall end</option>
+          <option value="free">Free end</option>
+          <option value="outside-capped">Outside corner — stop start</option>
+          <option value="connected">Connected — joins another run</option>
+        </select>
+        <label id="selEndLbl">Finish end (where arrow points)</label>
+        <select id="selEndEnd">
+          <option value="wall">Wall end</option>
+          <option value="free">Free end</option>
+          <option value="outside-capped">Outside corner — stop start</option>
+          <option value="connected">Connected — joins another run</option>
+        </select>
+        <button id="selSwapBtn" onclick="swapSelEnds()" style="margin-top:6px;width:100%;padding:5px;border-radius:3px;border:1px solid #555;background:#1a1a1a;color:#aaa;cursor:pointer;font-size:11px;font-family:'Courier New',monospace">⇄ Swap start / finish ends</button>
+      </div>
+      <div id="glassFieldsSel" style="display:none">
+        <label>Glass thickness</label>
+        <select id="selGlassThick"><option value="8">8mm TSG — with top rail</option><option value="10">10mm TSG — no top rail</option></select>
+        <label>Post shape</label>
+        <select id="selPostShape"><option value="round">Round 38.1mm</option><option value="square">Square 40×40</option></select>
+      </div>
+      <div id="vertFieldsSel" style="display:none">
+        <label>Infill diameter</label>
+        <select id="selInfillDia"><option value="16">16mm (standard)</option><option value="12.7">12.7mm</option></select>
+      </div>
+      <div class="popup-btns">
+        <button class="btn-save" onclick="saveSelect()">✔ Save</button>
+        <button class="btn-del" onclick="deleteLine()">✖ Delete</button>
+        <button class="btn-cancel" onclick="closeAll()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="popup" id="stairPopup">
+      <h4>Stair section</h4>
+      <label>Length (mm)</label>
+      <input type="text" id="stairDimVal" placeholder="e.g. 3100" autocomplete="off"/>
+      <label>Direction (walking up)</label>
+      <select id="stairDirVal"><option value="LH">LH — Left hand up</option><option value="RH">RH — Right hand up</option><option value="standalone">Standalone</option></select>
+      <label>Start end (bottom)</label>
+      <select id="stairStart"><option value="free">Free end</option><option value="wall">Wall end</option><option value="connected">Connected — joins another run</option></select>
+      <label>Finish end (top)</label>
+      <select id="stairEnd"><option value="connected">Connected — joins another run</option><option value="free">Free end</option><option value="wall">Wall end</option></select>
+      <label>Top connection type</label>
+      <select id="stairTopType"><option value="turn">Turns 90° (Type 3)</option><option value="inline">Continues straight (Type 7)</option></select>
+      <div class="popup-btns">
+        <button class="btn-save" onclick="saveStair()">✔ Save</button>
+        <button class="btn-cancel" onclick="cancelPending()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="popup" id="runPopup">
+      <h4>Run details</h4>
+      <label>Length (mm)</label>
+      <input type="text" id="runDimVal" placeholder="e.g. 5300" autocomplete="off"/>
+      <label>Label (optional)</label>
+      <input type="text" id="runLabelVal" placeholder="e.g. Leg A" autocomplete="off"/>
+      <label>Start end ➜ (where arrow begins)</label>
+      <select id="runStartEnd">
+        <option value="wall">Wall end</option>
+        <option value="free">Free end</option>
+        <option value="outside-capped">Outside corner — stop start</option>
+        <option value="connected">Connected — joins another run</option>
+      </select>
+      <label>Finish end (where arrow points)</label>
+      <select id="runEndEnd">
+        <option value="wall">Wall end</option>
+        <option value="free">Free end</option>
+        <option value="outside-capped">Outside corner — stop start</option>
+        <option value="connected">Connected — joins another run</option>
+      </select>
+      <button onclick="swapRunEnds()" style="margin-top:6px;width:100%;padding:5px;border-radius:3px;border:1px solid #555;background:#1a1a1a;color:#aaa;cursor:pointer;font-size:11px;font-family:'Courier New',monospace">⇄ Swap start / finish ends</button>
+      <div id="glassFields" style="display:none">
+        <label>Glass thickness</label>
+        <select id="runGlassThick"><option value="8">8mm TSG — with top rail</option><option value="10">10mm TSG — no top rail</option></select>
+        <label>Post shape</label>
+        <select id="runPostShape"><option value="round">Round 38.1mm</option><option value="square">Square 40×40</option></select>
+      </div>
+      <div id="vertFields" style="display:none">
+        <label>Infill diameter</label>
+        <select id="runInfillDia"><option value="16">16mm (standard)</option><option value="12.7">12.7mm</option></select>
+      </div>
+      <div class="popup-btns">
+        <button class="btn-save" onclick="saveRun()">✔ Save</button>
+        <button class="btn-cancel" onclick="cancelPending()">Cancel</button>
+      </div>
+    </div>
+  </div><!-- end canvasWrap -->
+
+    <!-- Calculate row inside canvas panel -->
+    <div class="btn-row" style="flex-shrink:0;padding:6px 0 0 0">
+      <button class="btn-secondary" onclick="undo()">↩ Undo</button>
+      <button class="btn-calc" onclick="calculate()">✔ Calculate — generate job card</button>
+      <button class="btn-danger-sm" onclick="clearCanvas()">🗑 Clear all</button>
+    </div>
+    </div><!-- end left column -->
+
+    <!-- RIGHT: Job card side panel — hidden until Calculate is clicked -->
+    <div id="canvasSideJC" style="width:270px;flex-shrink:0;border-left:2px solid var(--border2);background:var(--bg2);display:none;flex-direction:column;min-height:0">
+      <div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg3)">
+        <span style="font-size:10px;color:var(--accent);font-weight:bold;letter-spacing:1px;text-transform:uppercase">📋 Job Card</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="printJobCard()" style="padding:3px 8px;border-radius:3px;border:1px solid #2980b9;background:#1a3a5c;color:#aad4f5;cursor:pointer;font-size:10px;font-family:'Courier New',monospace" title="Print / Save as PDF">🖨️</button>
+          <button onclick="closeSideJC()" style="padding:3px 8px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Courier New',monospace" title="Close">✕</button>
+        </div>
+      </div>
+      <div id="jcBodySide" style="flex:1;overflow-y:auto;padding:8px 10px;font-size:11px"></div>
+    </div>
+
+  </div><!-- end panel-canvas -->
+
+  <!-- JOB CARD TAB PANEL -->
+  <div id="panel-jobcard" class="tab-panel">
+    <div style="padding:8px 12px;display:flex;gap:8px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
+      <button class="btn-copy" onclick="printJobCard()" style="flex:1">🖨️ Print / Save as PDF</button>
+      <button class="btn-claude" onclick="sendToChat()" style="flex:1">Send to Claude ↗</button>
+    </div>
+    <div class="jc-body" id="jcBody" style="flex:1;overflow-y:auto;padding:10px 12px"></div>
+  </div>
+
+  <!-- DRILLING SHEET TAB PANEL -->
+  <div id="panel-drilling" class="tab-panel" style="flex-direction:column">
+    <!-- action bar -->
+    <div style="padding:6px 10px;display:flex;gap:8px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;background:var(--bg2)">
+      <span style="font-size:11px;color:var(--text3);flex:1">Preview — data that will be sent to supplier drilling sheet</span>
+      <button onclick="openDrillingSheet()" style="padding:7px 18px;border-radius:3px;border:1px solid #7ab8e8;background:#1a3a5c;color:#aad4f5;cursor:pointer;font-size:11px;font-family:'Courier New',monospace;font-weight:bold;white-space:nowrap">🔩 Send to Drilling Sheet ↗</button>
+    </div>
+    <!-- visual form -->
+    <div id="dsBody" style="flex:1;overflow-y:auto;padding:12px 14px;background:var(--bg)">
+      <div id="dsForm" style="background:#fff;color:#111;border-radius:4px;padding:14px 16px;font-family:'Courier New',monospace;font-size:11px;max-width:900px;margin:0 auto;border:1px solid #ccc">
+        <!-- populated by updateDsPreview() -->
+        <div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to preview the drilling sheet before sending.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end mainWrap / pageContent -->
+
+<!-- ── BOTTOM TAB BAR ── -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-canvas" onclick="switchTab('canvas')">✏️ Canvas</button>
+  <button class="tab-btn" id="tab-jobcard" onclick="switchTab('jobcard')">📋 Job Card</button>
+  <button class="tab-btn ds-tab" id="tab-drilling" onclick="switchTab('drilling')">🔩 Drilling Sheet</button>
+</div>
+
+</div><!-- end pageContent -->
+
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const canvasWrap=document.getElementById('canvasWrap');
+const GRID=10,SNAP=14,PAD=6,CH=500;
+let tool='run',lines=[],drawing=false;
+let startX=0,startY=0,curX=0,curY=0;
+let selectedIdx=null,pendingIdx=null;
+let panX=0,panY=0,zoom=1;
+let isPanning=false,panSX=0,panSY=0,panOX=0,panOY=0;
+let lastCalcText='';
+let jobClient='', jobQuote='', jobCardNo='';
+
+function resizeCanvas(){
+  const cw=canvasWrap.clientWidth||800;
+  const ch=canvasWrap.clientHeight||500;
+  canvas.width=cw;
+  canvas.height=ch;
+  redraw();
+}
+window.addEventListener('resize',resizeCanvas);
+setTimeout(resizeCanvas,50);
+
+const S={run:{color:'#4a90d9',width:2.5,dash:[]},stairs:{color:'#e67e22',width:2.5,dash:[10,5]}};
+
+function getMount(){return document.getElementById('mountSelect').value;}
+function getProduct(){return document.getElementById('productSelect').value;}
+function getMountName(){return{top:'Top Mount',side:'Side Mount',flange:'Flange Mount'}[getMount()];}
+function getProductName(){
+  const p=getProduct();
+  if(p==='cable')return '9 Line Cable';
+  if(p==='glass')return 'Glass & Stainless';
+  if(p==='vertical')return 'Vertical Balustrade';
+  return '8 Line Horizontal';
+}
+
+function filterCornerOptions(){
+  const isSide=getMount()==='side';
+  const isCable=getProduct()==='cable';
+  const isGlass=getProduct()==='glass';
+  const isVertical=getProduct()==='vertical';
+  ['selStartEnd','selEndEnd','runStartEnd','runEndEnd'].forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    const cur=sel.value;
+    const opts=[
+      {value:'wall',text:'Wall end'},
+      {value:'free',text:'Free end'},
+    ];
+    if(isSide&&!isCable&&!isGlass&&!isVertical){
+      opts.push({value:'outside-capped',text:'Outside corner — stop start'});
+      opts.push({value:'outside-continuous',text:'Outside corner — continuous infills'});
+    } else if(isSide&&isGlass){
+      opts.push({value:'outside-capped',text:'Outside corner — stop start'});
+    } else if(isSide&&isVertical){
+      // Vertical side mount: outside corner always stop-start (no continuous infill option)
+      opts.push({value:'outside-capped',text:'Outside corner — stop start'});
+    } else if(isCable){
+      opts.push({value:'outside-capped',text:'Stop start — cable terminates'});
+      opts.push({value:'cable-continuous',text:'Continuous infills (bend tube)'});
+    } else if(isVertical){
+      // Vertical top/flange: outside corner stop-start only (sub-rails never bend)
+      opts.push({value:'outside-capped',text:'Outside corner — stop start'});
+    }
+    // glass & 8-line top/flange: no outside corner options (connected handles inside corners)
+    opts.push({value:'connected',text:'Connected — joins another run'});
+    sel.innerHTML=opts.map(o=>`<option value="${o.value}">${o.text}</option>`).join('');
+    const valid=opts.find(o=>o.value===cur);
+    sel.value=valid?cur:'wall';
+  });
+  // Show/hide glass-specific fields in run popup
+  const glassFields=document.getElementById('glassFields');
+  if(glassFields)glassFields.style.display=isGlass?'block':'none';
+  const glassFieldsSel=document.getElementById('glassFieldsSel');
+  if(glassFieldsSel)glassFieldsSel.style.display=isGlass?'block':'none';
+  // Show/hide vertical infill diameter field
+  const vertFields=document.getElementById('vertFields');
+  if(vertFields)vertFields.style.display=isVertical?'block':'none';
+  const vertFieldsSel=document.getElementById('vertFieldsSel');
+  if(vertFieldsSel)vertFieldsSel.style.display=isVertical?'block':'none';
+}
+
+let lastMount=null;
+function onMountChange(){
+  const current=getMount();
+  if(lastMount!==null&&lastMount!==current&&lines.filter(l=>l.dim).length>0){
+    const w=document.getElementById('mountWarning');
+    w.style.display='flex';
+  }
+  lastMount=current;
+  document.getElementById('instr').textContent=getProductName()+' — '+getMountName()+'  |  Select a tool then click and drag to draw.';
+  filterCornerOptions();
+  redraw();
+}
+function dismissMountWarning(){document.getElementById('mountWarning').style.display='none';}
+
+function setTool(t){
+  tool=t;selectedIdx=null;drawing=false;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  const b=document.getElementById('tool-'+t);if(b)b.classList.add('active');
+  closeAll();
+  const m={run:'Run: click and drag. Popup asks for dimension and end types.',stairs:'Stairs: click and drag. Popup asks for length, direction, end types and top connection.',select:'Select: click to select · drag to move · R to rotate 90° · DEL to delete · click to edit',pan:'Pan: click and drag to move. Scroll to zoom.'};
+  document.getElementById('instr').textContent=getProductName()+' — '+getMountName()+'  |  '+( m[t]||t);
+  canvas.style.cursor=t==='pan'?'grab':t==='select'?'pointer':'crosshair';
+  redraw();
+}
+
+function toWorld(sx,sy){return{x:(sx-panX)/zoom,y:(sy-panY)/zoom};}
+function toScreen(wx,wy){return{x:wx*zoom+panX,y:wy*zoom+panY};}
+function dist(x1,y1,x2,y2){return Math.sqrt((x2-x1)**2+(y2-y1)**2);}
+function snapPt(wx,wy){for(const l of lines){if(dist(wx,wy,l.x1,l.y1)<SNAP/zoom)return{x:l.x1,y:l.y1};if(dist(wx,wy,l.x2,l.y2)<SNAP/zoom)return{x:l.x2,y:l.y2};}return{x:Math.round(wx/GRID)*GRID,y:Math.round(wy/GRID)*GRID};}
+function constrain(x1,y1,x2,y2){return Math.abs(x2-x1)>=Math.abs(y2-y1)?{x:x2,y:y1}:{x:x1,y:y2};}
+function getMouse(e){const r=canvas.getBoundingClientRect();return{sx:e.clientX-r.left,sy:e.clientY-r.top};}
+
+function placePopup(id,sx,sy){
+  const p=document.getElementById(id);
+  p.style.display='block';
+  // Force layout so we get real dimensions
+  const pw=p.offsetWidth||210;
+  const ph=p.offsetHeight||240;
+  const cw=canvasWrap.clientWidth||canvas.width;
+  const ch=canvasWrap.clientHeight||canvas.height;
+  // Try to place to the right of click point, vertically centred
+  let x=sx+14;
+  let y=sy-Math.round(ph/2);
+  // If goes off right edge, flip to left
+  if(x+pw>cw-PAD) x=sx-pw-14;
+  // Hard clamp to stay inside canvas
+  if(x<PAD) x=PAD;
+  if(x+pw>cw-PAD) x=cw-pw-PAD;
+  // Vertical: clamp so popup never goes below visible area
+  if(y<PAD) y=PAD;
+  if(y+ph>ch-PAD) y=ch-ph-PAD;
+  if(y<PAD) y=PAD; // if popup taller than canvas, pin to top
+  p.style.left=x+'px';
+  p.style.top=y+'px';
+}
+
+canvas.addEventListener('wheel',e=>{e.preventDefault();const{sx,sy}=getMouse(e);const{x:wx,y:wy}=toWorld(sx,sy);zoom*=e.deltaY<0?1.1:0.9;zoom=Math.max(0.2,Math.min(5,zoom));panX=sx-wx*zoom;panY=sy-wy*zoom;redraw();},{passive:false});
+
+// ── DRAG STATE for moving a selected line ──
+let isDraggingLine=false,dragLineStart=null,dragMoved=false,dragSnapInfo=null;
+
+canvas.addEventListener('mousedown',e=>{
+  if(e.button!==0)return;const{sx,sy}=getMouse(e);
+  if(tool==='pan'){isPanning=true;panSX=e.clientX;panSY=e.clientY;panOX=panX;panOY=panY;canvas.style.cursor='grabbing';return;}
+  if(anyPopupOpen()){closeAll();return;}
+  const{x:wx,y:wy}=toWorld(sx,sy);
+  if(tool==='select'){
+    // Find the closest line under the cursor
+    let best=-1,bd=10/zoom;
+    lines.forEach((l,i)=>{const d=ptLineDist(wx,wy,l.x1,l.y1,l.x2,l.y2);if(d<bd){bd=d;best=i;}});
+    if(best>=0){
+      // Start a potential drag on this line
+      selectedIdx=best;
+      isDraggingLine=true;
+      dragMoved=false;
+      const l=lines[best];
+      dragLineStart={wx,wy,x1:l.x1,y1:l.y1,x2:l.x2,y2:l.y2};
+      canvas.style.cursor='grabbing';
+    } else {
+      // Clicked empty space — deselect
+      selectedIdx=null;
+    }
+    redraw();return;
+  }
+  const s=snapPt(wx,wy);startX=s.x;startY=s.y;curX=s.x;curY=s.y;drawing=true;
+});
+
+canvas.addEventListener('mousemove',e=>{
+  const{sx,sy}=getMouse(e);
+  if(isPanning){panX=panOX+(e.clientX-panSX);panY=panOY+(e.clientY-panSY);redraw();return;}
+  // Drag selected line
+  if(isDraggingLine&&dragLineStart&&selectedIdx!==null){
+    const{x:wx,y:wy}=toWorld(sx,sy);
+    const dx=wx-dragLineStart.wx, dy=wy-dragLineStart.wy;
+    if(Math.abs(dx)>2/zoom||Math.abs(dy)>2/zoom){
+      dragMoved=true;
+      let nx1=dragLineStart.x1+dx, ny1=dragLineStart.y1+dy;
+      let nx2=dragLineStart.x2+dx, ny2=dragLineStart.y2+dy;
+      // Snap either endpoint to nearby endpoints on other lines
+      const snapDist=20/zoom;
+      dragSnapInfo=null; // reset
+      let snapped=false;
+      for(let i=0;i<lines.length;i++){
+        if(i===selectedIdx)continue;
+        const ol=lines[i];
+        for(const[ex,ey,ewhich] of [[ol.x1,ol.y1,'start'],[ol.x2,ol.y2,'end']]){
+          if(!snapped&&Math.hypot(nx1-ex,ny1-ey)<snapDist){
+            const sdx=ex-nx1, sdy=ey-ny1;
+            nx1+=sdx; ny1+=sdy; nx2+=sdx; ny2+=sdy;
+            dragSnapInfo={myEnd:'start',otherIdx:i,otherEnd:ewhich};
+            snapped=true;break;
+          }
+          if(!snapped&&Math.hypot(nx2-ex,ny2-ey)<snapDist){
+            const sdx=ex-nx2, sdy=ey-ny2;
+            nx1+=sdx; ny1+=sdy; nx2+=sdx; ny2+=sdy;
+            dragSnapInfo={myEnd:'end',otherIdx:i,otherEnd:ewhich};
+            snapped=true;break;
+          }
+        }
+        if(snapped)break;
+      }
+      lines[selectedIdx].x1=nx1; lines[selectedIdx].y1=ny1;
+      lines[selectedIdx].x2=nx2; lines[selectedIdx].y2=ny2;
+      redraw();
+    }
+    return;
+  }
+  if(!drawing)return;
+  const{x:wx,y:wy}=toWorld(sx,sy);const s=snapPt(wx,wy);const c=constrain(startX,startY,s.x,s.y);curX=c.x;curY=c.y;redraw();
+  const p1=toScreen(startX,startY),p2=toScreen(curX,curY);
+  ctx.save();ctx.strokeStyle=S[tool]?S[tool].color:'#4a90d9';ctx.lineWidth=(S[tool]?S[tool].width:2.5)*zoom;ctx.setLineDash((S[tool]?S[tool].dash:[]).map(d=>d*zoom));ctx.lineCap='round';ctx.globalAlpha=0.4;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
+});
+
+canvas.addEventListener('mouseup',e=>{
+  if(e.button!==0)return;
+  if(isPanning){isPanning=false;canvas.style.cursor='grab';return;}
+  if(isDraggingLine){
+    isDraggingLine=false;
+    canvas.style.cursor='pointer';
+    if(!dragMoved&&selectedIdx!==null){
+      // It was a click not a drag — open the edit popup
+      const l=lines[selectedIdx];
+      const sc=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);
+      openSelectPopup(selectedIdx,sc.x,sc.y);
+    } else if(dragMoved&&dragSnapInfo!==null&&selectedIdx!==null){
+      // Snapped onto another line — set both ends to connected
+      const my=lines[selectedIdx];
+      const other=lines[dragSnapInfo.otherIdx];
+      if(dragSnapInfo.myEnd==='start') my.startEnd='connected';
+      else my.endEnd='connected';
+      if(dragSnapInfo.otherEnd==='start') other.startEnd='connected';
+      else other.endEnd='connected';
+    }
+    dragLineStart=null;dragMoved=false;dragSnapInfo=null;
+    redraw();return;
+  }
+  if(!drawing)return;drawing=false;if(dist(startX,startY,curX,curY)<4/zoom)return;
+  const idx=lines.length;
+  lines.push({type:tool,x1:startX,y1:startY,x2:curX,y2:curY,dim:'',label:'',dir:'LH',startEnd:'wall',endEnd:'wall',topType:'turn'});
+  pendingIdx=idx;
+  const sc=toScreen((startX+curX)/2,(startY+curY)/2);
+  if(tool==='stairs')openStairPopup(idx,sc.x,sc.y);else if(tool==='run')openRunPopup(idx,sc.x,sc.y);else{pendingIdx=null;redraw();}
+});
+
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('mouseleave',()=>{
+  if(isPanning){isPanning=false;canvas.style.cursor='grab';}
+  if(isDraggingLine){isDraggingLine=false;dragLineStart=null;dragMoved=false;canvas.style.cursor='pointer';}
+});
+
+function ptLineDist(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,l2=dx*dx+dy*dy;if(l2===0)return dist(px,py,x1,y1);const t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/l2));return dist(px,py,x1+t*dx,y1+t*dy);}
+function anyPopupOpen(){return['selectPopup','stairPopup','runPopup'].some(id=>document.getElementById(id).style.display==='block');}
+function closeAll(){['selectPopup','stairPopup','runPopup'].forEach(id=>{document.getElementById(id).style.display='none';});selectedIdx=null;pendingIdx=null;redraw();}
+function cancelPending(){if(pendingIdx!==null){lines.splice(pendingIdx,1);}closeAll();}
+
+function openSelectPopup(idx,sx,sy){
+  const l=lines[idx];const isStair=l.type==='stairs';
+  document.getElementById('selectTitle').textContent=isStair?'Edit stairs':'Edit run';
+  document.getElementById('selDim').value=l.dim.replace('mm','');document.getElementById('selLabel').value=l.label||'';
+  document.getElementById('stairDirRow').style.display=isStair?'block':'none';
+  if(isStair){document.getElementById('selDir').value=l.dir||'LH';document.getElementById('selTopType').value=l.topType||'turn';}
+  document.getElementById('selEndsRow').style.display='block';
+  document.getElementById('selStartEnd').value=l.startEnd||'wall';document.getElementById('selEndEnd').value=l.endEnd||'wall';
+  if(getProduct()==='glass'){document.getElementById('selGlassThick').value=l.glassThick||'8';document.getElementById('selPostShape').value=l.postShape||'round';}
+  if(getProduct()==='vertical'){document.getElementById('selInfillDia').value=l.infillDia||'16';}
+  placePopup('selectPopup',sx,sy);filterCornerOptions();setTimeout(()=>{const d=document.getElementById('selDim');d.focus();d.select();},30);
+}
+
+function saveSelect(){
+  if(selectedIdx===null)return;
+  const v=document.getElementById('selDim').value.trim();
+  lines[selectedIdx].dim=v?v.replace('mm','')+'mm':'';lines[selectedIdx].label=document.getElementById('selLabel').value.trim();
+  if(lines[selectedIdx].type==='stairs'){lines[selectedIdx].dir=document.getElementById('selDir').value;lines[selectedIdx].topType=document.getElementById('selTopType').value;}
+  lines[selectedIdx].startEnd=document.getElementById('selStartEnd').value;lines[selectedIdx].endEnd=document.getElementById('selEndEnd').value;
+  if(getProduct()==='glass'){lines[selectedIdx].glassThick=document.getElementById('selGlassThick').value;lines[selectedIdx].postShape=document.getElementById('selPostShape').value;}
+  if(getProduct()==='vertical'){lines[selectedIdx].infillDia=document.getElementById('selInfillDia').value;}
+  closeAll();redraw();
+}
+
+function deleteLine(){if(selectedIdx===null)return;lines.splice(selectedIdx,1);closeAll();redraw();}
+document.getElementById('selDim').addEventListener('keydown',e=>{if(e.key==='Enter')saveSelect();if(e.key==='Escape')closeAll();});
+
+function openRunPopup(idx,sx,sy){document.getElementById('runDimVal').value='';document.getElementById('runLabelVal').value='';document.getElementById('runStartEnd').value='wall';document.getElementById('runEndEnd').value='wall';document.getElementById('runGlassThick').value=lines[idx]?lines[idx].glassThick||'8':'8';document.getElementById('runPostShape').value=lines[idx]?lines[idx].postShape||'round':'round';document.getElementById('runInfillDia').value=lines[idx]?lines[idx].infillDia||'16':'16';placePopup('runPopup',sx,sy);filterCornerOptions();setTimeout(()=>{document.getElementById('runDimVal').focus();},30);}
+function saveRun(){const idx=pendingIdx;if(idx===null)return;const v=document.getElementById('runDimVal').value.trim();lines[idx].dim=v?v.replace('mm','')+'mm':'';lines[idx].label=document.getElementById('runLabelVal').value.trim();lines[idx].startEnd=document.getElementById('runStartEnd').value;lines[idx].endEnd=document.getElementById('runEndEnd').value;lines[idx].glassThick=document.getElementById('runGlassThick').value;lines[idx].postShape=document.getElementById('runPostShape').value;lines[idx].infillDia=document.getElementById('runInfillDia').value;closeAll();redraw();}
+document.getElementById('runDimVal').addEventListener('keydown',e=>{if(e.key==='Enter')saveRun();if(e.key==='Escape')cancelPending();});
+
+function openStairPopup(idx,sx,sy){document.getElementById('stairDimVal').value='';document.getElementById('stairDirVal').value='LH';document.getElementById('stairStart').value='free';document.getElementById('stairEnd').value='connected';document.getElementById('stairTopType').value='turn';placePopup('stairPopup',sx,sy);setTimeout(()=>{document.getElementById('stairDimVal').focus();},30);}
+function saveStair(){const idx=pendingIdx;if(idx===null)return;const v=document.getElementById('stairDimVal').value.trim();lines[idx].dim=v?v.replace('mm','')+'mm':'';lines[idx].dir=document.getElementById('stairDirVal').value;lines[idx].startEnd=document.getElementById('stairStart').value;lines[idx].endEnd=document.getElementById('stairEnd').value;lines[idx].topType=document.getElementById('stairTopType').value;closeAll();redraw();}
+document.getElementById('stairDimVal').addEventListener('keydown',e=>{if(e.key==='Enter')saveStair();if(e.key==='Escape')cancelPending();});
+
+// Global keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,select,textarea'))return;
+  // DEL / Backspace — delete selected line
+  if((e.key==='Delete'||e.key==='Backspace')&&selectedIdx!==null){
+    lines.splice(selectedIdx,1);selectedIdx=null;closeAll();redraw();return;
+  }
+  // ESC — deselect / cancel
+  if(e.key==='Escape'){closeAll();return;}
+  // R — rotate selected line 90° around its centre
+  if(e.key==='r'||e.key==='R'){
+    if(selectedIdx!==null&&!anyPopupOpen()){
+      const l=lines[selectedIdx];
+      const cx=(l.x1+l.x2)/2, cy=(l.y1+l.y2)/2;
+      const dx1=l.x1-cx, dy1=l.y1-cy;
+      const dx2=l.x2-cx, dy2=l.y2-cy;
+      // Rotate 90° clockwise: (x,y) → (y,-x)
+      l.x1=cx+dy1; l.y1=cy-dx1;
+      l.x2=cx+dy2; l.y2=cy-dx2;
+      redraw();
+    }
+    return;
+  }
+});
+
+function zoomIn(){zoom=Math.min(5,zoom*1.2);redraw();}
+function zoomOut(){zoom=Math.max(0.2,zoom/1.2);redraw();}
+function resetView(){zoom=1;panX=0;panY=0;redraw();}
+function undo(){
+  if(lines.length>0){
+    lines.splice(lines.length-1,1);
+    selectedIdx=null;
+    closeAll();
+    redraw();
+  }
+}
+function closePanel(){switchTab('canvas');}
+function clearCanvas(){lines=[];selectedIdx=null;pendingIdx=null;drawing=false;lastCalcText='';closePanel();['selectPopup','stairPopup','runPopup'].forEach(id=>{document.getElementById(id).style.display='none';});document.getElementById('canvasSideJC').style.display='none';setTimeout(resizeCanvas,50);}
+
+function switchTab(tab){
+  ['canvas','jobcard','drilling'].forEach(t=>{
+    const btn=document.getElementById('tab-'+t);
+    if(btn) btn.classList.toggle('active',t===tab);
+    const p=document.getElementById('panel-'+t);
+    if(p) p.classList.toggle('active',t===tab);
+  });
+  if(tab==='canvas') setTimeout(resizeCanvas,50);
+  if(tab==='drilling') updateDsPreview();
+}
+
+function updateDsPreview(){
+  const el=document.getElementById('dsForm');if(!el)return;
+  const active=lines.filter(l=>l.dim);
+  if(active.length===0){
+    el.innerHTML='<div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to preview the drilling sheet before sending.</div>';
+    return;
+  }
+  const product=getProduct(),mount=getMount(),mat=getMaterial(),postSz=getPostSize();
+  const isGlass=product==='glass';
+  const OFF=100;
+  const legs=active.map(l=>{const dim=parseInt(l.dim);const sd=isCorner(l.startEnd)?0:OFF,ed=isCorner(l.endEnd)?0:OFF;const eff=dim-sd-ed;const openings=Math.ceil(Math.max(eff,100)/1200);return{...l,dim,eff,openings,rawPosts:openings+1};});
+  const connectedEnds=legs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0);
+  const totalPosts=legs.reduce((s,l)=>s+l.rawPosts,0)-Math.round(connectedEnds/2);
+  const typeData=getPostTypes(legs);
+  const phMap={top:isGlass?'1100':'1000',side:isGlass?'1250':'1150',flange:isGlass?'1000':'900'};
+  const postHeight=phMap[mount]||'1000';
+  const numHoles=product==='glass'?'2':product==='cable'?'9':product==='vertical'?'2':'8';
+  const holeSize=product==='glass'?'11':product==='cable'?'5':product==='vertical'?'25.1':'16';
+  const postSzName={round38:'Round 38.1mm',round50:'Round 50mm',sq40:'Square 40×40',sq50:'Square 50×50'}[postSz]||postSz;
+
+  // helper: checkbox cell
+  const chk=(checked)=>`<td style="text-align:center;vertical-align:middle"><span style="font-size:14px">${checked?'☑':'☐'}</span></td>`;
+  const qty=(n)=>`<td style="text-align:center;vertical-align:middle;font-weight:bold;font-size:12px;background:#f9f9f9;border:1px solid #ccc;min-width:36px">${n||''}</td>`;
+  const field=(val,w)=>`<span style="display:inline-block;min-width:${w||80}px;border-bottom:1px solid #333;font-weight:bold;padding:1px 4px">${val||''}</span>`;
+  const cell=(label,val,bold)=>`<td style="padding:2px 6px;font-size:10px;white-space:nowrap">${label}: ${bold?`<b>${val}</b>`:val}</td>`;
+  const td=(content,style)=>`<td style="padding:3px 6px;font-size:11px;${style||''}">${content}</td>`;
+
+  // post type grid data  (types 1-13, LH/RH where applicable)
+  const T=typeData;
+  const postTypeRows=[
+    [1,'Corner post in straight to degree up','lh','rh'],
+    [2,'Corner post in degree to degree up','lh','rh'],
+    [3,'Corner post degree up to straight','lh','rh'],
+    [4,'End post up at degree',null,null],
+    [5,'End post down at degree',null,null],
+    [6,'Centre post straight to degree up',null,null],
+    [7,'Centre post straight to degree down',null,null],
+    [8,'Centre post through at degree',null,null],
+    [9,'Open corner post 135°',null,null],
+    [10,'Corner post straight',null,null],
+    [11,'End post straight',null,null],
+    [12,'Centre post straight through',null,null],
+    [13,'Plain post',null,null],
+  ];
+
+  let postGrid='';
+  postTypeRows.forEach(([n,label,lh,rh])=>{
+    const qLH=lh?T[n+'LH']||0:null;
+    const qRH=rh?T[n+'RH']||0:null;
+    const qPlain=(!lh&&!rh)?T[String(n)]||0:null;
+    const highlight=(qLH||0)+(qRH||0)+(qPlain||0)>0;
+    postGrid+=`<tr style="background:${highlight?'#fffbe6':'#fff'};border-bottom:1px solid #eee">
+      <td style="padding:3px 8px;font-weight:bold;font-size:13px;text-align:center;width:30px;border-right:1px solid #ddd">${n}</td>
+      <td style="padding:3px 8px;font-size:10px;border-right:1px solid #ddd">${label}</td>
+      ${lh?`<td style="text-align:center;padding:3px;width:60px;border-right:1px solid #ddd"><b style="font-size:12px;color:${qLH>0?'#c8a028':'#999'}">${qLH>0?qLH:'—'}</b></td>`:''}
+      ${rh?`<td style="text-align:center;padding:3px;width:60px;border-right:1px solid #ddd"><b style="font-size:12px;color:${qRH>0?'#c8a028':'#999'}">${qRH>0?qRH:'—'}</b></td>`:''}
+      ${(!lh&&!rh)?`<td colspan="2" style="text-align:center;padding:3px;border-right:1px solid #ddd"><b style="font-size:12px;color:${qPlain>0?'#c8a028':'#999'}">${qPlain>0?qPlain:'—'}</b></td>`:''}
+    </tr>`;
+  });
+
+  // mount/finishing/material checkboxes
+  const mTop=mount==='top',mSide=mount==='side',mFlange=mount==='flange';
+  const isRound38=postSz==='round38',isRound50=postSz==='round50',isSq40=postSz==='sq40',isSq50=postSz==='sq50';
+  const mat304_180=mat==='304-180',mat304m=mat==='304-mirror',mat316_180=mat==='316-180',mat316m=mat==='316-mirror',matMS=mat==='mild';
+
+  el.innerHTML=`
+  <div style="border:2px solid #333;padding:10px;background:#fff;font-family:'Courier New',monospace">
+
+    <!-- HEADER -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333;align-items:flex-start">
+      <div style="flex:2;min-width:160px"><span style="font-size:10px;color:#666;display:block;margin-bottom:2px">QUOTE NO</span><div style="border-bottom:1px solid #333;min-height:20px;font-weight:bold;font-size:13px">${jobQuote||''}</div></div>
+      <div style="flex:3;min-width:200px"><span style="font-size:10px;color:#666;display:block;margin-bottom:2px">CLIENT NAME</span><div style="border-bottom:1px solid #333;min-height:20px;font-weight:bold;font-size:13px">${jobClient||''}</div></div>
+      <div style="flex:2;min-width:140px"><span style="font-size:10px;color:#666;display:block;margin-bottom:2px">JOBCARD NO</span><div style="border-bottom:1px solid #333;min-height:20px;font-weight:bold;font-size:13px">${jobCardNo||''}</div></div>
+      <div style="flex:1;min-width:80px"><span style="font-size:10px;color:#666;display:block;margin-bottom:2px">TOTAL POSTS</span><div style="border-bottom:1px solid #333;min-height:20px;font-weight:bold;font-size:16px;color:#c8a028;text-align:center">${totalPosts}</div></div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+
+      <!-- LEFT: POST TYPE GRID -->
+      <div style="flex:2;min-width:320px">
+        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Types</div>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #ccc">
+          <thead>
+            <tr style="background:#f0f0f0">
+              <th style="padding:3px 6px;font-size:10px;border-right:1px solid #ddd;width:30px">#</th>
+              <th style="padding:3px 6px;font-size:10px;text-align:left;border-right:1px solid #ddd">Description</th>
+              <th style="padding:3px 6px;font-size:10px;width:60px;border-right:1px solid #ddd">LH QTY</th>
+              <th style="padding:3px 6px;font-size:10px;width:60px">RH / QTY</th>
+            </tr>
+          </thead>
+          <tbody>${postGrid}</tbody>
+        </table>
+      </div>
+
+      <!-- RIGHT: OPTIONS -->
+      <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:10px">
+
+        <!-- Post options -->
+        <div>
+          <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Options</div>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="font-size:11px;padding:2px 4px">Round 38.1mm</td><td style="text-align:center">${isRound38?'☑':'☐'}</td><td style="font-size:11px;padding:2px 8px">Height: <b>${postHeight}mm</b></td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Round 50mm</td><td style="text-align:center">${isRound50?'☑':'☐'}</td><td style="font-size:11px;padding:2px 8px">Holes: <b>${numHoles}</b></td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Square 40×40</td><td style="text-align:center">${isSq40?'☑':'☐'}</td><td style="font-size:11px;padding:2px 8px">Hole size: <b>${holeSize}mm</b></td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Square 50×50</td><td style="text-align:center">${isSq50?'☑':'☐'}</td><td></td></tr>
+          </table>
+        </div>
+
+        <!-- Mount -->
+        <div>
+          <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Mounting</div>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="font-size:11px;padding:2px 4px">Core Drill</td><td style="text-align:center">${mTop?'☑':'☐'}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Side Mount</td><td style="text-align:center">${mSide?'☑':'☐'}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Flange</td><td style="text-align:center">${mFlange?'☑':'☐'}</td></tr>
+          </table>
+        </div>
+
+        <!-- Finishing -->
+        <div>
+          <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Finishing</div>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="font-size:11px;padding:2px 4px">No Pin</td><td style="text-align:center">${isGlass&&product!=='8line'&&product!=='vertical'?'☑':'☐'}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Weld On Pin</td><td style="text-align:center">${(!isGlass||product==='vertical')?'☑':'☐'}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Knock In Pin</td><td style="text-align:center">☐</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Cover Plate Flat</td><td style="text-align:center">☐</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Cover Plate Domed</td><td style="text-align:center">${!isGlass?'☑':'☐'}</td></tr>
+          </table>
+        </div>
+
+        <!-- Material -->
+        <div>
+          <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Material</div>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="font-size:11px;padding:2px 4px">304-180</td><td style="text-align:center">${mat304_180?'☑':'☐'}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">304-Mirror</td><td style="text-align:center">${mat304m?'☑':'☐'}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">316-180</td><td style="text-align:center">${mat316_180?'☑':'☐'}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">316-Mirror</td><td style="text-align:center">${mat316m?'☑':'☐'}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Mild Steel</td><td style="text-align:center">${matMS?'☑':'☐'}</td></tr>
+          </table>
+        </div>
+
+
+      </div>
+    </div>
+
+    <!-- APPROVAL -->
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid #ddd;font-size:10px;color:#c0392b;font-weight:bold;white-space:normal;word-break:break-word;line-height:1.6">
+      PLEASE FILL IN ALL CATEGORIES AND SIGN APPROVING THE DOCUMENT<br>
+      <span style="color:#333;font-weight:normal">APPROVAL SIGNATURE: ___________________________</span>
+    </div>
+  </div>`;
+}
+
+
+
+
+function drawArrow(ctx,x1,y1,x2,y2,color){
+  const t=0.55;const ax=x1+(x2-x1)*t,ay=y1+(y2-y1)*t;
+  const ang=Math.atan2(y2-y1,x2-x1);const sz=10;
+  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(ax-Math.cos(ang)*sz,ay-Math.sin(ang)*sz);ctx.lineTo(ax+Math.cos(ang)*sz,ay+Math.sin(ang)*sz);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ax+Math.cos(ang)*sz,ay+Math.sin(ang)*sz);ctx.lineTo(ax+Math.cos(ang+2.4)*7,ay+Math.sin(ang+2.4)*7);ctx.lineTo(ax+Math.cos(ang-2.4)*7,ay+Math.sin(ang-2.4)*7);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+function swapSelEnds(){
+  const s=document.getElementById('selStartEnd').value;
+  const e=document.getElementById('selEndEnd').value;
+  document.getElementById('selStartEnd').value=e;
+  document.getElementById('selEndEnd').value=s;
+}
+
+function swapRunEnds(){
+  const s=document.getElementById('runStartEnd').value;
+  const e=document.getElementById('runEndEnd').value;
+  document.getElementById('runStartEnd').value=e;
+  document.getElementById('runEndEnd').value=s;
+}
+
+function redraw(){
+  const cw=canvas.width,ch=canvas.height;ctx.clearRect(0,0,cw,ch);
+  ctx.fillStyle=isLight?'#ffffff':'#1a1a1a';ctx.fillRect(0,0,cw,ch);
+  const g=GRID*zoom,ox=((panX%g)+g)%g,oy=((panY%g)+g)%g;
+  const dotMinor=isLight?'rgba(0,0,0,0.07)':'rgba(255,255,255,0.025)';
+  const dotMajor=isLight?'rgba(0,0,0,0.18)':'rgba(255,255,255,0.08)';
+  for(let x=ox-g;x<cw+g;x+=g){for(let y=oy-g;y<ch+g;y+=g){
+    const major=(Math.round((x-ox)/g)%5===0&&Math.round((y-oy)/g)%5===0);
+    ctx.fillStyle=major?dotMajor:dotMinor;
+    ctx.beginPath();ctx.arc(x,y,major?1.5:0.7,0,Math.PI*2);ctx.fill();
+  }}
+  lines.forEach((l,i)=>{
+    const s=S[l.type]||S.run;const p1=toScreen(l.x1,l.y1),p2=toScreen(l.x2,l.y2);
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;const horiz=Math.abs(l.x2-l.x1)>=Math.abs(l.y2-l.y1);const sel=(i===selectedIdx);
+    if(sel){ctx.save();ctx.strokeStyle='#c8a028';ctx.lineWidth=(s.width+6)*zoom;ctx.setLineDash([]);ctx.lineCap='round';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();}
+    ctx.save();ctx.strokeStyle=sel?'#c8a028':s.color;ctx.lineWidth=s.width*zoom;ctx.setLineDash(s.dash.map(d=>d*zoom));ctx.lineCap='round';ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
+    // Direction arrow on runs and stairs
+    if(zoom>0.4){
+      let ax1=l.x1,ay1=l.y1,ax2=l.x2,ay2=l.y2;
+      if(l.type==='stairs'){
+        // Stairs: arrow always goes from lower screen point (bottom) to upper (top)
+        if(p1.y<p2.y){ax1=l.x2;ay1=l.y2;ax2=l.x1;ay2=l.y1;}
+      }
+      const wp1=toScreen(ax1,ay1),wp2=toScreen(ax2,ay2);
+      drawArrow(ctx,wp1.x,wp1.y,wp2.x,wp2.y,sel?'#c8a028':s.color);
+    }
+    [[p1.x,p1.y],[p2.x,p2.y]].forEach(([ex,ey])=>{ctx.save();ctx.fillStyle=sel?'#c8a028':s.color;ctx.beginPath();ctx.arc(ex,ey,Math.max(3,4*Math.min(zoom,1.5)),0,Math.PI*2);ctx.fill();ctx.restore();});
+    // End type labels at each endpoint
+    if(l.startEnd&&zoom>0.5){
+      const etShort=v=>({'wall':'W','free':'F','outside-capped':'OS','outside-continuous':'OC','connected':'C','cable-continuous':'CC'}[v]||'');
+      const etColor=v=>v==='free'?'#e74c3c':v==='wall'?'#95a5a6':v==='connected'?'#27ae60':'#9b59b6';
+      const drawET=(sx,sy,v,above)=>{
+        const lbl=etShort(v);if(!lbl)return;
+        const ofs=above?-16:14;
+        ctx.save();ctx.font=`bold ${Math.max(8,9*Math.min(zoom,1.2))}px Courier New`;
+        const tw=ctx.measureText(lbl).width;
+        ctx.fillStyle='rgba(20,20,20,0.85)';ctx.fillRect(sx-tw/2-3,sy+ofs-8,tw+6,13);
+        ctx.fillStyle=etColor(v);ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(lbl,sx,sy+ofs-1);ctx.restore();
+      };
+      // Start end — at p1, finish end — at p2
+      // For horizontal lines: label above start, above end. For vertical: offset to side.
+      drawET(p1.x,p1.y,l.startEnd,true);
+      drawET(p2.x,p2.y,l.endEnd,true);
+    }
+    if(l.dim&&zoom>0.35){
+      let dlx,dly;
+      if(l.type==='stairs'){dlx=mx;dly=my-8;}else if(horiz){dlx=mx;dly=my-16;}else{dlx=mx+52;dly=my-8;}
+      ctx.save();const fs=Math.max(9,11*Math.min(zoom,1.3));ctx.font=`bold ${fs}px Courier New`;
+      const lbl=l.label?`${l.label} ${l.dim}`:l.dim;const tw=ctx.measureText(lbl).width;
+      ctx.fillStyle=isLight?'rgba(240,242,245,0.92)':'rgba(26,26,26,0.9)';ctx.fillRect(dlx-tw/2-4,dly-11,tw+8,17);
+      ctx.fillStyle=sel?'#c8a028':s.color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,dlx,dly-2);ctx.restore();
+      if(l.type==='stairs'&&l.dir){
+        const dfs=Math.max(9,10*Math.min(zoom,1.3));
+        ctx.save();ctx.font=`bold ${dfs}px Courier New`;
+        const dirLbl=l.dir+' up';const dtw=ctx.measureText(dirLbl).width;
+        // LH goes left of dim label, RH goes right — anchored to line centre
+        const gap=tw/2+dtw/2+10;
+        const ddx=l.dir==='RH'?dlx+gap:dlx-gap;
+        const ddy=dly-2;
+        ctx.fillStyle=isLight?'rgba(240,242,245,0.92)':'rgba(26,26,26,0.9)';ctx.fillRect(ddx-dtw/2-4,ddy-9,dtw+8,15);
+        ctx.fillStyle='#e67e22';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(dirLbl,ddx,ddy);ctx.restore();
+      }
+    }
+  });
+
+  // Draw snap-to-connect rings when dragging a line near another endpoint
+  if(isDraggingLine&&selectedIdx!==null){
+    const sl=lines[selectedIdx];
+    const snapDist=20/zoom;
+    for(let i=0;i<lines.length;i++){
+      if(i===selectedIdx)continue;
+      const ol=lines[i];
+      for(const[ex,ey] of [[ol.x1,ol.y1],[ol.x2,ol.y2]]){
+        const nearStart=Math.hypot(sl.x1-ex,sl.y1-ey)<snapDist;
+        const nearEnd=Math.hypot(sl.x2-ex,sl.y2-ey)<snapDist;
+        if(nearStart||nearEnd){
+          const sp=toScreen(ex,ey);
+          ctx.save();
+          ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;
+          ctx.beginPath();ctx.arc(sp.x,sp.y,10*Math.min(zoom,1.5),0,Math.PI*2);ctx.stroke();
+          ctx.fillStyle='rgba(39,174,96,0.2)';ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+  }
+}
+
+function isCorner(v){return v==='outside-capped'||v==='outside-continuous'||v==='connected'||v==='cable-continuous';}
+
+function getPostTypes(legs){
+  const types={};const add=(t,q=1)=>{types[t]=(types[t]||0)+q;};
+  legs.forEach(l=>{
+    const OFF=100;const dim=parseInt(l.dim);
+    // No offset deduction on any corner type — full length used
+    const startDeduct=isCorner(l.startEnd)?0:OFF;
+    const endDeduct=isCorner(l.endEnd)?0:OFF;
+    const eff=dim-startDeduct-endDeduct;
+    const openings=Math.ceil(Math.max(eff,100)/1200);const rawPosts=openings+1;
+    if(l.type==='stairs'){
+      const isCableLeg=getProduct()==='cable';
+      add(isCableLeg?'8':'4');
+      const thru=Math.max(0,rawPosts-2);if(thru>0)add('8',thru);
+      if(l.endEnd==='connected'){if(l.topType==='inline'){add('7');}else{if(l.dir==='LH')add('3LH');else add('3RH');}}
+      else{add(isCableLeg?'8':'5');}
+    }else{
+      const isCableLeg=getProduct()==='cable';
+      // Start post
+      if(l.startEnd==='outside-capped'||l.startEnd==='cable-continuous') add(isCableLeg?'12':'11');
+      else if(l.startEnd==='outside-continuous')add('12');
+      else if(l.startEnd==='connected')add('10');
+      else add(isCableLeg?'12':'11'); // wall or free — cable always Type 12
+      // Through posts
+      const thru=Math.max(0,rawPosts-2);if(thru>0)add('12',thru);
+      // End post
+      if(l.endEnd==='outside-capped'||l.endEnd==='cable-continuous') add(isCableLeg?'12':'11');
+      else if(l.endEnd==='outside-continuous')add('12');
+      else if(l.endEnd==='connected')add('10');
+      else add(isCableLeg?'12':'11'); // wall or free — cable always Type 12
+    }
+  });
+  // Deduplicate shared posts: connected run-run corners each appear on two legs → halve them
+  const connectedRunEnds=legs.filter(l=>l.type==='run').reduce((s,l)=>
+    s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0);
+  const stairTopConn=legs.filter(l=>l.type==='stairs'&&l.endEnd==='connected').length;
+  const runRunCorners=Math.round((connectedRunEnds-stairTopConn)/2);
+  if(types['10'])types['10']=Math.max(0,types['10']-runRunCorners-stairTopConn);
+  return types;
+}
+
+function calculate(){
+  dismissMountWarning();
+  const active=lines.filter(l=>l.dim);
+  if(active.length===0){alert('Draw at least one run or stair with a dimension first.');return;}
+  const OFF=100;
+  const legs=active.map(l=>{
+    const dim=parseInt(l.dim);
+    const startDeduct=isCorner(l.startEnd)?0:OFF;
+    const endDeduct=isCorner(l.endEnd)?0:OFF;
+    const eff=dim-startDeduct-endDeduct;
+    const openings=Math.ceil(Math.max(eff,100)/1200);const rawPosts=openings+1;
+    return{...l,dim,eff,openings,rawPosts};
+  });
+  const rawTotal=legs.reduce((s,l)=>s+l.rawPosts,0);
+  // Only 'connected' ends share a post between two legs — outside corners use separate posts
+  const connectedEnds=legs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0);
+  const sharedPosts=Math.round(connectedEnds/2);
+  const totalPosts=rawTotal-sharedPosts;
+  // End caps only on truly free or wall ends
+  const endCaps=legs.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?1:0)+(l.endEnd==='wall'||l.endEnd==='free'?1:0),0);
+  const totalRail=legs.reduce((s,l)=>s+l.dim,0);
+  // Joiners only needed on legs that actually have a top rail
+  // Glass with 10mm TSG has no top rail — never needs a joiner
+  const joiners=legs.filter(l=>l.dim>5800&&!(getProduct()==='glass'&&(l.glassThick||'8')==='10')).length;
+  const railStock=Math.ceil(totalRail/5800);
+  const isCable=getProduct()==='cable';
+  const isGlass=getProduct()==='glass';
+  const isVertical=getProduct()==='vertical';
+  const mount=getMount();
+  const mountName=getMountName();
+  const productName=getProductName();
+
+  // Rail bends — top rail continuous through ALL corners except wall end and free end
+  const allCornerEnds=legs.filter(l=>l.type==='run').reduce((s,l)=>
+    s+(l.startEnd!=='wall'&&l.startEnd!=='free'?1:0)
+     +(l.endEnd!=='wall'&&l.endEnd!=='free'?1:0),0);
+  const railBends=Math.round(allCornerEnds/2);
+
+  // ── VERTICAL BALUSTRADE QUANTITIES ──
+  let vertTotalInfills=0, vertSubRailMm=0, vertInfillStockMm=0;
+  const vertInfillDia=legs.length>0?(parseFloat(legs[0].infillDia)||16):16;
+  const vertCutLengthMm=mount==='side'?850:800;
+  if(isVertical){
+    legs.forEach(l=>{
+      const avgOpening=Math.round(l.eff/l.openings);
+      for(let i=0;i<l.openings;i++){
+        const gaps=Math.ceil(avgOpening/100);
+        const infillsThisOpening=Math.max(0,gaps-1);
+        vertTotalInfills+=infillsThisOpening;
+        vertSubRailMm+=avgOpening*2;
+      }
+    });
+    vertInfillStockMm=vertTotalInfills*vertCutLengthMm;
+  }
+  const totalInfill=(isCable||isGlass||isVertical)?0:totalRail*8;
+  const infillStock=(isCable||isGlass||isVertical)?0:Math.ceil(totalInfill/5800);
+  // Glass quantities
+  // Panels = openings per leg (posts - 1). D-clamps = 4 per panel (2 each side).
+  // Top rail only for 8mm TSG legs.
+  const glassPanels=isGlass?legs.reduce((s,l)=>s+l.openings,0):0;
+  const glassDclamps=isGlass?glassPanels*4:0;
+  const glassHasTopRail=isGlass?legs.some(l=>(l.glassThick||'8')==='8'):false;
+  const glassTotalRail=isGlass?legs.filter(l=>(l.glassThick||'8')==='8').reduce((s,l)=>s+l.dim,0):0;
+  const glassRailStock=glassTotalRail>0?Math.ceil(glassTotalRail/5800):0;
+  // Derive majority post shape for drilling sheet note
+  const glassPostShapes=isGlass?legs.map(l=>l.postShape||'round'):[];
+  const glassPostShapeNote=isGlass?(glassPostShapes.every(s=>s==='square')?'Square 40×40':glassPostShapes.every(s=>s==='round')?'Round 38.1mm':'Mixed — see legs'):'';
+  // Cable quantities
+  const cableLines=9;
+  const totalCableM=isCable?Math.ceil(legs.reduce((s,l)=>s+l.dim,0)/1000*cableLines*10)/10:0;
+  const openEnds=isCable?legs.reduce((s,l)=>{
+    const startOpen=l.startEnd==='wall'||l.startEnd==='free'||l.startEnd==='outside-capped';
+    const endOpen=l.endEnd==='wall'||l.endEnd==='free'||l.endEnd==='outside-capped';
+    return s+(startOpen?1:0)+(endOpen?1:0);
+  },0):0;
+  const swages=isCable?openEnds*cableLines:0;
+  // Bend tubes: each corner is shared between two legs so appears twice in the count — halve it
+  const bendCorners=isCable?Math.round(legs.reduce((s,l)=>
+    s+(l.startEnd==='cable-continuous'||l.startEnd==='outside-continuous'?1:0)
+     +(l.endEnd==='cable-continuous'||l.endEnd==='outside-continuous'?1:0),0)/2):0;
+  const bendTubes=bendCorners*cableLines;
+  const types=getPostTypes(legs);
+  const typeNames={'3LH':'Type 3 LH — corner degree up to straight','3RH':'Type 3 RH — corner degree up to straight','4':'Type 4 — end post up at degree','5':'Type 5 — end post down at degree','7':'Type 7 — centre straight to degree down','8':'Type 8 — centre through at degree','10':'Type 10 — corner post straight','11':'Type 11 — end post straight','12':'Type 12 — centre post through'};
+  const alerts=[];
+  if(joiners>0)legs.filter(l=>l.dim>5800).forEach(l=>{alerts.push(`${l.label||l.type} (${l.dim}mm) exceeds 5800mm — joiner required`);});
+  let html='';
+  // Job header — client, quote, job card number
+  if(jobClient||jobQuote||jobCardNo){
+    html+=`<div class="jc-section" style="border:1px solid var(--border2);border-radius:3px;padding:7px 10px;margin-bottom:10px;background:var(--bg3)">`;
+    if(jobClient) html+=`<div class="jc-row"><span style="color:var(--text3)">Client</span><span class="val" style="color:var(--text)">${jobClient}</span></div>`;
+    if(jobQuote)  html+=`<div class="jc-row"><span style="color:var(--text3)">Quote No</span><span class="val" style="color:var(--text)">${jobQuote}</span></div>`;
+    if(jobCardNo) html+=`<div class="jc-row"><span style="color:var(--text3)">Job Card No</span><span class="val" style="color:var(--text)">${jobCardNo}</span></div>`;
+    html+=`<div class="jc-row"><span style="color:var(--text3)">Date</span><span style="color:var(--text4);font-size:10px">${new Date().toLocaleDateString('en-ZA')}</span></div>`;
+    html+=`</div>`;
+  }
+  if(alerts.length)html+=`<div class="jc-alert">⚠ ${alerts.join('<br>⚠ ')}</div>`;
+  html+=`<div class="jc-section"><div class="jc-section-title">Legs</div>`;
+  const endLbl=v=>({"wall":"wall","free":"free","outside-capped":"stop-start","outside-continuous":"continuous","connected":"corner"}[v]||v);
+  legs.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');html+=`<div class="jc-row"><span>${lbl} ${l.dim}mm <span style="color:#666;font-size:10px">[${endLbl(l.startEnd)} → ${endLbl(l.endEnd)}]</span></span><span class="val">${l.rawPosts}</span></div>`;});
+  html+=`<div class="jc-total"><span>${rawTotal}−${sharedPosts} shared</span><span>${totalPosts} posts</span></div></div>`;
+  html+=`<div class="jc-section"><div class="jc-section-title">Post types — drilling sheet</div>`;
+  const typeOrder=['3LH','3RH','4','5','6','7','8','9','10','11','12','13'];
+  let typeTotal=0;
+  typeOrder.forEach(t=>{if(types[t]){html+=`<div class="jc-row"><span>${typeNames[t]||'Type '+t}</span><span class="val">${types[t]}</span></div>`;typeTotal+=types[t];}});
+  html+=`<div class="jc-total"><span>Total</span><span>${typeTotal}</span></div></div>`;
+
+  // Top rail — glass: only for 8mm TSG legs; vertical: handled in its own block; others: all legs
+  if(isGlass){
+    const railLegs=legs.filter(l=>(l.glassThick||'8')==='8');
+    if(railLegs.length>0){
+      html+=`<div class="jc-section"><div class="jc-section-title">Top rail 50.8mm circular SS — 8mm TSG legs only</div>`;
+      railLegs.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');html+=`<div class="jc-row"><span>${lbl}</span><span class="val">${l.dim}mm</span></div>`;});
+      html+=`<div class="jc-total"><span>Total</span><span>${glassTotalRail}mm</span></div>`;
+      html+=`<div class="jc-row"><span>Stock lengths</span><span class="val">${glassRailStock} × 5800mm</span></div>`;
+      if(railBends>0)html+=`<div class="jc-row"><span>Top rail bends (corners)</span><span class="val">${railBends} bend${railBends>1?'s':''}</span></div>`;
+      html+=`</div>`;
+    } else {
+      html+=`<div class="jc-section"><div class="jc-section-title">Top rail</div><div class="jc-row"><span>No top rail — all legs are 10mm TSG</span><span class="val">—</span></div></div>`;
+    }
+  } else if(!isVertical){
+    html+=`<div class="jc-section"><div class="jc-section-title">Top rail 50.8mm circular SS</div>`;
+    legs.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');html+=`<div class="jc-row"><span>${lbl}</span><span class="val">${l.dim}mm</span></div>`;});
+    html+=`<div class="jc-total"><span>Total</span><span>${totalRail}mm</span></div>`;
+    html+=`<div class="jc-row"><span>Stock lengths</span><span class="val">${railStock} × 5800mm</span></div>`;
+    if(joiners>0)html+=`<div class="jc-row"><span>Joiners</span><span class="val">${joiners}</span></div>`;
+    if(railBends>0)html+=`<div class="jc-row"><span>Top rail bends (corners)</span><span class="val">${railBends} bend${railBends>1?'s':''}</span></div>`;
+    html+=`</div>`;
+  }
+
+  if(isGlass){
+    html+=`<div class="jc-section"><div class="jc-section-title">Glass panels — TSG</div>`;
+    legs.forEach(l=>{
+      const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');
+      const thick=l.glassThick||'8';
+      const shape=l.postShape==='square'?'Square 40×40':'Round 38.1mm';
+      html+=`<div class="jc-row"><span>${lbl} ${l.dim}mm <span style="color:#666;font-size:10px">${thick}mm TSG · ${shape}</span></span><span class="val">${l.openings} panels</span></div>`;
+    });
+    html+=`<div class="jc-total"><span>Total panels</span><span>${glassPanels}</span></div>`;
+    html+=`<div class="jc-row"><span>D-clamps (4 per panel — 2 each side)</span><span class="val">${glassDclamps}</span></div>`;
+    const roundPanels=legs.filter(l=>(l.postShape||'round')==='round').reduce((s,l)=>s+l.openings,0);
+    const squarePanels=legs.filter(l=>l.postShape==='square').reduce((s,l)=>s+l.openings,0);
+    if(roundPanels>0)html+=`<div class="jc-row"><span style="font-size:10px;color:#666">Round-back D-clamps (round post)</span><span class="val">${roundPanels*4}</span></div>`;
+    if(squarePanels>0)html+=`<div class="jc-row"><span style="font-size:10px;color:#666">Flat-back D-clamps (square post)</span><span class="val">${squarePanels*4}</span></div>`;
+    html+=`</div>`;
+  } else if(isCable){
+    html+=`<div class="jc-section"><div class="jc-section-title">4mm 1×19 Grade 316 Cable — 9 lines</div>`;
+    legs.forEach(l=>{
+      const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');
+      const legM=Math.ceil(l.dim/1000*10)/10;
+      html+=`<div class="jc-row"><span>${lbl} ${l.dim}mm × 9</span><span class="val">${legM}m × 9</span></div>`;
+    });
+    html+=`<div class="jc-total"><span>Total cable</span><span>${totalCableM}m</span></div>`;
+    html+=`<div class="jc-row"><span>Swages (2 per cable — both ends)</span><span class="val">${swages}</span></div>`;
+    if(bendTubes>0)html+=`<div class="jc-row"><span>Continuous bend tubes (fabricated, 9 per corner)</span><span class="val">${bendTubes}</span></div>`;
+    html+=`</div>`;
+  } else if(isVertical){
+    const vertInfillStock=Math.ceil(vertInfillStockMm/5800);
+    const vertSubRailStock=Math.ceil(vertSubRailMm/5800);
+    html+=`<div class="jc-section"><div class="jc-section-title">Top rail 50.8mm circular SS</div>`;
+    legs.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');html+=`<div class="jc-row"><span>${lbl}</span><span class="val">${l.dim}mm</span></div>`;});
+    html+=`<div class="jc-total"><span>Total</span><span>${totalRail}mm</span></div>`;
+    html+=`<div class="jc-row"><span>Stock lengths</span><span class="val">${railStock} × 5800mm</span></div>`;
+    if(joiners>0)html+=`<div class="jc-row"><span>Joiners</span><span class="val">${joiners}</span></div>`;
+    if(railBends>0)html+=`<div class="jc-row"><span>Top rail bends (corners)</span><span class="val">${railBends} bend${railBends>1?'s':''}</span></div>`;
+    html+=`</div>`;
+    html+=`<div class="jc-section"><div class="jc-section-title">Sub-rails 25.1mm circular SS (top + bottom)</div>`;
+    html+=`<div class="jc-row"><span style="font-size:10px;color:#666">Top of top sub-rail: 50mm below cap · Bottom of bottom sub-rail: 50mm above FFL</span><span></span></div>`;
+    html+=`<div class="jc-row"><span>Total sub-rail</span><span class="val">${vertSubRailMm}mm</span></div>`;
+    html+=`<div class="jc-row"><span>Stock lengths</span><span class="val">${vertSubRailStock} × 5800mm</span></div></div>`;
+    html+=`<div class="jc-section"><div class="jc-section-title">Vertical infills ${vertInfillDia}mm circular SS</div>`;
+    legs.forEach(l=>{
+      const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');
+      const avgOp=Math.round(l.eff/l.openings);
+      const gaps=Math.ceil(avgOp/100);
+      const inf=Math.max(0,gaps-1);
+      html+=`<div class="jc-row"><span>${lbl} — ${l.openings} opening${l.openings>1?'s':''} × ~${inf} infills</span><span class="val">${l.openings*inf}</span></div>`;
+    });
+    html+=`<div class="jc-total"><span>Total infills</span><span>${vertTotalInfills}</span></div>`;
+    html+=`<div class="jc-row"><span style="font-size:10px;color:#666">Cut length ~${vertCutLengthMm}mm — fabricators measure on site</span><span></span></div>`;
+    html+=`<div class="jc-row"><span>Stock lengths (est.)</span><span class="val">${vertInfillStock} × 5800mm</span></div></div>`;
+  } else {
+    html+=`<div class="jc-section"><div class="jc-section-title">Infills 15.88mm × 8 lines</div>`;
+    html+=`<div class="jc-row"><span>Total</span><span class="val">${totalInfill}mm</span></div>`;
+    html+=`<div class="jc-row"><span>Stock lengths</span><span class="val">${infillStock} × 5800mm</span></div></div>`;
+  }
+  const jcTitleEl=document.getElementById('jcTitle');
+  if(jcTitleEl) jcTitleEl.textContent='📋 Job Card — '+productName+' '+mountName;
+  const infillSageLine=isGlass
+    ?`GLASS PANELS: ${glassPanels} total (max 1200mm opening)\n  D-clamps: ${glassDclamps} (4 per panel — round-back for round post, flat-back for square)\n  Post shape: ${glassPostShapeNote}`+(glassTotalRail>0?`\n  Top rail (8mm TSG legs): ${glassTotalRail}mm / ${glassRailStock} × 5800mm lengths`:'  Top rail: none (all 10mm TSG)')
+    :isCable
+      ?`CABLE: ${totalCableM}m total (9 lines x run lengths)\n  Swages: ${swages} (2 per cable, both ends)`+(bendTubes>0?`\n  Continuous bend tubes: ${bendTubes} (fabricated, 9 per corner)`:'')
+      :isVertical
+        ?`TOP RAIL: ${totalRail}mm / ${railStock} × 5800mm lengths`+(railBends>0?`\n  Top rail bends: ${railBends}`:'')+`\nSUB-RAILS (25.1mm): ${vertSubRailMm}mm / ${Math.ceil(vertSubRailMm/5800)} × 5800mm lengths\nVERTICAL INFILLS (${vertInfillDia}mm): ${vertTotalInfills} total\n  Stock (est.): ${Math.ceil(vertInfillStockMm/5800)} × 5800mm lengths\n  Fabricators cut to length on site`
+        :`INFILLS: ${totalInfill}mm / ${infillStock} x 5800mm lengths`+(railBends>0?`\n  Top rail bends: ${railBends}`:'');
+  html+=`<div class="jc-section"><div class="jc-section-title">Fixing & extras — ${mountName}</div>`;
+  // Glass post height = standard + 100mm (no pin, no top rail for 10mm)
+  const glassPostH={top:'1100',side:'1250',flange:'1000'};
+  const postHeightNote=isGlass?glassPostH[mount]:(mount==='top'?'1000':mount==='side'?'1150':'900');
+  html+=`<div class="jc-row"><span>Post height</span><span class="val">${postHeightNote}mm</span></div>`;
+  if(isGlass)html+=`<div class="jc-row"><span style="font-size:10px;color:#666">+100mm standard — no pin, no top rail on 10mm TSG</span><span></span></div>`;
+  if(mount==='top'){
+    const grout=Math.ceil(totalPosts/6)*2;
+    html+=`<div class="jc-row"><span>Method</span><span class="val">Core drill + non-shrink grout</span></div>`;
+    html+=`<div class="jc-row"><span>Non-shrink grout</span><span class="val">${grout}kg</span></div>`;
+    html+=`<div class="jc-row"><span>Domed cover plates (1 per post)</span><span class="val">${totalPosts}</span></div>`;
+    if(!isGlass)html+=`<div class="jc-row"><span>End caps</span><span class="val">${endCaps}</span></div>`;
+    if(joiners>0&&!isGlass)html+=`<div class="jc-row"><span>Rail joiners</span><span class="val">${joiners}</span></div>`;
+    html+=`</div>`;
+    const typeSummary=typeOrder.filter(t=>types[t]).map(t=>`  ${typeNames[t]||'Type '+t}: ${types[t]}`).join('\n');
+    lastCalcText=`JOB CARD SUMMARY — ${productName.toUpperCase()} TOP MOUNT\n${'─'.repeat(36)}\nTOTAL POSTS: ${totalPosts}\nPOST HEIGHT: ${postHeightNote}mm\n\nLEGS:\n`+legs.map(l=>`  ${l.label||l.type} ${l.dim}mm — ${l.rawPosts} posts`+(isGlass?` [${l.glassThick||8}mm TSG · ${l.postShape==='square'?'Square 40×40':'Round 38.1mm'}]`:'')).join('\n')+`\n\nPOST TYPES:\n${typeSummary}\n\n${infillSageLine}\n\nFIXING:\n  Method: Core drill + non-shrink grout\n  Grout: ${grout}kg\n  Domed cover plates: ${totalPosts}`+(!isGlass?`\n  End caps: ${endCaps}`:'');
+  } else if(mount==='side'){
+    const rods=totalPosts*2;
+    const epoxy=Math.ceil(totalPosts/5);
+    const domeNuts=rods;
+    const rodLengths=Math.ceil(rods/6);
+    html+=`<div class="jc-row"><span>Method</span><span class="val">SDS drill + M10 threaded rod + epoxy</span></div>`;
+    html+=`<div class="jc-row"><span>M10 threaded rod × 2 per post (150mm each)</span><span class="val">${rods} rods</span></div>`;
+    html+=`<div class="jc-row"><span>M10 rod stock (1m lengths, 6 rods per length)</span><span class="val">${rodLengths} × 1m</span></div>`;
+    html+=`<div class="jc-row"><span>M10 dome nuts (1 per rod)</span><span class="val">${domeNuts}</span></div>`;
+    html+=`<div class="jc-row"><span>Chemical anchor epoxy (1 per 5 posts)</span><span class="val">${epoxy} × 300ml</span></div>`;
+    if(!isGlass)html+=`<div class="jc-row"><span>End caps</span><span class="val">${endCaps}</span></div>`;
+    if(joiners>0&&!isGlass)html+=`<div class="jc-row"><span>Rail joiners</span><span class="val">${joiners}</span></div>`;
+    html+=`</div>`;
+    const typeSummary=typeOrder.filter(t=>types[t]).map(t=>`  ${typeNames[t]||'Type '+t}: ${types[t]}`).join('\n');
+    lastCalcText=`JOB CARD SUMMARY — ${productName.toUpperCase()} SIDE MOUNT\n${'─'.repeat(36)}\nTOTAL POSTS: ${totalPosts}\nPOST HEIGHT: ${postHeightNote}mm\n\nLEGS:\n`+legs.map(l=>`  ${l.label||l.type} ${l.dim}mm — ${l.rawPosts} posts`+(isGlass?` [${l.glassThick||8}mm TSG · ${l.postShape==='square'?'Square 40×40':'Round 38.1mm'}]`:'')).join('\n')+`\n\nPOST TYPES:\n${typeSummary}\n\n${infillSageLine}\n\nFIXING:\n  Method: SDS drill + M10 threaded rod + epoxy\n  M10 rods (2 per post @ 150mm): ${rods}\n  M10 rod stock (1m lengths): ${rodLengths}\n  M10 dome nuts: ${domeNuts}\n  Chemical anchor epoxy: ${epoxy} x 300ml`+(!isGlass?`\n  End caps: ${endCaps}`:'');
+  } else {
+    // flange
+    html+=`<div class="jc-row"><span>Method</span><span class="val">Flange plate — substrate fixing by client</span></div>`;
+    html+=`<div class="jc-row"><span>Flange plates 3-hole (matched to post OD)</span><span class="val">${totalPosts}</span></div>`;
+    html+=`<div class="jc-row"><span style="font-size:10px;color:#666">Timber → coach screws | Concrete → 6mm rod + epoxy or rawl bolts</span><span></span></div>`;
+    html+=`<div class="jc-row"><span>Domed cover plates</span><span class="val">Client preference</span></div>`;
+    if(!isGlass)html+=`<div class="jc-row"><span>End caps</span><span class="val">${endCaps}</span></div>`;
+    if(joiners>0&&!isGlass)html+=`<div class="jc-row"><span>Rail joiners</span><span class="val">${joiners}</span></div>`;
+    html+=`</div>`;
+    const typeSummary=typeOrder.filter(t=>types[t]).map(t=>`  ${typeNames[t]||'Type '+t}: ${types[t]}`).join('\n');
+    lastCalcText=`JOB CARD SUMMARY — ${productName.toUpperCase()} FLANGE MOUNT\n${'─'.repeat(36)}\nTOTAL POSTS: ${totalPosts}\nPOST HEIGHT: ${postHeightNote}mm\n\nLEGS:\n`+legs.map(l=>`  ${l.label||l.type} ${l.dim}mm — ${l.rawPosts} posts`+(isGlass?` [${l.glassThick||8}mm TSG · ${l.postShape==='square'?'Square 40×40':'Round 38.1mm'}]`:'')).join('\n')+`\n\nPOST TYPES:\n${typeSummary}\n\n${infillSageLine}\n\nFIXING (FLANGE MOUNT):\n  Flange plates 3-hole (matched to post OD): ${totalPosts}\n  Substrate fixing: BY CLIENT\n    Timber  — coach screws\n    Concrete — 6mm threaded rod + epoxy OR rawl bolts\n  Domed cover plates: CLIENT PREFERENCE`+(!isGlass?`\n  End caps: ${endCaps}`:'');
+  }
+  document.getElementById('jcBody').innerHTML=html;
+  // Show side panel with job card alongside canvas
+  const sideJC = document.getElementById('canvasSideJC');
+  document.getElementById('jcBodySide').innerHTML=html;
+  sideJC.style.display='flex';
+  switchTab('canvas');
+  setTimeout(resizeCanvas,50);
+}
+
+function closeSideJC(){const p=document.getElementById('canvasSideJC');p.style.display='none';setTimeout(resizeCanvas,50);}
+function copyJobCard(){if(!lastCalcText){alert('Calculate first.');return;}if(navigator.clipboard){navigator.clipboard.writeText(lastCalcText).then(()=>{alert('Copied — paste into Sage or WhatsApp.');}).catch(()=>{prompt('Copy this:',lastCalcText);});}else{prompt('Copy this:',lastCalcText);}}
+
+function printJobCard(){
+  if(!lastCalcText){alert('Calculate first.');return;}
+  const jcHtml=document.getElementById('jcBody').innerHTML;
+  const win=window.open('','_blank','width=750,height=950');
+  win.document.write(`<!DOCTYPE html><html><head><title>Job Card${jobClient?' — '+jobClient:''}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Courier New',monospace;background:#fff;color:#111;padding:24px 28px;font-size:11px}
+    .jc-header-block{border:1px solid #ccc;border-radius:3px;padding:10px 14px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
+    .jc-header-block .field{display:flex;flex-direction:column;gap:2px}
+    .jc-header-block .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888}
+    .jc-header-block .val{font-size:13px;font-weight:bold;color:#111}
+    .jc-section{margin-bottom:12px}
+    .jc-section-title{font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:#666;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid #ddd}
+    .jc-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f0f0f0;gap:8px}
+    .jc-row .val{font-weight:bold;color:#b8860b}
+    .jc-total{display:flex;justify-content:space-between;padding:5px 0;font-weight:bold;font-size:12px;border-top:1px solid #aaa;margin-top:3px;color:#b8860b}
+    .jc-alert{background:#fff3cd;border:1px solid #e6a817;border-radius:3px;padding:5px 8px;font-size:10px;color:#856404;margin-bottom:8px}
+    @media print{
+      body{padding:12mm 14mm}
+      @page{size:A4 portrait;margin:8mm}
+    }
+  </style></head><body>
+  <div class="jc-header-block">
+    ${jobClient?`<div class="field"><div class="lbl">Client</div><div class="val">${jobClient}</div></div>`:''}
+    ${jobQuote?`<div class="field"><div class="lbl">Quote No</div><div class="val">${jobQuote}</div></div>`:''}
+    ${jobCardNo?`<div class="field"><div class="lbl">Job Card No</div><div class="val">${jobCardNo}</div></div>`:''}
+    <div class="field"><div class="lbl">Date</div><div class="val">${new Date().toLocaleDateString('en-ZA')}</div></div>
+  </div>
+  ${jcHtml}
+  </body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>win.print(),400);
+}
+function sendToChat(){if(typeof sendPrompt==='function'&&lastCalcText){sendPrompt('Please review this job card:\n\n'+lastCalcText);}else{alert('This button only works inside Claude.ai. Use Copy for Sage instead.');}}
+
+
+// ── AI SKETCH READER ────────────────────────────────────
+const AKEY = localStorage.getItem('balustrader_api_key') || '';
+let sketchPending = [];
+
+function closeSkOverlay(){
+  document.getElementById('skOverlay').classList.remove('open');
+  sketchPending = [];
+}
+
+async function readSketch(input){
+  const file = input.files[0]; if(!file) return; input.value='';
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const b64 = e.target.result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+
+    // Show overlay — loading state
+    const ov = document.getElementById('skOverlay');
+    ov.classList.add('open');
+    document.getElementById('skSpinner').style.display = 'block';
+    document.getElementById('skMsg').textContent = 'Reading your sketch...';
+    document.getElementById('skNotes').style.display = 'none';
+    document.getElementById('skBtns').style.display = 'none';
+
+    const prompt = `You are reading a hand-drawn balustrade site sketch. Extract every run and stair section visible.
+
+Return ONLY valid JSON — no markdown, no explanation, no extra text.
+
+Output format:
+{"lines":[
+  {"type":"run","label":"Top horizontal","dim":830,"startEnd":"wall","endEnd":"connected","x1":0,"y1":0,"x2":83,"y2":0},
+  ...
+], "notes":"anything unclear or assumed"}
+
+STRICT RULES:
+
+1. EXTRACT EVERY LINE — count all numbered dimensions in the sketch and make sure you have one line entry per dimension. Do not skip any.
+
+2. DIMENSIONS — read the written number exactly as shown. dim is always an integer in mm. Never estimate — use the number written on the sketch.
+
+3. LINE TYPE:
+   - "run" = horizontal or vertical balustrade section
+   - "stairs" = diagonal section with stair lines drawn across it. Add "dir":"LH" or "RH" (LH = stair goes up to the left when walking up, RH = up to the right)
+
+4. END TYPES for startEnd and endEnd:
+   - "wall" = end touches a wall (shown as a tick mark, T-junction, or the line ends at a wall line)
+   - "free" = open end with nothing attached
+   - "connected" = end joins directly to another run or stair at that exact point
+
+5. COORDINATES — use a 0–1000 wide by 0–800 tall grid:
+   - Place runs true to their sketch layout. Horizontal runs: same y value for x1 and x2. Vertical runs: same x value for y1 and y2.
+   - Scale proportionally to the actual dimensions. A 6000mm run should be roughly 4x longer than a 1500mm run.
+   - Where two runs connect, their shared endpoint coordinates MUST be identical (e.g. if run A ends at x2=200,y2=100 then the connected run B must start at x1=200,y1=100).
+   - Separate groups of runs that are not connected to each other must be placed in different areas of the grid — do not overlap them.
+   - Leave at least 80 units of clear space between unconnected groups.
+
+6. LABEL — short description of what the line represents e.g. "Top horizontal", "Right vertical", "Stair section". Use the sketch's own labels if visible.
+
+7. BE CONSISTENT — given the same sketch you must always return the same result. Do not vary the output between attempts.`;
+
+    // Check for API key
+    let apiKey = localStorage.getItem('balustrader_api_key') || '';
+    if (!apiKey) {
+      apiKey = window.prompt('Enter your Anthropic API key to use the sketch reader:\n(It will be saved in your browser for next time)');
+      if (!apiKey) return;
+      localStorage.setItem('balustrader_api_key', apiKey.trim());
+    }
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-6',
+          max_tokens:2500,
+          messages:[{role:'user',content:[
+            {type:'image',source:{type:'base64',media_type:mime,data:b64}},
+            {type:'text',text:prompt}
+          ]}]
+        })
+      });
+      const data = await res.json();
+      if(data.error)throw new Error(data.error.message);
+      const raw = data.content.map(b=>b.text||'').join('').trim();
+      const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+      sketchPending = parsed.lines||[];
+      const notes = parsed.notes||'';
+      const n = sketchPending.length;
+      document.getElementById('skSpinner').style.display='none';
+      document.getElementById('skMsg').textContent = `Found ${n} section${n!==1?'s':''}. Click Draw it to place them on the canvas — then edit anything that needs fixing.`;
+      if(notes){document.getElementById('skNotes').textContent='📝 '+notes;document.getElementById('skNotes').style.display='block';}
+      document.getElementById('skBtns').style.display='flex';
+    } catch(err) {
+      document.getElementById('skSpinner').style.display='none';
+      document.getElementById('skMsg').textContent='Error: '+err.message;
+      document.getElementById('skBtns').style.display='flex';
+      console.error(err);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function applySketch(){
+  if(!sketchPending.length){closeSkOverlay();return;}
+  const cw=canvas.width,ch=canvas.height;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  sketchPending.forEach(l=>{minX=Math.min(minX,l.x1,l.x2);minY=Math.min(minY,l.y1,l.y2);maxX=Math.max(maxX,l.x1,l.x2);maxY=Math.max(maxY,l.y1,l.y2);});
+  const bw=maxX-minX||1,bh=maxY-minY||1;
+  const sf=Math.min((cw*0.72)/bw,(ch*0.65)/bh);
+  const offX=(cw*0.5-panX)/zoom-(minX+bw/2)*sf/zoom;
+  const offY=(ch*0.45-panY)/zoom-(minY+bh/2)*sf/zoom;
+  sketchPending.forEach(l=>{
+    lines.push({
+      type:l.type||'run',
+      x1:(l.x1-minX)*sf/zoom+offX, y1:(l.y1-minY)*sf/zoom+offY,
+      x2:(l.x2-minX)*sf/zoom+offX, y2:(l.y2-minY)*sf/zoom+offY,
+      dim:l.dim?String(l.dim)+'mm':'',
+      label:l.label||'',
+      dir:l.dir||'LH',
+      startEnd:l.startEnd||'wall',
+      endEnd:l.endEnd||'wall',
+      topType:l.topType||'turn'
+    });
+  });
+  closeSkOverlay();
+  redraw();
+}
+
+// ── DRILLING SHEET ─────────────────────────────────────────
+function getPostSize(){ return (document.getElementById('postSizeSelect')||{}).value||'round38'; }
+function getMaterial(){ return (document.getElementById('materialSelect')||{}).value||'316-180'; }
+
+function openDrillingSheet(){
+  const active=lines.filter(l=>l.dim);
+  if(active.length===0){alert('Draw at least one run or stair with a dimension first.');return;}
+  const product=getProduct(), mount=getMount(), mat=getMaterial(), postSz=getPostSize();
+  const isGlass=product==='glass';
+  const phMap={top:isGlass?'1100':'1000',side:isGlass?'1250':'1150',flange:isGlass?'1000':'900'};
+  const postHeight=phMap[mount]||'1000';
+  const numHoles=product==='glass'?'2':product==='cable'?'9':product==='vertical'?'2':'8';
+  const holeSize=product==='glass'?'11':product==='cable'?'5':product==='vertical'?'25.1':'16';
+  const OFF=100;
+  const legs=active.map(l=>{
+    const dim=parseInt(l.dim);
+    const sd=isCorner(l.startEnd)?0:OFF, ed=isCorner(l.endEnd)?0:OFF;
+    const eff=dim-sd-ed;
+    const openings=Math.ceil(Math.max(eff,100)/1200);
+    return{...l,dim,eff,openings,rawPosts:openings+1};
+  });
+  const connectedEnds=legs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0);
+  const totalPosts=legs.reduce((s,l)=>s+l.rawPosts,0)-Math.round(connectedEnds/2);
+  const glassHasAnyTopRail=isGlass&&legs.some(l=>(l.glassThick||'8')==='8');
+  const noPin=isGlass&&!glassHasAnyTopRail;
+  const weldPin=!isGlass||glassHasAnyTopRail;
+  const typeData=getPostTypes(legs);
+  const types={};
+  ['1','2','3'].forEach(n=>{types[n+'lh']=typeData[n+'LH']||0;types[n+'rh']=typeData[n+'RH']||0;});
+  ['4','5','6','7','8','9','10','11','12','13'].forEach(n=>{types[n]=typeData[n]||0;});
+  const endLbl=v=>({'wall':'wall','free':'free','outside-capped':'stop-start','outside-continuous':'continuous','connected':'corner','cable-continuous':'cont.'}[v]||v);
+  const summary=legs.map((l,i)=>{
+    const lbl=l.label||(l.type==='stairs'?'Stairs':'Run '+(i+1));
+    return`${lbl}: ${l.dim}mm  [${endLbl(l.startEnd)} → ${endLbl(l.endEnd)}]  ${l.rawPosts} posts`;
+  }).join('\n')+`\n\nTotal posts: ${totalPosts}`;
+  const payload={
+    type:'balustrader_jobcard',product,mount,material:mat,postSize:postSz,
+    postHeight,numHoles,holeSize,totalPosts,types,summary,noPin,weldPin,
+    client:jobClient,quoteNo:jobQuote,jobNo:jobCardNo
+  };
+  try{localStorage.setItem('balustrader_jc',JSON.stringify(payload));}catch(e){}
+  const win=window.open('drilling_sheet_v2.html','_blank');
+  if(win){setTimeout(()=>{try{win.postMessage(payload,'*');}catch(e){}},1200);}
+}
+
+let isLight=true;
+function toggleMode(){
+  isLight=!isLight;
+  document.body.classList.toggle('light',isLight);
+  document.getElementById('modeToggle').textContent=isLight?'🌙':'☀️';
+  redraw();
+}
+document.body.classList.add('light');
+
+// ── READ PRESELECT FROM LAUNCHER (localStorage) ────────
+(function(){
+  try {
+    const prod = localStorage.getItem('bl_product');
+    const mnt  = localStorage.getItem('bl_mount');
+    jobClient  = localStorage.getItem('bl_client')||'';
+    jobQuote   = localStorage.getItem('bl_quote')||'';
+    jobCardNo  = localStorage.getItem('bl_jobno')||'';
+    if(prod){ const s=document.getElementById('productSelect'); if(s) s.value=prod; }
+    if(mnt){  const s=document.getElementById('mountSelect');   if(s) s.value=mnt;  }
+    localStorage.removeItem('bl_product');
+    localStorage.removeItem('bl_mount');
+    localStorage.removeItem('bl_client');
+    localStorage.removeItem('bl_quote');
+    localStorage.removeItem('bl_jobno');
+    if(prod||mnt){ try{onMountChange();}catch(e){} try{filterCornerOptions();}catch(e){} }
+  } catch(e) {}
+})();
+
+lastMount=getMount();
+filterCornerOptions();
+setTool('run');
+redraw();
+</script>
+</body>
+</html>
