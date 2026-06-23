@@ -29,6 +29,37 @@
   --purple:#8e44ad;
 }
 
+body.light{
+  --gold:#9a7010;
+  --gold-dim:#7a5808;
+  --gold-glow:rgba(154,112,16,0.10);
+  --bg:#f0f2f5;
+  --bg2:#ffffff;
+  --bg3:#e8eaed;
+  --surface:#ffffff;
+  --border:#d0d2d5;
+  --border-lit:#b0b2b5;
+  --text:#1a1a1a;
+  --text-dim:#444;
+  --text-muted:#888;
+  --green:#1e8e4f;
+  --green-dim:rgba(30,142,79,0.10);
+  --blue:#2a5fb5;
+  --orange:#c05a10;
+  --purple:#6e2e8d;
+}
+
+body.light::before{opacity:0.15}
+
+.mode-toggle{
+  background:var(--surface);border:1px solid var(--border-lit);
+  color:var(--text-dim);padding:5px 10px;border-radius:2px;
+  cursor:pointer;font-size:14px;line-height:1;
+  transition:background 0.15s,border-color 0.15s;
+  font-family:'DM Mono',monospace;
+}
+.mode-toggle:hover{border-color:var(--gold);color:var(--gold)}
+
 body{
   font-family:'DM Sans',sans-serif;
   background:var(--bg);
@@ -55,7 +86,7 @@ header{
   padding:18px 24px 16px;
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
-  background:linear-gradient(180deg,#0d0c0b 0%,transparent 100%);
+  background:linear-gradient(180deg,var(--bg2) 0%,transparent 100%);
 }
 
 .logo-block{display:flex;align-items:center;gap:16px}
@@ -119,10 +150,10 @@ main{position:relative;z-index:10;flex:1;padding:24px 24px 40px;max-width:1280px
   transform:scaleX(0);transform-origin:left;
   transition:transform 0.25s ease;
 }
-.card:hover{border-color:var(--border-lit);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.4),0 0 0 1px var(--border-lit)}
+.card:hover{border-color:var(--border-lit);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.15),0 0 0 1px var(--border-lit)}
 .card:hover::before{transform:scaleX(1)}
 
-.card.active-card{border-color:var(--gold-dim);background:linear-gradient(135deg,var(--surface) 0%,#201e18 100%)}
+.card.active-card{border-color:var(--gold-dim);background:linear-gradient(135deg,var(--surface) 0%,var(--bg3) 100%)}
 
 .card.locked{cursor:not-allowed;opacity:0.38}
 .card.locked:hover{transform:none;box-shadow:none;border-color:var(--border)}
@@ -141,7 +172,7 @@ main{position:relative;z-index:10;flex:1;padding:24px 24px 40px;max-width:1280px
 }
 .status-badge.ready{background:var(--green-dim);color:var(--green);border:1px solid rgba(39,174,96,0.25)}
 .status-badge.skeleton{background:rgba(200,160,40,0.08);color:var(--gold-dim);border:1px solid rgba(200,160,40,0.2)}
-.status-badge.soon{background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border)}
+.status-badge.soon{background:var(--bg3);color:var(--text-muted);border:1px solid var(--border)}
 
 .card-mount-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1.5px;color:var(--text)}
 
@@ -173,7 +204,7 @@ main{position:relative;z-index:10;flex:1;padding:24px 24px 40px;max-width:1280px
 .ai-card-body{flex:1}
 .ai-card-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text-muted);margin-bottom:4px}
 .ai-card-desc{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.8}
-.ai-card-badge{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:1px;background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border)}
+.ai-card-badge{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:1px;background:var(--bg3);color:var(--text-muted);border:1px solid var(--border)}
 
 /* ── BG ACCENTS ── */
 .bg-accent{position:fixed;bottom:-200px;right:-200px;width:500px;height:500px;border:1px solid var(--border);border-radius:50%;opacity:0.25;pointer-events:none;z-index:1}
@@ -185,7 +216,7 @@ footer{
   border-top:1px solid var(--border);
   padding:14px 48px;
   display:flex;align-items:center;justify-content:space-between;
-  background:#0d0c0b;
+  background:var(--bg2);
 }
 .footer-left{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)}
 .footer-right{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted)}
@@ -229,10 +260,11 @@ footer{
       <div class="logo-text">Balustrader</div>
     </div>
   </div>
-  <div class="header-right">
-    <span>Drawing &amp; Quoting System</span><br>
+  <div class="header-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <button class="mode-toggle" id="modeToggle" onclick="toggleMode()" title="Toggle light/dark mode">☀️</button>
+    <span><span>Drawing &amp; Quoting System</span><br>
     Grade 304 / 316 · SS &amp; Glass<br>
-    Cape Town · South Africa
+    Cape Town · South Africa</span>
   </div>
 </header>
 
@@ -386,7 +418,7 @@ footer{
       <div class="card active-card" onclick="launch('glass','top')" style="--card-accent:#8e44ad">
         <div class="card-top">
           <span class="mount-badge">Top Mount</span>
-          <span class="status-badge ready">✔ Ready</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
         </div>
         <div class="card-mount-name">Core Drill</div>
         <div class="card-details">
@@ -402,7 +434,7 @@ footer{
       <div class="card active-card" onclick="launch('glass','side')" style="--card-accent:#8e44ad">
         <div class="card-top">
           <span class="mount-badge">Side Mount</span>
-          <span class="status-badge ready">✔ Ready</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
         </div>
         <div class="card-mount-name">SDS + Epoxy</div>
         <div class="card-details">
@@ -418,7 +450,7 @@ footer{
       <div class="card active-card" onclick="launch('glass','flange')" style="--card-accent:#8e44ad">
         <div class="card-top">
           <span class="mount-badge">Flange Mount</span>
-          <span class="status-badge ready">✔ Ready</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
         </div>
         <div class="card-mount-name">Flange Plate</div>
         <div class="card-details">
@@ -512,20 +544,30 @@ footer{
 </main>
 
 <footer>
-  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v7</div>
+  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v9</div>
   <div class="footer-right">Built for <span>Balustrader</span> · Cape Town · South Africa</div>
 </footer>
 
 <script>
+// Start in light mode — staff preference
+let isLight = true;
+document.addEventListener('DOMContentLoaded', function(){
+  document.body.classList.add('light');
+  document.getElementById('modeToggle').textContent = '🌙';
+});
+
+function toggleMode(){
+  isLight = !isLight;
+  document.body.classList.toggle('light', isLight);
+  document.getElementById('modeToggle').textContent = isLight ? '🌙' : '☀️';
+}
+
 function launch(product, mount) {
-  try {
-    localStorage.setItem('bl_product', product);
-    localStorage.setItem('bl_mount', mount);
-    localStorage.setItem('bl_client', document.getElementById('jobClient').value||'');
-    localStorage.setItem('bl_quote',  document.getElementById('jobQuote').value||'');
-    localStorage.setItem('bl_jobno',  document.getElementById('jobCardNo').value||'');
-  } catch(e) {}
-  window.open('balustrader_drawing_tool_v9.html', '_blank');
+  const client = document.getElementById('jobClient').value||'';
+  const quote  = document.getElementById('jobQuote').value||'';
+  const jobno  = document.getElementById('jobCardNo').value||'';
+  const params = new URLSearchParams({product, mount, client, quote, jobno});
+  window.open('balustrader_master_template_v1_19.html?' + params.toString(), '_blank');
 }
 </script>
 
