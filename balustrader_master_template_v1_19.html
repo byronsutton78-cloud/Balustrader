@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Balustrader — Master Template v1</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1a1a1a;--bg2:#111;--bg3:#0d0d0d;--bg4:#222;--bg5:#2e2e2e;
+  --border:#2a2a2a;--border2:#444;--border3:#555;
+  --text:#e0e0e0;--text2:#ccc;--text3:#888;--text4:#666;
+  --accent:#c8a028;--accent-text:#111;
+  --danger:#c0392b;--danger-text:#e07060;
+  --canvas-bg:#1a1a1a;--row-border:#1f1f1f;--popup-shadow:rgba(0,0,0,0.8);
+}
+body.light{
+  --bg:#f0f2f5;--bg2:#ffffff;--bg3:#e8eaed;--bg4:#e0e2e5;--bg5:#d0d2d5;
+  --border:#ccc;--border2:#bbb;--border3:#999;
+  --text:#1a1a1a;--text2:#333;--text3:#666;--text4:#999;
+  --accent:#b8860b;--accent-text:#fff;
+  --danger:#c0392b;--danger-text:#c0392b;
+  --canvas-bg:#ffffff;--row-border:#e0e0e0;--popup-shadow:rgba(0,0,0,0.2);
+}
+html,body{height:100%;margin:0;overflow:hidden}
+body{font-family:'Courier New',monospace;background:var(--bg);color:var(--text);padding:6px 8px 0 8px;height:100vh;display:flex;flex-direction:column;box-sizing:border-box}
+#pageContent{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.settings-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px;padding:6px 9px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;align-items:center}
+.settings-bar label{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.tb-select{background:var(--bg);border:1px solid var(--border3);color:var(--text);padding:3px 6px;font-family:'Courier New',monospace;font-size:11px;border-radius:3px;cursor:pointer}
+.s-sep{width:1px;background:var(--border);margin:0 2px;height:18px}
+.toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;padding:6px 9px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;align-items:center}
+.tool-btn{padding:4px 10px;border-radius:3px;border:1px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-size:11px;font-family:'Courier New',monospace;font-weight:500;white-space:nowrap;transition:background 0.12s}
+.tool-btn:hover{background:var(--bg5);border-color:var(--border3)}
+.tool-btn.active{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:bold}
+.tool-btn.danger{border-color:var(--danger);color:var(--danger-text)}
+.tool-btn.danger:hover{background:var(--danger);color:#fff}
+.tool-btn.sec-btn{border-color:#7b68ee;color:#b0a0ff}
+.tool-btn.sec-btn:hover{background:#3a3060}
+.sep{width:1px;background:var(--border);margin:0 2px;height:18px}
+#secIndicator{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:bold;border:1px solid var(--border2);background:var(--bg4);color:var(--text2)}
+#secDot{width:9px;height:9px;border-radius:50%;display:inline-block;background:#aaa}
+.instr{font-size:11px;color:var(--text3);margin-bottom:5px;padding:4px 9px;background:var(--bg2);border-radius:3px;border:1px solid var(--border);line-height:1.5}
+.tab-panel{display:none;flex:1;min-height:0;overflow-y:auto;background:var(--bg2);flex-direction:column}
+.tab-panel.active{display:flex}
+.tab-bar{display:flex;gap:0;border-top:2px solid var(--border2);background:var(--bg2);flex-shrink:0}
+.tab-btn{flex:1;padding:8px 10px;border:none;border-right:1px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer;font-family:'Courier New',monospace;font-size:11px;font-weight:500;text-align:center;transition:background 0.12s}
+.tab-btn:last-child{border-right:none}
+.tab-btn:hover{background:var(--bg3);color:var(--text)}
+.tab-btn.active{background:var(--bg3);color:var(--accent);border-top:2px solid var(--accent);margin-top:-2px}
+.tab-btn.ds-tab{color:#7ab8e8}
+.canvas-wrap{position:relative;border:1px solid var(--border);border-radius:4px;background:var(--canvas-bg);overflow:hidden;flex:1;min-height:0}
+canvas{display:block}
+.popup{position:absolute;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:11px 13px;display:none;z-index:100;width:230px;box-shadow:0 4px 20px var(--popup-shadow)}
+.popup h4{font-size:11px;font-weight:bold;color:var(--accent);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px}
+.popup label{font-size:10px;color:var(--text3);display:block;margin-bottom:2px;margin-top:5px;text-transform:uppercase;letter-spacing:0.5px}
+.popup input,.popup select{width:100%;padding:4px 6px;border:1px solid var(--border2);border-radius:3px;font-size:12px;background:var(--bg);color:var(--text);outline:none;font-family:'Courier New',monospace}
+.popup input:focus,.popup select:focus{border-color:var(--accent)}
+.popup-btns{display:flex;gap:4px;margin-top:9px}
+.btn-save{flex:1;padding:5px;border-radius:3px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-text);cursor:pointer;font-size:11px;font-weight:bold;font-family:'Courier New',monospace}
+.btn-cancel{padding:5px 7px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-del{padding:5px 7px;border-radius:3px;border:1px solid var(--danger);background:transparent;color:var(--danger-text);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-row{display:flex;gap:6px;margin-top:5px;flex-shrink:0}
+.btn-calc{flex:1;padding:8px;border-radius:3px;border:1px solid #27ae60;background:#1a5c33;color:#bef0d0;cursor:pointer;font-size:12px;font-family:'Courier New',monospace;font-weight:bold}
+.btn-calc:hover{background:#27ae60;color:#fff}
+.btn-secondary{padding:8px 12px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Courier New',monospace}
+.btn-secondary:hover{background:var(--bg4);color:var(--text2)}
+.btn-danger-sm{padding:8px 12px;border-radius:3px;border:1px solid var(--danger);background:transparent;color:var(--danger-text);cursor:pointer;font-size:12px;font-family:'Courier New',monospace}
+.btn-danger-sm:hover{background:var(--danger);color:#fff}
+.jc-panel{display:block;font-size:11px}
+.jc-body{padding:10px 12px}
+.jc-section{margin-bottom:12px}
+.jc-section-title{font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--border)}
+.jc-section-title.sec-hdr{padding:3px 7px;border-radius:3px;color:#fff;margin-bottom:7px}
+.jc-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--row-border);font-size:11px;gap:8px}
+.jc-row:last-child{border-bottom:none}
+.jc-row .val{font-weight:bold;color:var(--accent);white-space:nowrap}
+.jc-total{display:flex;justify-content:space-between;padding:5px 0;font-weight:bold;font-size:13px;border-top:1px solid var(--border2);margin-top:3px;color:var(--accent)}
+.jc-alert{background:rgba(192,57,43,0.15);border:1px solid var(--danger);border-radius:3px;padding:5px 7px;font-size:10px;color:var(--danger-text);margin-bottom:7px}
+.jc-footer{padding:7px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;position:sticky;bottom:0;background:var(--bg2)}
+.btn-copy{width:100%;padding:6px;border-radius:3px;border:1px solid #2980b9;background:#1a3a5c;color:#aad4f5;cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-copy:hover{background:#2980b9;color:#fff}
+</style>
+</head>
+<body>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║          PRODUCT CONFIG — EDIT THIS SECTION ONLY               ║
+// ║  When copying this template for a new product:                 ║
+// ║  1. Change the values below to match the product               ║
+// ║  2. Do NOT touch anything below the CONFIG END marker          ║
+// ╚══════════════════════════════════════════════════════════════════╝
+
+const PRODUCT = {
+
+  // ── PRODUCT IDENTITY ─────────────────────────────────────────────
+  name:    '8-Line Horizontal — Top Mount',   // shown in title bar and job card
+  version: 'v1',                               // tool version
+
+  // ── SETTINGS BAR — what dropdowns to show ────────────────────────
+  // Set to false to hide a dropdown entirely from the settings bar
+
+  showInfillSelect:      true,   // infill type dropdown (8-line, cable, glass etc)
+  showInfillFixing:      true,   // pipe holder vs pre-drilled (only relevant for 8-line DIY)
+  showFixingSelect:      true,   // core drill / side mount / flange
+  showPostSelect:        true,   // post profile (38mm, 50mm, square etc)
+  showRailSelect:        true,   // top rail profile
+  showMaterialSelect:    true,   // 304 / 316 / mild steel
+
+  // ── INFILL OPTIONS — master list, all products draw from this ────
+  infillOptions: [
+    { value: '15.88-8',         label: '15.88mm — 8 lines'                          },
+    { value: '12.7-8',          label: '12.7mm — 8 lines'                           },
+    { value: 'cable-9',         label: '4mm cable — 9 lines'                        },
+    { value: 'glass-8mm',       label: 'Glass 8mm TSG (with top rail)'              },
+    { value: 'glass-10mm',      label: 'Glass 10mm TSG (no top rail)'               },
+    { value: 'v-25.1-15.88',    label: 'Subrail 25.1mm top+btm / verticals 15.88mm'},
+    { value: 'v-25.1-12.7',     label: 'Subrail 25.1mm top+btm / verticals 12.7mm' },
+    { value: 'v-25x25-15x15',   label: 'Subrail 25×25 top+btm / verticals 15×15mm' },
+    { value: 'v-custom',        label: 'Vertical — custom infill'                   },
+  ],
+
+  // ── FIXING OPTIONS — pin fix now available on all products ────────
+  fixingOptions: [
+    { value: 'top',    label: 'Core Drill — grout'           },
+    { value: 'side',   label: 'Side Mount — M10 rod'         },
+    { value: 'flange', label: 'Flange — 3 Hole Flange Plate' },
+    { value: 'pinfix', label: 'Pin Fix — M16 rod + grommet'  },
+  ],
+
+  // ── POST OPTIONS ─────────────────────────────────────────────────
+  postOptions: [
+    { value: 'round38',   label: 'Round 38.1mm'      },
+    { value: 'round50',   label: 'Round 50.8mm'        },
+    { value: 'sq40',      label: 'Square 40×40'       },
+    { value: 'sq50',      label: 'Square 50×50'       },
+    { value: 'rect50x25', label: 'Rectangle 50×25mm'  },
+  ],
+
+  // ── RAIL OPTIONS ─────────────────────────────────────────────────
+  railOptions: [
+    { value: '50.8',  label: '50.8mm round'   },
+    { value: '38.1',  label: '38.1mm round'   },
+    { value: '50x50', label: '50×50mm square' },
+    { value: '40x40', label: '40×40mm square' },
+    { value: '50x25', label: '50×25mm rect'   },
+  ],
+
+  // ── MATERIAL OPTIONS ─────────────────────────────────────────────
+  materialOptions: [
+    { value: '304-180',    label: '304 Brushed'   },
+    { value: '304-mirror', label: '304 Mirror'    },
+    { value: '316-180',    label: '316 Brushed'   },
+    { value: '316-mirror', label: '316 Mirror'    },
+    { value: 'mild',       label: 'Mild Steel'    },
+    { value: 'pc',         label: 'Powder Coat'   },
+    { value: 'aluminium',  label: 'Aluminium'     },
+  ],
+
+  // ── END TYPE OPTIONS — what appears in run/stair end dropdowns ───
+  // Remove any not relevant. Order determines dropdown order.
+  endTypes: [
+    { value: 'wall',                label: 'Wall end'                          },
+    { value: 'free',                label: 'Free end'                          },
+    { value: 'outside-capped',      label: 'Outside corner — stop/start'       },
+    { value: 'outside-continuous',  label: 'Outside corner — continuous infill' },
+    { value: 'connected',           label: 'Connected — joins another run'     },
+  ],
+
+  // ── CANVAS BEHAVIOUR ─────────────────────────────────────────────
+  showStairsTool:  true,    // show the Stairs tool button
+  showSections:    true,    // show the Section colour-coding system
+  sharedPosts:     true,    // deduct shared posts at connected ends (trade = true, DIY = false)
+
+  // ── CALCULATION ──────────────────────────────────────────────────
+  edgeOffset:      100,     // default edge offset in mm
+  maxPostSpacing:  1200,    // max spacing between posts in mm
+  stockLength:     5800,    // standard stock length in mm
+
+};
+
+// ── PRODUCT REGISTRY — add new products here as they are built ──────
+const FIXING_ALL = [
+  { value: 'top',    label: 'Core Drill — grout'           },
+  { value: 'side',   label: 'Side Mount — M10 rod'         },
+  { value: 'flange', label: 'Flange — 3 Hole Flange Plate' },
+  { value: 'pinfix', label: 'Pin Fix — M16 rod + grommet'  },
+];
+
+const PRODUCTS = [
+  {
+    value: '8line',
+    label: '8 Line Horizontal Balustrade',
+    overrides: {
+      name: '8 Line Horizontal Balustrade',
+      showInfillFixing: false,
+      infillOptions: [
+        { value: '15.88-8', label: '15.88mm — 8 lines' },
+        { value: '12.7-8',  label: '12.7mm — 8 lines'  },
+      ],
+      fixingOptions: FIXING_ALL,
+      sharedPosts: true,
+    }
+  },
+  {
+    value: 'cable',
+    label: '9 Line Cable Balustrade',
+    overrides: {
+      name: '9 Line Cable Balustrade',
+      showInfillFixing: false,
+      infillOptions: [
+        { value: 'cable-9', label: '4mm cable — 9 lines' },
+      ],
+      fixingOptions: FIXING_ALL,
+      sharedPosts: true,
+    }
+  },
+  {
+    value: 'vertical',
+    label: 'Vertical Balustrade',
+    overrides: {
+      name: 'Vertical Balustrade',
+      showInfillFixing: false,
+      infillOptions: [
+        { value: 'v-25.1-15.88',  label: 'Subrail 25.1mm top+btm / verticals 15.88mm' },
+        { value: 'v-25.1-12.7',   label: 'Subrail 25.1mm top+btm / verticals 12.7mm'  },
+        { value: 'v-25x25-15x15', label: 'Subrail 25×25 top+btm / verticals 15×15mm'  },
+        { value: 'v-custom',      label: 'Vertical — custom infill'                    },
+      ],
+      fixingOptions: FIXING_ALL,
+      sharedPosts: true,
+    }
+  },
+  {
+    value: 'glass',
+    label: 'Glass & Stainless Steel Balustrade',
+    overrides: {
+      name: 'Glass & Stainless Steel Balustrade',
+      showInfillFixing: false,
+      infillOptions: [
+        { value: 'glass-8mm',  label: 'Glass 8mm TSG — top rail recommended' },
+        { value: 'glass-10mm', label: 'Glass 10mm TSG — top rail optional'   },
+      ],
+      fixingOptions: FIXING_ALL,
+      sharedPosts: true,
+    }
+  },
+  {
+    value: 'diy',
+    label: 'DIY Balustrade',
+    overrides: {
+      name: 'DIY Balustrade',
+      showInfillFixing: true,
+      infillOptions: [
+        // Horizontal
+        { value: '15.88-8',        label: 'Horizontal — 15.88mm × 8 lines'                  },
+        { value: '12.7-8',         label: 'Horizontal — 12.7mm × 8 lines'                   },
+        { value: 'cable-9',        label: 'Horizontal — 4mm cable × 9 lines'                },
+        // Vertical
+        { value: 'v-25.1-15.88',   label: 'Vertical — Subrail 25.1mm / uprights 15.88mm'   },
+        { value: 'v-25.1-12.7',    label: 'Vertical — Subrail 25.1mm / uprights 12.7mm'    },
+        { value: 'v-25x25-15x15',  label: 'Vertical — Subrail 25×25 / uprights 15×15mm'    },
+        { value: 'v-custom',       label: 'Vertical — custom infill'                        },
+        // Glass kits
+        { value: 'glass-8mm',      label: 'Glass kit — 8mm TSG (top rail recommended)'      },
+        { value: 'glass-10mm',     label: 'Glass kit — 10mm TSG (top rail optional)'        },
+      ],
+      fixingOptions: FIXING_ALL,
+      sharedPosts: false,
+    }
+  },
+  // Add new products below as built and tested:
+  // { value: 'handrail', label: 'Handrail — Stanchions', overrides: { ... } },
+];
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║                    CONFIG END                                   ║
+// ║          Do not edit anything below this line                  ║
+// ╚══════════════════════════════════════════════════════════════════╝
+</script>
+
+<div class="instr" id="instr">Loading...</div>
+
+<!-- SETTINGS BAR — built from PRODUCT config -->
+<div class="settings-bar" id="settingsBar"></div>
+
+<!-- CUSTOM VERTICAL INFILL PANEL — shown only when v-custom is selected -->
+<div id="customVertPanel" style="display:none;background:var(--bg2);border:1px solid var(--accent);border-radius:4px;padding:8px 12px;margin-bottom:5px;font-size:11px;gap:10px;flex-wrap:wrap;align-items:flex-end">
+  <span style="color:var(--accent);font-weight:bold;font-size:10px;text-transform:uppercase;letter-spacing:1px;width:100%;display:block;margin-bottom:4px">⚙ Custom Vertical Infill</span>
+  <label style="font-size:10px;color:var(--text3);display:flex;flex-direction:column;gap:2px">Subrail config
+    <select id="cvSubrail" class="tb-select" onchange="calcCustomVert()">
+      <option value="topbtm">Top + Bottom subrail</option>
+      <option value="btmonly">Bottom subrail only (infills into top rail)</option>
+      <option value="none">No subrail (infills full height)</option>
+    </select>
+  </label>
+  <label id="cvSubrailSizeLbl" style="font-size:10px;color:var(--text3);display:flex;flex-direction:column;gap:2px">Subrail size
+    <select id="cvSubrailSize" class="tb-select" onchange="calcCustomVert()">
+      <option value="38.1r">Round 38.1mm</option>
+      <option value="31r">Round 31mm</option>
+      <option value="25.4r">Round 25.4mm</option>
+      <option value="40sq">Square 40×40mm</option>
+      <option value="25sq">Square 25×25mm</option>
+    </select>
+  </label>
+  <label style="font-size:10px;color:var(--text3);display:flex;flex-direction:column;gap:2px">Upright size
+    <select id="cvUpright" class="tb-select" onchange="calcCustomVert()">
+      <option value="19.5">19.5mm round</option>
+      <option value="15.88">15.88mm round</option>
+      <option value="12.7">12.7mm round</option>
+      <option value="15sq">15×15mm square</option>
+    </select>
+  </label>
+  <label style="font-size:10px;color:var(--text3);display:flex;flex-direction:column;gap:2px">Target spacing (mm)
+    <input id="cvSpacing" type="number" value="80" min="10" max="100" class="tb-select" style="width:80px" oninput="calcCustomVert()"/>
+  </label>
+  <label style="font-size:10px;color:var(--text3);display:flex;flex-direction:column;gap:2px">Run length (mm)
+    <input id="cvLength" type="number" placeholder="e.g. 3000" class="tb-select" style="width:100px" oninput="calcCustomVert()"/>
+  </label>
+  <div id="cvResult" style="font-size:11px;padding:6px 10px;border-radius:3px;background:var(--bg3);border:1px solid var(--border);min-width:200px">Enter spacing and length to calculate</div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <label style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;white-space:nowrap">
+    Product:
+    <select id="productSelect" class="tb-select" onchange="switchProduct(this.value)" style="font-weight:bold;color:var(--accent);border-color:var(--accent)"></select>
+  </label>
+  <div class="sep"></div>
+  <button class="tool-btn active" id="tool-run" onclick="setTool('run')">📏 Run</button>
+  <button class="tool-btn" id="tool-stairs" onclick="setTool('stairs')">🪜 Stairs</button>
+  <div class="sep"></div>
+  <button class="tool-btn" id="tool-select" onclick="setTool('select')">✏️ Select/Edit</button>
+  <button class="tool-btn" id="tool-pan" onclick="setTool('pan')">🖐 Pan</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="zoomIn()">＋</button>
+  <button class="tool-btn" onclick="zoomOut()">－</button>
+  <button class="tool-btn" onclick="resetView()">⌂</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="undo()">↩ Undo</button>
+  <button class="tool-btn danger" onclick="clearCanvas()">🗑 Clear</button>
+  <div class="sep" id="secSep"></div>
+  <button class="tool-btn sec-btn" id="secBtn" onclick="newSection()">＋ Section</button>
+  <span id="secIndicator"><span id="secDot"></span><span id="secLabel">No section</span></span>
+  <div class="sep"></div>
+  <span style="font-size:10px;color:var(--text4)">Select: drag to move · R = rotate · DEL = delete</span>
+  <div style="margin-left:auto">
+    <button class="tool-btn" id="modeToggle" onclick="toggleMode()" style="font-size:13px;padding:3px 8px" title="Toggle light/dark">☀️</button>
+  </div>
+</div>
+
+<div id="pageContent">
+<div style="display:flex;flex-direction:column;flex:1;min-height:0">
+
+  <!-- CANVAS TAB -->
+  <div id="panel-canvas" class="tab-panel active" style="flex-direction:row;gap:0">
+    <div style="display:flex;flex-direction:column;flex:1;min-width:0;min-height:0">
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="canvas"></canvas>
+
+      <!-- SELECT POPUP -->
+      <div class="popup" id="selectPopup">
+        <h4 id="selectTitle">Edit run</h4>
+        <label>Dimension (mm)</label>
+        <input type="text" id="selDim" placeholder="e.g. 5300" autocomplete="off"/>
+        <label>Label (optional)</label>
+        <input type="text" id="selLabel" placeholder="e.g. Leg A" autocomplete="off"/>
+        <label>Section</label>
+        <select id="selSection"></select>
+        <div id="stairDirRow" style="display:none">
+          <label>Stair direction</label>
+          <select id="selDir">
+            <option value="LH">LH — Left hand up</option>
+            <option value="RH">RH — Right hand up</option>
+            <option value="standalone">Standalone</option>
+          </select>
+          <label>Bottom connection type</label>
+          <select id="selBottomType">
+            <option value="free">Free or wall end (Type 4)</option>
+            <option value="turn">Turns 90° into run (Type 1)</option>
+            <option value="deg-deg">Degree to degree (Type 2)</option>
+            <option value="inline">Continues straight up (Type 6)</option>
+          </select>
+          <label>Top connection type</label>
+          <select id="selTopType">
+            <option value="turn">Turns 90° (Type 3)</option>
+            <option value="inline">Continues straight (Type 7)</option>
+            <option value="deg-deg">Connects to stairs — degree to degree (Type 2)</option>
+          </select>
+        </div>
+        <div id="selEndsRow">
+          <label>Start end ➜</label>
+          <select id="selStartEnd"></select>
+          <label>Finish end</label>
+          <select id="selEndEnd"></select>
+          <button onclick="swapSelEnds()" style="margin-top:5px;width:100%;padding:4px;border-radius:3px;border:1px solid var(--border3);background:var(--bg);color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace">⇄ Swap ends</button>
+        </div>
+        <div class="popup-btns">
+          <button class="btn-save" onclick="saveSelect()">✔ Save</button>
+          <button class="btn-del" onclick="deleteLine()">✖ Del</button>
+          <button class="btn-cancel" onclick="closeAll()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- RUN POPUP -->
+      <div class="popup" id="runPopup">
+        <h4>Run details</h4>
+        <label>Length (mm)</label>
+        <input type="text" id="runDimVal" placeholder="e.g. 5300" autocomplete="off"/>
+        <label>Label (optional)</label>
+        <input type="text" id="runLabelVal" placeholder="e.g. Leg A" autocomplete="off"/>
+        <label>Start end ➜</label>
+        <select id="runStartEnd"></select>
+        <label>Finish end</label>
+        <select id="runEndEnd"></select>
+        <button onclick="swapRunEnds()" style="margin-top:5px;width:100%;padding:4px;border-radius:3px;border:1px solid var(--border3);background:var(--bg);color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace">⇄ Swap ends</button>
+        <div class="popup-btns">
+          <button class="btn-save" onclick="saveRun()">✔ Save</button>
+          <button class="btn-cancel" onclick="cancelPending()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- STAIRS POPUP -->
+      <div class="popup" id="stairPopup">
+        <h4>Stair section</h4>
+        <label>Length (mm)</label>
+        <input type="text" id="stairDimVal" placeholder="e.g. 3100" autocomplete="off"/>
+        <label>Direction (walking up)</label>
+        <select id="stairDirVal">
+          <option value="LH">LH — Left hand up</option>
+          <option value="RH">RH — Right hand up</option>
+          <option value="standalone">Standalone</option>
+        </select>
+        <label>Start end (bottom)</label>
+        <select id="stairStart"></select>
+        <label>Bottom connection type</label>
+        <select id="stairBottomType">
+          <option value="free">Free or wall end (Type 4)</option>
+          <option value="turn">Turns 90° into run (Type 1)</option>
+          <option value="deg-deg">Degree to degree (Type 2)</option>
+          <option value="inline">Continues straight up (Type 6)</option>
+        </select>
+        <label>Finish end (top)</label>
+        <select id="stairEnd"></select>
+        <label>Top connection type</label>
+        <select id="stairTopType">
+          <option value="turn">Turns 90° (Type 3)</option>
+          <option value="inline">Continues straight (Type 7)</option>
+          <option value="deg-deg">Connects to stairs — degree to degree (Type 2)</option>
+        </select>
+        <div class="popup-btns">
+          <button class="btn-save" onclick="saveStair()">✔ Save</button>
+          <button class="btn-cancel" onclick="cancelPending()">Cancel</button>
+        </div>
+      </div>
+
+    </div><!-- end canvas-wrap -->
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="undo()">↩ Undo</button>
+      <button class="btn-calc" onclick="calculate()">✔ Calculate — generate job card</button>
+      <button class="btn-danger-sm" onclick="clearCanvas()">🗑 Clear all</button>
+    </div>
+    </div><!-- end left column -->
+
+    <!-- SIDE JOB CARD PANEL -->
+    <div id="canvasSideJC" style="width:280px;flex-shrink:0;border-left:2px solid var(--border2);background:var(--bg2);display:none;flex-direction:column;min-height:0">
+      <div style="padding:7px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg3)">
+        <span style="font-size:10px;color:var(--accent);font-weight:bold;letter-spacing:1px;text-transform:uppercase">📋 Job Card</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="copyJobCard()" style="padding:3px 8px;border-radius:3px;border:1px solid #2980b9;background:#1a3a5c;color:#aad4f5;cursor:pointer;font-size:10px;font-family:'Courier New',monospace" title="Copy for Sage">📄</button>
+          <button onclick="printJobCard()" style="padding:3px 8px;border-radius:3px;border:1px solid #27ae60;background:#1a5c33;color:#bef0d0;cursor:pointer;font-size:10px;font-family:'Courier New',monospace" title="Print / PDF">🖨️</button>
+          <button onclick="closeSideJC()" style="padding:3px 8px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Courier New',monospace" title="Close">✕</button>
+        </div>
+      </div>
+      <div id="jcBodySide" style="flex:1;overflow-y:auto;padding:8px 10px;font-size:11px"></div>
+    </div>
+  </div><!-- end panel-canvas -->
+
+  <!-- JOB CARD TAB -->
+  <div id="panel-jobcard" class="tab-panel">
+    <div style="padding:7px 12px;display:flex;gap:7px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
+      <button class="btn-copy" onclick="copyJobCard()" style="flex:1">📄 Copy for Sage</button>
+      <button class="btn-copy" onclick="printJobCard()" style="flex:1;border-color:#27ae60;background:#1a5c33;color:#bef0d0">🖨️ Print / PDF</button>
+    </div>
+    <div class="jc-body" id="jcBody" style="flex:1;overflow-y:auto;padding:10px 12px"></div>
+  </div>
+
+  <!-- DRILLING SHEET TAB -->
+  <div id="panel-drilling" class="tab-panel" style="flex-direction:column">
+    <div style="padding:5px 10px;display:flex;gap:7px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;background:var(--bg2)">
+      <span style="font-size:11px;color:var(--text3);flex:1">Supplier drilling sheet — run Calculate first</span>
+      <button onclick="printDrilling()" style="padding:4px 10px;border-radius:3px;border:1px solid #27ae60;background:#1a5c33;color:#bef0d0;cursor:pointer;font-size:11px;font-family:'Courier New',monospace">🖨️ Print</button>
+    </div>
+    <div id="dsBody" style="flex:1;overflow-y:auto;padding:12px 14px;background:var(--bg)">
+      <div id="dsForm" style="background:#fff;color:#111;border-radius:4px;padding:14px 16px;font-family:'Courier New',monospace;font-size:11px;max-width:900px;margin:0 auto;border:1px solid #ccc">
+        <div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the drilling sheet.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end flex col -->
+
+<!-- BOTTOM TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-canvas" onclick="switchTab('canvas')">✏️ Canvas</button>
+  <button class="tab-btn" id="tab-jobcard" onclick="switchTab('jobcard')">📋 Job Card</button>
+  <button class="tab-btn ds-tab" id="tab-drilling" onclick="switchTab('drilling')">🔩 Drilling Sheet</button>
+</div>
+
+</div><!-- end pageContent -->
+
+<script>
+// ═══════════════════════════════════════════════
+// PRODUCT SWITCHING
+// ═══════════════════════════════════════════════
+let activeConfig = Object.assign({}, PRODUCT);
+
+function switchProduct(value){
+  const entry = PRODUCTS.find(p => p.value === value);
+  if(!entry) return;
+  // Deep merge: start from base PRODUCT, apply overrides key by key
+  activeConfig = {};
+  Object.keys(PRODUCT).forEach(k => {
+    activeConfig[k] = (entry.overrides && entry.overrides.hasOwnProperty(k))
+      ? entry.overrides[k]
+      : PRODUCT[k];
+  });
+  document.title = 'Balustrader — ' + activeConfig.name;
+  buildSettingsBar(activeConfig);
+  setTool('run');
+  redraw();
+}
+
+// ═══════════════════════════════════════════════
+// BOOT — build settings bar and dropdowns from config
+// ═══════════════════════════════════════════════
+
+function buildSelect(id, options, onchange){
+  const sel = document.createElement('select');
+  sel.id = id; sel.className = 'tb-select';
+  if(onchange) sel.setAttribute('onchange', onchange);
+  options.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.value; opt.textContent = o.label;
+    sel.appendChild(opt);
+  });
+  return sel;
+}
+
+function buildEndTypeOptions(selectEl){
+  selectEl.innerHTML = '';
+  PRODUCT.endTypes.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.value; opt.textContent = o.label;
+    selectEl.appendChild(opt);
+  });
+}
+
+function buildSettingsBar(cfg){
+  const bar = document.getElementById('settingsBar');
+  bar.innerHTML = '';
+  const sep = () => { const d=document.createElement('div'); d.className='s-sep'; return d; };
+  const lbl = (text, el) => { const l=document.createElement('label'); l.textContent=text+' '; l.appendChild(el); return l; };
+
+  if(cfg.showInfillSelect){
+    bar.appendChild(lbl('Infill:', buildSelect('infillSelect', cfg.infillOptions, 'onSettingsChange()')));
+    bar.appendChild(sep());
+  }
+  if(cfg.showInfillFixing){
+    const wrap = document.createElement('label');
+    wrap.id = 'infillFixLbl';
+    wrap.textContent = 'Infill fixing: ';
+    wrap.appendChild(buildSelect('infillFixingSelect', [
+      {value:'through', label:'Through post (pre-drilled)'},
+      {value:'side',    label:'Side fix (pipe holders)'}
+    ], 'onSettingsChange()'));
+    bar.appendChild(wrap);
+    const sp = sep(); sp.id='infillFixSep'; bar.appendChild(sp);
+  }
+  if(cfg.showFixingSelect){
+    bar.appendChild(lbl('Fixing:', buildSelect('fixingSelect', cfg.fixingOptions, 'onSettingsChange()')));
+    bar.appendChild(sep());
+  }
+  if(cfg.showPostSelect){
+    bar.appendChild(lbl('Post:', buildSelect('postSelect', cfg.postOptions)));
+    bar.appendChild(sep());
+  }
+  if(cfg.showRailSelect){
+    bar.appendChild(lbl('Top rail:', buildSelect('railSelect', cfg.railOptions)));
+    bar.appendChild(sep());
+  }
+  if(cfg.showMaterialSelect){
+    bar.appendChild(lbl('Material:', buildSelect('materialSelect', cfg.materialOptions)));
+  }
+
+  // Build end type dropdowns in popups
+  ['selStartEnd','selEndEnd','runStartEnd','runEndEnd','stairStart','stairEnd'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){ el.innerHTML=''; cfg.endTypes.forEach(o=>{const opt=document.createElement('option');opt.value=o.value;opt.textContent=o.label;el.appendChild(opt);}); }
+  });
+
+  // Stairs tool visibility
+  const stairsBtn = document.getElementById('tool-stairs');
+  if(stairsBtn) stairsBtn.style.display = cfg.showStairsTool ? '' : 'none';
+
+  // Sections visibility
+  ['secBtn','secIndicator','secSep'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display = cfg.showSections ? '' : 'none';
+  });
+
+  onSettingsChange();
+}
+
+// ═══════════════════════════════════════════════
+// SECTION COLOURS
+// ═══════════════════════════════════════════════
+const SEC_COLORS=['#4a90d9','#27ae60','#e67e22','#9b59b6','#e74c3c','#1abc9c','#f39c12','#2980b9','#8e44ad','#16a085'];
+let sections=[], activeSectionId=null;
+
+function newSection(){
+  const idx=sections.length;
+  const name='Section '+String.fromCharCode(65+idx);
+  const color=SEC_COLORS[idx%SEC_COLORS.length];
+  const id=String(Date.now());
+  sections.push({id,name,color});
+  activeSectionId=id;
+  updateSecIndicator();
+  rebuildSecDropdown();
+}
+function updateSecIndicator(){
+  const s=sections.find(x=>x.id===activeSectionId);
+  document.getElementById('secDot').style.background=s?s.color:'#aaa';
+  document.getElementById('secLabel').textContent=s?s.name:'No section';
+}
+function rebuildSecDropdown(){
+  const sel=document.getElementById('selSection');
+  sel.innerHTML='<option value="">— None —</option>';
+  sections.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name;sel.appendChild(o);});
+}
+function getSecColor(id){if(!id)return null;const s=sections.find(x=>String(x.id)===String(id));return s?s.color:null;}
+function getSecName(id){if(!id)return null;const s=sections.find(x=>String(x.id)===String(id));return s?s.name:null;}
+
+// ═══════════════════════════════════════════════
+// CANVAS / STATE
+// ═══════════════════════════════════════════════
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const canvasWrap=document.getElementById('canvasWrap');
+const GRID=10,SNAP=14,PAD=6;
+let tool='run',lines=[],drawing=false;
+let startX=0,startY=0,curX=0,curY=0;
+let selectedIdx=null,pendingIdx=null;
+let panX=0,panY=0,zoom=1;
+let isPanning=false,panSX=0,panSY=0,panOX=0,panOY=0;
+let lastCalcText='';
+let isDraggingLine=false,dragLineStart=null,dragMoved=false,dragSnapInfo=null;
+let isLight=true;
+
+function resizeCanvas(){canvas.width=canvasWrap.clientWidth||800;canvas.height=canvasWrap.clientHeight||500;redraw();}
+window.addEventListener('resize',resizeCanvas);
+
+// ═══════════════════════════════════════════════
+// SETTINGS HELPERS
+// ═══════════════════════════════════════════════
+function getVal(id,fallback=''){const el=document.getElementById(id);return el?el.value:fallback;}
+function getInfill(){return getVal('infillSelect','15.88-8');}
+function getInfillFix(){return getVal('infillFixingSelect','through');}
+function getFixing(){return getVal('fixingSelect','top');}
+function getPost(){return getVal('postSelect','round38');}
+function getRail(){return getVal('railSelect','50.8');}
+function getMaterial(){return getVal('materialSelect','304-180');}
+
+// mm → metres display: e.g. 5800 → "5.8m", 11600 → "11.6m"
+function toM(mm){
+  const m = mm / 1000;
+  return (Number.isInteger(m) ? m.toFixed(1) : parseFloat(m.toFixed(3)).toString()) + 'm';
+}
+
+function lineCount(){
+  const i=getInfill();
+  if(i==='cable-9') return 9;
+  if(i==='glass-8mm'||i==='glass-10mm'||i.startsWith('v-')) return 0; // calculated separately
+  return 8;
+}
+
+function onSettingsChange(){
+  const inf=getInfill();
+  // Infill fixing (pipe holders / pre-drilled) — only for horizontal 8-line
+  const showFix=inf==='15.88-8'||inf==='12.7-8';
+  const fl=document.getElementById('infillFixLbl');
+  const fs=document.getElementById('infillFixSep');
+  if(fl)fl.style.display=showFix?'flex':'none';
+  if(fs)fs.style.display=showFix?'block':'none';
+  // Custom vertical panel
+  const cvp=document.getElementById('customVertPanel');
+  if(cvp) cvp.style.display=inf==='v-custom'?'flex':'none';
+  // Subrail size — hide when no subrail selected
+  if(inf==='v-custom'){
+    const sub=document.getElementById('cvSubrail');
+    const sizeLbl=document.getElementById('cvSubrailSizeLbl');
+    if(sub&&sizeLbl) sizeLbl.style.display=sub.value==='none'?'none':'flex';
+    calcCustomVert();
+  }
+  redraw();
+}
+
+function calcCustomVert(){
+  const res=document.getElementById('cvResult');if(!res)return;
+  const upVal=document.getElementById('cvUpright').value;
+  const uprightD=upVal==='15sq'?15:parseFloat(upVal);
+  const spacing=parseInt(document.getElementById('cvSpacing').value)||80;
+  const length=parseInt(document.getElementById('cvLength').value)||0;
+  const subrail=document.getElementById('cvSubrail').value;
+  const sizeLbl=document.getElementById('cvSubrailSizeLbl');
+  if(sizeLbl) sizeLbl.style.display=subrail==='none'?'none':'flex';
+  if(!length){res.textContent='Enter run length to calculate';res.style.borderColor='var(--border)';return;}
+  if(spacing>100){res.innerHTML='<span style="color:#e74c3c">⚠ Target spacing exceeds 100mm air gap rule</span>';res.style.borderColor='#e74c3c';return;}
+  // Number of uprights: fit as many as needed so no gap > spacing
+  const uprights=Math.ceil((length-uprightD)/(spacing+uprightD));
+  const actualGap=Math.round((length-(uprights*uprightD))/(uprights+1));
+  const totalUpright=uprights*(uprightD<=15?15:uprightD); // label size
+  let color='#27ae60',icon='✔';
+  if(actualGap>100){color='#e74c3c';icon='✗';}
+  else if(uprights<3){color='#e67e22';icon='⚠';}
+  const subrailLabel=subrail==='topbtm'?'Top + Bottom':subrail==='btmonly'?'Bottom only':'None';
+  res.innerHTML=`<span style="color:${color};font-weight:bold">${icon} ${uprights} uprights</span> &nbsp;|&nbsp; Actual gap: <b>${actualGap}mm</b> &nbsp;|&nbsp; Upright Ø: <b>${upVal}</b><br>
+  <span style="font-size:10px;color:var(--text3)">Subrail: ${subrailLabel} &nbsp;·&nbsp; Run: ${length}mm</span>`;
+  res.style.borderColor=color;
+}
+
+// ═══════════════════════════════════════════════
+// COORDS
+// ═══════════════════════════════════════════════
+function toWorld(sx,sy){return{x:(sx-panX)/zoom,y:(sy-panY)/zoom};}
+function toScreen(wx,wy){return{x:wx*zoom+panX,y:wy*zoom+panY};}
+function dist(x1,y1,x2,y2){return Math.sqrt((x2-x1)**2+(y2-y1)**2);}
+function snapPt(wx,wy){for(const l of lines){if(dist(wx,wy,l.x1,l.y1)<SNAP/zoom)return{x:l.x1,y:l.y1};if(dist(wx,wy,l.x2,l.y2)<SNAP/zoom)return{x:l.x2,y:l.y2};}return{x:Math.round(wx/GRID)*GRID,y:Math.round(wy/GRID)*GRID};}
+function constrain(x1,y1,x2,y2){return Math.abs(x2-x1)>=Math.abs(y2-y1)?{x:x2,y:y1}:{x:x1,y:y2};}
+function getMouse(e){const r=canvas.getBoundingClientRect();const cssX=e.clientX-r.left,cssY=e.clientY-r.top;const scaleX=canvas.width/r.width,scaleY=canvas.height/r.height;return{sx:cssX*scaleX,sy:cssY*scaleY,px:cssX,py:cssY};}
+function bufToCSS(bx,by){const r=canvas.getBoundingClientRect();return{x:bx*(r.width/canvas.width),y:by*(r.height/canvas.height)};}
+function ptLineDist(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,l2=dx*dx+dy*dy;if(l2===0)return dist(px,py,x1,y1);const t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/l2));return dist(px,py,x1+t*dx,y1+t*dy);}
+
+// ═══════════════════════════════════════════════
+// TOOL
+// ═══════════════════════════════════════════════
+function setTool(t){
+  tool=t;selectedIdx=null;drawing=false;isDraggingLine=false;dragLineStart=null;dragMoved=false;
+  document.querySelectorAll('.tool-btn[id^="tool-"]').forEach(b=>b.classList.remove('active'));
+  const b=document.getElementById('tool-'+t);if(b)b.classList.add('active');
+  closeAll();
+  const tips={run:'Run: click and drag. Popup asks for length, label, end types.',stairs:'Stairs: click and drag. Popup asks for length, direction and end types.',select:'Select: click · drag to move · R = rotate 90° · DEL = delete · double-click to edit',pan:'Pan: click and drag. Scroll to zoom.'};
+  document.getElementById('instr').textContent=activeConfig.name+' — '+(tips[t]||t);
+  canvas.style.cursor=t==='pan'?'grab':t==='select'?'pointer':'crosshair';
+  redraw();
+}
+
+// ═══════════════════════════════════════════════
+// POPUP PLACEMENT
+// ═══════════════════════════════════════════════
+function placePopup(id,sx,sy){
+  const p=document.getElementById(id);p.style.display='block';
+  const pw=p.offsetWidth||230,ph=p.offsetHeight||280;
+  const cw=canvasWrap.clientWidth||canvas.width,ch=canvasWrap.clientHeight||canvas.height;
+  let x=sx+14,y=sy-Math.round(ph/2);
+  if(x+pw>cw-PAD)x=sx-pw-14;if(x<PAD)x=PAD;if(x+pw>cw-PAD)x=cw-pw-PAD;
+  if(y<PAD)y=PAD;if(y+ph>ch-PAD)y=ch-ph-PAD;if(y<PAD)y=PAD;
+  p.style.left=x+'px';p.style.top=y+'px';
+}
+
+// ═══════════════════════════════════════════════
+// MOUSE EVENTS
+// ═══════════════════════════════════════════════
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const{sx,sy}=getMouse(e);const{x:wx,y:wy}=toWorld(sx,sy);
+  zoom*=e.deltaY<0?1.1:0.9;zoom=Math.max(0.2,Math.min(5,zoom));
+  panX=sx-wx*zoom;panY=sy-wy*zoom;redraw();
+},{passive:false});
+
+canvas.addEventListener('mousedown',e=>{
+  if(e.button!==0)return;
+  const{sx,sy}=getMouse(e);
+  if(tool==='pan'){isPanning=true;panSX=e.clientX;panSY=e.clientY;panOX=panX;panOY=panY;canvas.style.cursor='grabbing';return;}
+  if(anyPopupOpen()){closeAll();return;}
+  const{x:wx,y:wy}=toWorld(sx,sy);
+  if(tool==='select'){
+    let best=-1,bd=10/zoom;
+    lines.forEach((l,i)=>{const d=ptLineDist(wx,wy,l.x1,l.y1,l.x2,l.y2);if(d<bd){bd=d;best=i;}});
+    if(best>=0){
+      selectedIdx=best;isDraggingLine=true;dragMoved=false;
+      const l=lines[best];
+      dragLineStart={wx,wy,x1:l.x1,y1:l.y1,x2:l.x2,y2:l.y2};
+      canvas.style.cursor='grabbing';
+    } else {selectedIdx=null;}
+    redraw();return;
+  }
+  const s=snapPt(wx,wy);startX=s.x;startY=s.y;curX=s.x;curY=s.y;drawing=true;
+});
+
+canvas.addEventListener('mousemove',e=>{
+  const{sx,sy}=getMouse(e);
+  if(isPanning){panX=panOX+(e.clientX-panSX);panY=panOY+(e.clientY-panSY);redraw();return;}
+  if(isDraggingLine&&dragLineStart&&selectedIdx!==null){
+    const{x:wx,y:wy}=toWorld(sx,sy);
+    const dx=wx-dragLineStart.wx,dy=wy-dragLineStart.wy;
+    if(Math.abs(dx)>2/zoom||Math.abs(dy)>2/zoom){
+      dragMoved=true;
+      let nx1=dragLineStart.x1+dx,ny1=dragLineStart.y1+dy,nx2=dragLineStart.x2+dx,ny2=dragLineStart.y2+dy;
+      const sd=20/zoom;dragSnapInfo=null;let snapped=false;
+      for(let i=0;i<lines.length;i++){
+        if(i===selectedIdx)continue;
+        const ol=lines[i];
+        for(const[ex,ey,ew] of [[ol.x1,ol.y1,'start'],[ol.x2,ol.y2,'end']]){
+          if(!snapped&&Math.hypot(nx1-ex,ny1-ey)<sd){const sdx=ex-nx1,sdy=ey-ny1;nx1+=sdx;ny1+=sdy;nx2+=sdx;ny2+=sdy;dragSnapInfo={myEnd:'start',otherIdx:i,otherEnd:ew};snapped=true;break;}
+          if(!snapped&&Math.hypot(nx2-ex,ny2-ey)<sd){const sdx=ex-nx2,sdy=ey-ny2;nx1+=sdx;ny1+=sdy;nx2+=sdx;ny2+=sdy;dragSnapInfo={myEnd:'end',otherIdx:i,otherEnd:ew};snapped=true;break;}
+        }
+        if(snapped)break;
+      }
+      lines[selectedIdx].x1=nx1;lines[selectedIdx].y1=ny1;lines[selectedIdx].x2=nx2;lines[selectedIdx].y2=ny2;
+      redraw();
+    }
+    return;
+  }
+  if(!drawing)return;
+  const{x:wx,y:wy}=toWorld(sx,sy);const s2=snapPt(wx,wy);const c=constrain(startX,startY,s2.x,s2.y);curX=c.x;curY=c.y;redraw();
+  const p1=toScreen(startX,startY),p2=toScreen(curX,curY);
+  const pc=getSecColor(activeSectionId)||(tool==='stairs'?'#e67e22':'#4a90d9');
+  ctx.save();ctx.strokeStyle=pc;ctx.lineWidth=2.5*zoom;if(tool==='stairs')ctx.setLineDash([10*zoom,5*zoom]);ctx.lineCap='round';ctx.globalAlpha=0.4;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
+});
+
+canvas.addEventListener('mouseup',e=>{
+  if(e.button!==0)return;
+  if(isPanning){isPanning=false;canvas.style.cursor='grab';return;}
+  if(isDraggingLine){
+    isDraggingLine=false;canvas.style.cursor='pointer';
+    if(!dragMoved&&selectedIdx!==null){const l=lines[selectedIdx];const scB=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);const sc=bufToCSS(scB.x,scB.y);openSelectPopup(selectedIdx,sc.x,sc.y);}
+    else if(dragMoved&&dragSnapInfo!==null&&selectedIdx!==null){
+      const my=lines[selectedIdx];const other=lines[dragSnapInfo.otherIdx];
+      if(dragSnapInfo.myEnd==='start')my.startEnd='connected';else my.endEnd='connected';
+      if(dragSnapInfo.otherEnd==='start')other.startEnd='connected';else other.endEnd='connected';
+    }
+    dragLineStart=null;dragMoved=false;dragSnapInfo=null;redraw();return;
+  }
+  if(!drawing)return;drawing=false;if(dist(startX,startY,curX,curY)<4/zoom)return;
+  const idx=lines.length;
+  lines.push({type:tool,x1:startX,y1:startY,x2:curX,y2:curY,dim:'',label:'',dir:'LH',startEnd:'wall',endEnd:'wall',topType:'turn',sectionId:activeSectionId?String(activeSectionId):null});
+  pendingIdx=idx;
+  const scB=toScreen((startX+curX)/2,(startY+curY)/2);const sc=bufToCSS(scB.x,scB.y);
+  if(tool==='stairs')openStairPopup(idx,sc.x,sc.y);
+  else openRunPopup(idx,sc.x,sc.y);
+});
+
+canvas.addEventListener('mouseleave',()=>{
+  if(isPanning){isPanning=false;canvas.style.cursor='grab';}
+  if(isDraggingLine){isDraggingLine=false;dragLineStart=null;dragMoved=false;canvas.style.cursor='pointer';}
+});
+canvas.addEventListener('dblclick',e=>{
+  if(tool==='select'&&selectedIdx!==null&&!anyPopupOpen()){const l=lines[selectedIdx];const scB=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);const sc=bufToCSS(scB.x,scB.y);openSelectPopup(selectedIdx,sc.x,sc.y);}
+});
+
+// ═══════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,select,textarea'))return;
+  if((e.key==='Delete'||e.key==='Backspace')&&selectedIdx!==null){lines.splice(selectedIdx,1);selectedIdx=null;closeAll();redraw();return;}
+  if(e.key==='Escape'){closeAll();return;}
+  if((e.key==='r'||e.key==='R')&&selectedIdx!==null&&!anyPopupOpen()){
+    const l=lines[selectedIdx];const cx=(l.x1+l.x2)/2,cy=(l.y1+l.y2)/2;
+    const dx1=l.x1-cx,dy1=l.y1-cy,dx2=l.x2-cx,dy2=l.y2-cy;
+    l.x1=cx+dy1;l.y1=cy-dx1;l.x2=cx+dy2;l.y2=cy-dx2;redraw();return;
+  }
+});
+
+// ═══════════════════════════════════════════════
+// POPUPS
+// ═══════════════════════════════════════════════
+function anyPopupOpen(){return['selectPopup','runPopup','stairPopup'].some(id=>document.getElementById(id).style.display==='block');}
+function closeAll(){['selectPopup','runPopup','stairPopup'].forEach(id=>document.getElementById(id).style.display='none');selectedIdx=null;pendingIdx=null;redraw();}
+function cancelPending(){if(pendingIdx!==null)lines.splice(pendingIdx,1);closeAll();}
+
+function openSelectPopup(idx,sx,sy){
+  const l=lines[idx];const isStair=l.type==='stairs';
+  document.getElementById('selectTitle').textContent=isStair?'Edit stairs':'Edit run';
+  document.getElementById('selDim').value=l.dim?l.dim.replace('mm',''):'';
+  document.getElementById('selLabel').value=l.label||'';
+  rebuildSecDropdown();
+  document.getElementById('selSection').value=l.sectionId?String(l.sectionId):'';
+  document.getElementById('stairDirRow').style.display=isStair?'block':'none';
+  if(isStair){document.getElementById('selDir').value=l.dir||'LH';document.getElementById('selBottomType').value=l.bottomType||'free';document.getElementById('selTopType').value=l.topType||'turn';}
+  document.getElementById('selStartEnd').value=l.startEnd||'wall';
+  document.getElementById('selEndEnd').value=l.endEnd||'wall';
+  placePopup('selectPopup',sx,sy);
+  setTimeout(()=>{const d=document.getElementById('selDim');d.focus();d.select();},30);
+}
+function saveSelect(){
+  if(selectedIdx===null)return;
+  const v=document.getElementById('selDim').value.trim();
+  lines[selectedIdx].dim=v?v.replace('mm','')+'mm':'';
+  lines[selectedIdx].label=document.getElementById('selLabel').value.trim();
+  lines[selectedIdx].sectionId=document.getElementById('selSection').value||null;
+  if(lines[selectedIdx].type==='stairs'){lines[selectedIdx].dir=document.getElementById('selDir').value;lines[selectedIdx].bottomType=document.getElementById('selBottomType').value;lines[selectedIdx].topType=document.getElementById('selTopType').value;}
+  lines[selectedIdx].startEnd=document.getElementById('selStartEnd').value;
+  lines[selectedIdx].endEnd=document.getElementById('selEndEnd').value;
+  closeAll();redraw();
+}
+function deleteLine(){if(selectedIdx===null)return;lines.splice(selectedIdx,1);closeAll();redraw();}
+document.getElementById('selDim').addEventListener('keydown',e=>{if(e.key==='Enter')saveSelect();if(e.key==='Escape')closeAll();});
+function swapSelEnds(){
+  // Swap the dropdown values in the popup
+  const s=document.getElementById('selStartEnd').value;
+  const en=document.getElementById('selEndEnd').value;
+  document.getElementById('selStartEnd').value=en;
+  document.getElementById('selEndEnd').value=s;
+  // Also immediately flip the line coordinates so the arrow redraws correctly on save
+  if(selectedIdx!==null){
+    const l=lines[selectedIdx];
+    [l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];
+    redraw();
+  }
+}
+
+function openRunPopup(idx,sx,sy){
+  document.getElementById('runDimVal').value='';document.getElementById('runLabelVal').value='';
+  document.getElementById('runStartEnd').value='wall';document.getElementById('runEndEnd').value='wall';
+  placePopup('runPopup',sx,sy);setTimeout(()=>document.getElementById('runDimVal').focus(),30);
+}
+function saveRun(){
+  const idx=pendingIdx;if(idx===null)return;
+  const v=document.getElementById('runDimVal').value.trim();
+  lines[idx].dim=v?v.replace('mm','')+'mm':'';lines[idx].label=document.getElementById('runLabelVal').value.trim();
+  lines[idx].startEnd=document.getElementById('runStartEnd').value;lines[idx].endEnd=document.getElementById('runEndEnd').value;
+  closeAll();redraw();
+}
+document.getElementById('runDimVal').addEventListener('keydown',e=>{if(e.key==='Enter')saveRun();if(e.key==='Escape')cancelPending();});
+function swapRunEnds(){
+  const s=document.getElementById('runStartEnd').value;
+  const en=document.getElementById('runEndEnd').value;
+  document.getElementById('runStartEnd').value=en;
+  document.getElementById('runEndEnd').value=s;
+  // Flip the line so the arrow redraws in the new direction immediately
+  if(pendingIdx!==null){
+    const l=lines[pendingIdx];
+    [l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];
+    redraw();
+  }
+}
+
+function openStairPopup(idx,sx,sy){
+  document.getElementById('stairDimVal').value='';document.getElementById('stairDirVal').value='LH';
+  document.getElementById('stairStart').value='free';document.getElementById('stairEnd').value='connected';
+  document.getElementById('stairBottomType').value='free';
+  document.getElementById('stairTopType').value='turn';
+  placePopup('stairPopup',sx,sy);setTimeout(()=>document.getElementById('stairDimVal').focus(),30);
+}
+function saveStair(){
+  const idx=pendingIdx;if(idx===null)return;
+  const v=document.getElementById('stairDimVal').value.trim();
+  lines[idx].dim=v?v.replace('mm','')+'mm':'';lines[idx].dir=document.getElementById('stairDirVal').value;
+  lines[idx].startEnd=document.getElementById('stairStart').value;lines[idx].endEnd=document.getElementById('stairEnd').value;
+  lines[idx].bottomType=document.getElementById('stairBottomType').value;
+  lines[idx].topType=document.getElementById('stairTopType').value;
+  closeAll();redraw();
+}
+document.getElementById('stairDimVal').addEventListener('keydown',e=>{if(e.key==='Enter')saveStair();if(e.key==='Escape')cancelPending();});
+
+// ═══════════════════════════════════════════════
+// ZOOM / NAV
+// ═══════════════════════════════════════════════
+function zoomIn(){zoom=Math.min(5,zoom*1.2);redraw();}
+function zoomOut(){zoom=Math.max(0.2,zoom/1.2);redraw();}
+function resetView(){zoom=1;panX=0;panY=0;redraw();}
+function undo(){if(lines.length>0){lines.splice(lines.length-1,1);selectedIdx=null;closeAll();redraw();}}
+function clearCanvas(){
+  lines=[];selectedIdx=null;pendingIdx=null;drawing=false;lastCalcText='';
+  sections=[];activeSectionId=null;updateSecIndicator();
+  ['selectPopup','runPopup','stairPopup'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('jcBody').innerHTML='';
+  document.getElementById('jcBodySide').innerHTML='';
+  document.getElementById('canvasSideJC').style.display='none';
+  document.getElementById('dsForm').innerHTML='<div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the drilling sheet.</div>';
+  switchTab('canvas');setTimeout(resizeCanvas,50);
+}
+function closeSideJC(){document.getElementById('canvasSideJC').style.display='none';setTimeout(resizeCanvas,50);}
+function switchTab(tab){
+  ['canvas','jobcard','drilling'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('panel-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='canvas')setTimeout(resizeCanvas,50);
+  if(tab==='drilling')updateDsPreview();
+}
+function toggleMode(){isLight=!isLight;document.body.classList.toggle('light',isLight);document.getElementById('modeToggle').textContent=isLight?'🌙':'☀️';redraw();}
+
+// ═══════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════
+function drawArrow(x1,y1,x2,y2,color){
+  const t=0.55,ax=x1+(x2-x1)*t,ay=y1+(y2-y1)*t;
+  const ang=Math.atan2(y2-y1,x2-x1),sz=10;
+  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(ax-Math.cos(ang)*sz,ay-Math.sin(ang)*sz);ctx.lineTo(ax+Math.cos(ang)*sz,ay+Math.sin(ang)*sz);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ax+Math.cos(ang)*sz,ay+Math.sin(ang)*sz);ctx.lineTo(ax+Math.cos(ang+2.4)*7,ay+Math.sin(ang+2.4)*7);ctx.lineTo(ax+Math.cos(ang-2.4)*7,ay+Math.sin(ang-2.4)*7);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+function redraw(){
+  const cw=canvas.width,ch=canvas.height;
+  ctx.clearRect(0,0,cw,ch);
+  ctx.fillStyle=isLight?'#ffffff':'#1a1a1a';ctx.fillRect(0,0,cw,ch);
+  const g=GRID*zoom,ox2=((panX%g)+g)%g,oy2=((panY%g)+g)%g;
+  for(let x=ox2-g;x<cw+g;x+=g){for(let y=oy2-g;y<ch+g;y+=g){
+    const major=(Math.round((x-ox2)/g)%5===0&&Math.round((y-oy2)/g)%5===0);
+    ctx.fillStyle=major?(isLight?'rgba(0,0,0,0.15)':'rgba(255,255,255,0.08)'):(isLight?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.025)');
+    ctx.beginPath();ctx.arc(x,y,major?1.5:0.7,0,Math.PI*2);ctx.fill();
+  }}
+
+  lines.forEach((l,i)=>{
+    const baseColor=getSecColor(l.sectionId)||(l.type==='stairs'?'#e67e22':'#4a90d9');
+    const dash=l.type==='stairs'?[10,5]:[];
+    const p1=toScreen(l.x1,l.y1),p2=toScreen(l.x2,l.y2);
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+    const horiz=Math.abs(l.x2-l.x1)>=Math.abs(l.y2-l.y1);
+    const sel=(i===selectedIdx);
+
+    if(sel){ctx.save();ctx.strokeStyle='#c8a028';ctx.lineWidth=(2.5+6)*zoom;ctx.setLineDash([]);ctx.lineCap='round';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();}
+    ctx.save();ctx.strokeStyle=sel?'#c8a028':baseColor;ctx.lineWidth=2.5*zoom;ctx.setLineDash(dash.map(d=>d*zoom));ctx.lineCap='round';ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
+
+    if(zoom>0.4){
+      let ax1=l.x1,ay1=l.y1,ax2=l.x2,ay2=l.y2;
+      if(l.type==='stairs'&&p1.y<p2.y){ax1=l.x2;ay1=l.y2;ax2=l.x1;ay2=l.y1;}
+      const wp1=toScreen(ax1,ay1),wp2=toScreen(ax2,ay2);
+      drawArrow(wp1.x,wp1.y,wp2.x,wp2.y,sel?'#c8a028':baseColor);
+    }
+
+    [[p1.x,p1.y],[p2.x,p2.y]].forEach(([ex,ey])=>{ctx.save();ctx.fillStyle=sel?'#c8a028':baseColor;ctx.beginPath();ctx.arc(ex,ey,Math.max(3,4*Math.min(zoom,1.5)),0,Math.PI*2);ctx.fill();ctx.restore();});
+
+    if(l.startEnd&&zoom>0.5){
+      const etShort=v=>({'wall':'W','free':'F','outside-capped':'OS','outside-continuous':'OC','connected':'C'}[v]||'');
+      const etColor=v=>v==='free'?'#e74c3c':v==='wall'?'#95a5a6':v==='connected'?'#27ae60':'#9b59b6';
+      const bg=isLight?'rgba(240,242,245,0.92)':'rgba(20,20,20,0.85)';
+      const drawET=(ex,ey,v)=>{
+        const lbl=etShort(v);if(!lbl)return;
+        let dlx,dly;
+        if(horiz){dlx=ex;dly=ey-18;}else{dlx=ex+22;dly=ey;}
+        ctx.save();ctx.font=`bold ${Math.max(8,9*Math.min(zoom,1.2))}px Courier New`;
+        const tw=ctx.measureText(lbl).width;
+        ctx.fillStyle=bg;ctx.fillRect(dlx-tw/2-3,dly-8,tw+6,13);
+        ctx.fillStyle=etColor(v);ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(lbl,dlx,dly);ctx.restore();
+      };
+      drawET(p1.x,p1.y,l.startEnd);
+      drawET(p2.x,p2.y,l.endEnd);
+    }
+
+    if(l.dim&&zoom>0.35){
+      const bg=isLight?'rgba(240,242,245,0.92)':'rgba(26,26,26,0.9)';
+      const dimTxt=l.label?`${l.label}  ${l.dim}`:l.dim;
+      let dlx,dly;
+      if(horiz){dlx=mx;dly=my-18;}else{dlx=mx+52;dly=my;}
+      ctx.save();
+      const fs=Math.max(9,11*Math.min(zoom,1.3));ctx.font=`bold ${fs}px Courier New`;
+      const tw=ctx.measureText(dimTxt).width;
+      ctx.fillStyle=bg;ctx.fillRect(dlx-tw/2-4,dly-9,tw+8,16);
+      ctx.fillStyle=sel?'#c8a028':baseColor;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(dimTxt,dlx,dly);
+      if(l.type==='stairs'&&l.dir){
+        const dfs=Math.max(8,10*Math.min(zoom,1.2));ctx.font=`bold ${dfs}px Courier New`;
+        const dirLbl=l.dir+' up';const dtw=ctx.measureText(dirLbl).width;
+        const gap=tw/2+dtw/2+10;const ddx=dlx+gap,ddy=dly;
+        ctx.fillStyle=bg;ctx.fillRect(ddx-dtw/2-3,ddy-8,dtw+6,14);
+        ctx.fillStyle=baseColor;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(dirLbl,ddx,ddy);
+      }
+      ctx.restore();
+    }
+
+    const secName=getSecName(l.sectionId);
+    if(secName&&zoom>0.5){
+      const secColor=getSecColor(l.sectionId);
+      let slx,sly;
+      if(horiz){slx=mx;sly=my+14;}else{slx=mx+52;sly=my+16;}
+      ctx.save();
+      const sfs=Math.max(8,9*Math.min(zoom,1.1));ctx.font=`${sfs}px Courier New`;
+      const stw=ctx.measureText(secName).width;
+      ctx.fillStyle=secColor+'33';ctx.fillRect(slx-stw/2-3,sly-7,stw+6,13);
+      ctx.strokeStyle=secColor;ctx.lineWidth=0.5;ctx.strokeRect(slx-stw/2-3,sly-7,stw+6,13);
+      ctx.fillStyle=secColor;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(secName,slx,sly);ctx.restore();
+    }
+  });
+
+  if(isDraggingLine&&selectedIdx!==null){
+    const sl=lines[selectedIdx];const sd2=20/zoom;
+    for(let i=0;i<lines.length;i++){
+      if(i===selectedIdx)continue;
+      const ol=lines[i];
+      for(const[ex,ey] of [[ol.x1,ol.y1],[ol.x2,ol.y2]]){
+        if(Math.hypot(sl.x1-ex,sl.y1-ey)<sd2||Math.hypot(sl.x2-ex,sl.y2-ey)<sd2){
+          const sp=toScreen(ex,ey);
+          ctx.save();ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;
+          ctx.beginPath();ctx.arc(sp.x,sp.y,10*Math.min(zoom,1.5),0,Math.PI*2);ctx.stroke();
+          ctx.fillStyle='rgba(39,174,96,0.2)';ctx.fill();ctx.restore();
+        }
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// CALCULATION HELPERS
+// ═══════════════════════════════════════════════
+function isCorner(v){return v==='outside-capped'||v==='outside-continuous'||v==='connected';}
+
+function getPostTypes(legs,infill,infillFix){
+  const types={};const add=(t,q=1)=>{types[t]=(types[t]||0)+q;};
+  const isPH=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='side';
+  const isCable=infill==='cable-9';
+  legs.forEach(l=>{
+    const dim=parseInt(l.dim);
+    const sd=isCorner(l.startEnd)?0:activeConfig.edgeOffset;
+    const ed=isCorner(l.endEnd)?0:activeConfig.edgeOffset;
+    const eff=dim-sd-ed;
+    const openings=Math.ceil(Math.max(eff,100)/activeConfig.maxPostSpacing);
+    const rawPosts=openings+1;
+
+    if(l.type==='stairs'){
+      // Bottom end post — depends on bottomType
+      const bt=l.bottomType||'free';
+      if(bt==='turn'){       l.dir==='LH'?add('1LH'):add('1RH'); } // 90° turn into run
+      else if(bt==='deg-deg'){ l.dir==='LH'?add('2LH'):add('2RH'); } // degree to degree
+      else if(bt==='inline'){  add('6'); }                            // straight to degree up
+      else                   { add('4'); }                            // free or wall end
+      // Intermediate stair posts — Type 8
+      const thru=Math.max(0,openings-1);if(thru>0)add('8',thru);
+      // Top end depends on connection
+      if(l.endEnd==='connected'){
+        if(l.topType==='inline')        add('7');                          // continues straight into run
+        else if(l.topType==='deg-deg'){ l.dir==='LH'?add('2LH'):add('2RH'); } // stair-to-stair degree/degree
+        else{                           l.dir==='LH'?add('3LH'):add('3RH'); } // turns 90° into run
+      } else {
+        add('5'); // stair top is free or wall — Type 5
+      }
+      return;
+    }
+
+    // Straight run post logic
+    if(isPH){ add('13',rawPosts); return; }   // pipe holder = plain posts
+    if(isCable){ add('12',rawPosts); return; } // cable = all Type 12
+
+    // Standard run
+    if(l.startEnd==='outside-continuous') add('12');       // continuous outside — through post
+    else if(l.startEnd==='connected')     add('10');        // inside corner
+    else                                   add('11');        // wall / free / outside-capped
+
+    const thru=Math.max(0,rawPosts-2);if(thru>0)add('12',thru);
+
+    if(l.endEnd==='outside-continuous')   add('12');
+    else if(l.endEnd==='connected')       add('10');
+    else                                   add('11');
+  });
+
+  if(activeConfig.sharedPosts){
+    // Only deduct shared Type 10 posts at run-to-run connected ends and stair-top-to-run ends.
+    // Stair bottom connected ends (Types 1/2/6) are their own dedicated post — never shared.
+    const connRunEnds=legs.filter(l=>l.type==='run').reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0);
+    // stair tops that connect to ANOTHER RUN (Type 3 or Type 7) — these share a Type 10 post that was counted on the run side
+    const stairTopToRun=legs.filter(l=>l.type==='stairs'&&l.endEnd==='connected'&&l.topType!=='deg-deg').length;
+    // stair tops that connect to ANOTHER STAIR bottom (Type 2) — these share a Type 2 post counted on THIS stair; deduct the matching bottom stair's Type 4 (it was never added — bottom of upper stair is connected, so bottomType will be 'deg-deg' or similar, already generating Type 2)
+    // For stair-to-stair: both ends each add a Type 2. The shared post is 1, not 2 — so deduct once.
+    const stairTopToDegDeg=legs.filter(l=>l.type==='stairs'&&l.endEnd==='connected'&&l.topType==='deg-deg').length;
+    const runRunCorners=Math.round((connRunEnds-stairTopToRun)/2);
+    if(types['10'])types['10']=Math.max(0,types['10']-runRunCorners-stairTopToRun);
+    // Deduplicate Type 2 shared posts: top stair adds Type 2, bottom stair also adds Type 2 — net = 1
+    const t2lh=(types['2LH']||0), t2rh=(types['2RH']||0);
+    if(stairTopToDegDeg>0){
+      // Each stair-to-stair pair: both legs add a Type 2. Deduct the duplicates.
+      if(types['2LH'])types['2LH']=Math.max(0,types['2LH']-Math.min(stairTopToDegDeg,types['2LH']));
+      if(types['2RH'])types['2RH']=Math.max(0,types['2RH']-Math.min(stairTopToDegDeg,types['2RH']));
+    }
+  }
+  return types;
+}
+
+// ═══════════════════════════════════════════════
+// CALCULATE
+// ═══════════════════════════════════════════════
+function calculate(){
+  const active=lines.filter(l=>l.dim);
+  if(active.length===0){alert('Draw at least one run or stair with a dimension first.');return;}
+  const infill=getInfill(),infillFix=getInfillFix(),fixing=getFixing(),post=getPost(),rail=getRail(),mat=getMaterial();
+  const lc=lineCount();
+  const OFF=activeConfig.edgeOffset;
+  const STOCK=activeConfig.stockLength;
+  const isPH=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='side';
+  const isPD=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='through';
+  const isGlassInfill=infill==='glass-8mm'||infill==='glass-10mm'||infill==='glass';
+  const isCableInfill=infill==='cable-9';
+
+  const legs=active.map(l=>{
+    const dim=parseInt(l.dim);
+    const sd=isCorner(l.startEnd)?0:OFF,ed=isCorner(l.endEnd)?0:OFF;
+    const eff=dim-sd-ed;
+    const openings=Math.ceil(Math.max(eff,100)/activeConfig.maxPostSpacing);
+    return{...l,dim,eff,openings,rawPosts:openings+1};
+  });
+
+  const rawTotal=legs.reduce((s,l)=>s+l.rawPosts,0);
+  // Only count connected ends that truly share a post (run-to-run and stair-top-to-run).
+  // Stair bottom connected ends (Types 1/2/6) are their own post — not shared.
+  // Stair bottom connected ends with bottomType='deg-deg'/'turn'/'inline' are their own dedicated posts (not shared).
+  // Stair top deg-deg: both the upper stair's top and the lower stair's bottom each count a post — net shared = 1 per pair.
+  const stairBottomConnected=legs.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
+  const stairTopDegDeg=legs.filter(l=>l.type==='stairs'&&l.endEnd==='connected'&&l.topType==='deg-deg').length;
+  const connEnds=legs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-stairBottomConnected;
+  // stair-to-stair pairs: each pair generates 2 Type 2 posts but should be 1 — already deducted in getPostTypes; adjust raw total here
+  const sharedPosts=activeConfig.sharedPosts?Math.round(connEnds/2)+stairTopDegDeg:0;
+  const totalPosts=rawTotal-sharedPosts;
+
+  const showEC=!isCableInfill&&!isGlassInfill;
+  const endCaps=showEC?legs.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?1:0)+(l.endEnd==='wall'||l.endEnd==='free'?1:0),0):0;
+  const totalRail=legs.reduce((s,l)=>s+l.dim,0);
+  const joiners=legs.filter(l=>l.dim>STOCK).length;
+  const railStock=Math.ceil(totalRail/STOCK);
+  const totalInfill=!isGlassInfill?totalRail*lc:0;
+  const infillStock=totalInfill>0?Math.ceil(totalInfill/STOCK):0;
+  const cornerCount=Math.round(connEnds/2);
+  // DIY flexi bends: only on pre-drilled system, not glass, not cable
+  const flexiBends=(isPD&&activeConfig.showInfillFixing&&!isGlassInfill&&!isCableInfill)?cornerCount*lc:0;
+  // Trade prefab rail bends: corners on trade products (not DIY, not glass, not cable)
+  const tradeBends=(!activeConfig.showInfillFixing&&!isGlassInfill&&!isCableInfill)?cornerCount:0;
+  const types=getPostTypes(legs,infill,infillFix);
+
+  const infillLbls={'15.88-8':'15.88mm × 8 lines','12.7-8':'12.7mm × 8 lines','cable-9':'4mm cable × 9 lines','glass':'Glass & stainless steel'};
+  const postLbls={'round38':'Round 38.1mm','round50':'Round 50.8mm','sq40':'Square 40×40','sq50':'Square 50×50','rect50x25':'Rect 50×25mm'};
+  const railLbls={'50.8':'50.8mm round','38.1':'38.1mm round','50x50':'50×50 square','40x40':'40×40 square','50x25':'50×25 rect'};
+  const typeNames={
+    '1LH':'Type 1 LH — corner post straight to degree up',
+    '1RH':'Type 1 RH — corner post straight to degree up',
+    '2LH':'Type 2 LH — corner post degree to degree up',
+    '2RH':'Type 2 RH — corner post degree to degree up',
+    '3LH':'Type 3 LH — corner post degree up to straight',
+    '3RH':'Type 3 RH — corner post degree up to straight',
+    '4':  'Type 4 — end post up at degree',
+    '5':  'Type 5 — end post down at degree',
+    '6':  'Type 6 — centre post straight to degree up',
+    '7':  'Type 7 — centre post straight to degree down',
+    '8':  'Type 8 — centre post through at degree',
+    '9':  'Type 9 — open corner post 135°',
+    '10': 'Type 10 — corner post straight',
+    '11': 'Type 11 — end post straight',
+    '12': 'Type 12 — centre post straight through',
+    '13': 'Type 13 — plain post',
+  };
+  const typeOrder=['1LH','1RH','2LH','2RH','3LH','3RH','4','5','6','7','8','9','10','11','12','13'];
+
+  // Fixing block
+  let fixHtml='',fixText='';
+  if(fixing==='top'){
+    const grout=Math.ceil(totalPosts/6)*2;
+    fixHtml=`<div class="jc-row"><span>Method</span><span class="val">Core drill + non-shrink grout</span></div>
+    <div class="jc-row"><span>Post depth</span><span class="val">100mm into slab</span></div>
+    <div class="jc-row"><span>Non-shrink grout</span><span class="val">${grout}kg</span></div>
+    <div class="jc-row" style="font-size:10px;color:var(--text4)"><span>Mix: 1kg powder to ~0.18L water. Fill hole, insert post, check plumb.</span></div>
+    <div class="jc-row" style="font-size:10px;color:var(--text4)"><span>Cure: 1hr=15MPa · 4hr=24MPa · 1 day=30MPa · 7 days=35MPa · 28 days=40MPa</span></div>
+    <div class="jc-row" style="font-size:10px;color:#e67e22;margin-top:3px"><span>⚠ Do not mix more than can be used in 15 minutes. Once stiffened do not re-temper with water. Grout and all contact surfaces must be 15–25°C — do not grout in freezing conditions. Pour from one side only — pouring from both sides traps air under the post base.</span></div>`;
+    fixText=`  Method: Core drill + non-shrink grout\n  Depth: 100mm\n  Grout: ${grout}kg\n  Mix: 1kg powder to ~0.18L water\n  Cure: 1hr=15MPa · 4hr=24MPa · 1 day=30MPa · 7 days=35MPa · 28 days=40MPa\n  ⚠ Do not mix more than can be used in 15 min. Do not re-temper. 15-25°C. Pour from one side only.`;
+  } else if(fixing==='side'){
+    const rods=totalPosts*2,epoxy=Math.ceil(totalPosts/5),rodStock=Math.ceil(rods/6);
+    fixHtml=`<div class="jc-row"><span>Method</span><span class="val">Side mount — M10 rod + epoxy</span></div>
+    <div class="jc-row"><span>M10 rod × 2 per post (150mm)</span><span class="val">${rods} rods</span></div>
+    <div class="jc-row"><span>M10 rod stock (1m, 6 per length)</span><span class="val">${rodStock} × 1m</span></div>
+    <div class="jc-row"><span>Chemical anchor epoxy (1 per 5 posts)</span><span class="val">${epoxy} × 300ml</span></div>`;
+    fixText=`  Method: Side mount — M10 rod + epoxy\n  M10 rods: ${rods}\n  Rod stock: ${rodStock} × 1m\n  Epoxy: ${epoxy} × 300ml`;
+  } else if(fixing==='pinfix'){
+    const rods=Math.ceil(totalPosts/6);
+    const epoxy=Math.ceil(totalPosts/10);
+    const grommets=totalPosts;
+    fixHtml=`<div class="jc-row"><span>Method</span><span class="val">Pin fix — M16 rod + knock-in grommet</span></div>
+    <div class="jc-row"><span>M16 rod 150mm (1 per post, 6 per 1m length)</span><span class="val">${rods} × 1m lengths</span></div>
+    <div class="jc-row"><span>Chemical anchor epoxy (1 per 10 holes)</span><span class="val">${epoxy} × 300ml</span></div>
+    <div class="jc-row"><span>Knock-in grommets (1 per post)</span><span class="val">${grommets}</span></div>
+    <div class="jc-row" style="font-size:10px;color:var(--text4)"><span>100mm into ground, 50mm into post base</span></div>`;
+    fixText=`  Method: Pin fix — M16 rod + knock-in grommet\n  M16 rod stock (1m lengths): ${rods}\n  Epoxy: ${epoxy} × 300ml\n  Grommets: ${grommets}`;
+  } else {
+    fixHtml=`<div class="jc-row"><span>Method</span><span class="val">Flange plate — 1 per post</span></div>
+    <div class="jc-row"><span>Flange plates</span><span class="val">${totalPosts}</span></div>
+    <div class="jc-row" style="font-size:10px;color:var(--text4)"><span>Substrate by client: Timber=coach screws · Concrete=rawl bolts or epoxy rod</span></div>`;
+    fixText=`  Method: Flange plate\n  Flange plates: ${totalPosts}\n  Substrate: by client`;
+  }
+
+  // Section grouping
+  const secGroups={};const unsec=[];
+  legs.forEach(l=>{if(l.sectionId){if(!secGroups[l.sectionId])secGroups[l.sectionId]=[];secGroups[l.sectionId].push(l);}else unsec.push(l);});
+
+  const renderSecBlock=(sl,sid,mode='full')=>{
+    const sName=getSecName(sid)||'Unsectioned';
+    const sColor=getSecColor(sid)||'#888';
+    const sRaw=sl.reduce((s,l)=>s+l.rawPosts,0);
+    const sStairBtmConn=sl.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
+    const sConn=sl.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-sStairBtmConn;
+    const sShared=activeConfig.sharedPosts?Math.round(sConn/2):0;
+    const sTotal=sRaw-sShared;
+    const sRail=sl.reduce((s,l)=>s+l.dim,0);
+    const sInfill=!isGlassInfill?sRail*lc:0;
+    const sRailSt=Math.ceil(sRail/STOCK);
+    const sInfillSt=sInfill>0?Math.ceil(sInfill/STOCK):0;
+    const sCorners=Math.round(sConn/2);
+    const sFlexi=(isPD&&activeConfig.showInfillFixing&&!isGlassInfill&&!isCableInfill)?sCorners*lc:0;
+    const sTradeBends=(!activeConfig.showInfillFixing&&!isGlassInfill&&!isCableInfill)?sCorners:0;
+    const sEC=showEC?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?1:0)+(l.endEnd==='wall'||l.endEnd==='free'?1:0),0):0;
+
+    // Post types for this section's legs only
+    const sTypes=getPostTypes(sl,infill,infillFix);
+    const sTypeOrder=['1LH','1RH','2LH','2RH','3LH','3RH','4','5','6','7','8','9','10','11','12','13'];
+
+    let h=`<div class="jc-section"><div class="jc-section-title sec-hdr" style="background:${sColor}aa;border-color:${sColor}">${sName}</div>`;
+    sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');h+=`<div class="jc-row"><span>${lbl} ${toM(l.dim)}</span><span class="val">${l.rawPosts} posts</span></div>`;});
+    h+=`<div class="jc-row" style="font-size:10px"><span>Posts (${sRaw}−${sShared} shared)</span><span class="val">${sTotal}</span></div>`;
+
+    if(mode==='full'){
+      // Option B — full post type table per section
+      const hasTypes=sTypeOrder.some(t=>sTypes[t]);
+      if(hasTypes){
+        h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Post types</div>`;
+        sTypeOrder.forEach(t=>{
+          if(!sTypes[t])return;
+          h+=`<div class="jc-row"><span style="font-size:10px">${typeNames[t]||'Type '+t}</span><span class="val">${sTypes[t]}</span></div>`;
+        });
+        h+=`<div class="jc-row"><span>Cover plates (domed)</span><span class="val">${sTotal}</span></div>`;
+      }
+    } else {
+      // Option A — compact single-line type summary for side panel
+      const typeParts=sTypeOrder.filter(t=>sTypes[t]).map(t=>`${t.replace('LH',' LH').replace('RH',' RH')} ×${sTypes[t]}`);
+      if(typeParts.length){
+        h+=`<div class="jc-row" style="font-size:10px;flex-wrap:wrap;gap:4px"><span style="color:var(--text4)">Types:</span><span class="val" style="font-size:10px;white-space:normal;text-align:right">${typeParts.join('&nbsp;&nbsp;')}</span></div>`;
+      }
+      h+=`<div class="jc-row" style="font-size:10px"><span>Cover plates</span><span class="val">${sTotal}</span></div>`;
+    }
+
+    h+=`<div class="jc-row"><span>Top rail</span><span class="val">${toM(sRail)} / ${sRailSt}×${toM(STOCK)}</span></div>`;
+    if(sInfill>0)h+=`<div class="jc-row"><span>Infill ×${lc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}×${toM(STOCK)}</span></div>`;
+    if(sFlexi>0)h+=`<div class="jc-row"><span>Flexi bends (${sCorners} corners ×${lc})</span><span class="val">${sFlexi}</span></div>`;
+    if(sTradeBends>0)h+=`<div class="jc-row"><span>Top rail prefab bends (${sCorners} corners)</span><span class="val">${sTradeBends}</span></div>`;
+    if(sEC>0)h+=`<div class="jc-row"><span>End caps</span><span class="val">${sEC}</span></div>`;
+    h+=`</div>`;return h;
+  };
+
+  const alerts=[];if(joiners>0)legs.filter(l=>l.dim>STOCK).forEach(l=>alerts.push(`${l.label||l.type} (${toM(l.dim)}) exceeds ${toM(STOCK)} — joiner required`));
+  const alertHtml=alerts.length?`<div class="jc-alert">⚠ ${alerts.join('<br>⚠ ')}</div>`:'';
+
+  const settingsHtml=`<div class="jc-section"><div class="jc-section-title">Job settings</div>
+    <div class="jc-row"><span>Product</span><span class="val">${activeConfig.name}</span></div>
+    <div class="jc-row"><span>Infill</span><span class="val">${infillLbls[infill]||infill}</span></div>
+    <div class="jc-row"><span>Post</span><span class="val">${postLbls[post]||post}</span></div>
+    <div class="jc-row"><span>Top rail</span><span class="val">${railLbls[rail]||rail}</span></div>
+    <div class="jc-row"><span>Material</span><span class="val">${mat==='pc'?'Powder Coat':mat}</span></div>
+    ${mat==='pc'?`<div class="jc-row" style="background:rgba(200,160,40,0.08);border:1px dashed var(--accent);border-radius:3px;padding:4px 7px;margin-top:3px"><span style="color:var(--accent)">⚠ Powder coat colour</span><span class="val" style="color:var(--text3)">confirm with client</span></div>`:''}
+    </div>`;
+
+  // Totals block (shared)
+  let totalsHtml=`<div class="jc-section"><div class="jc-section-title">Job totals</div>
+    <div class="jc-total"><span>Total posts</span><span>${totalPosts}</span></div>
+    <div class="jc-row"><span>Top rail total</span><span class="val">${toM(totalRail)} / ${railStock}×${toM(STOCK)}</span></div>`;
+  if(totalInfill>0){
+    if(isCableInfill)totalsHtml+=`<div class="jc-row"><span>Cable total (per metre — roll)</span><span class="val">${toM(totalInfill)}</span></div>`;
+    else totalsHtml+=`<div class="jc-row"><span>Infill total</span><span class="val">${toM(totalInfill)} / ${infillStock}×${toM(STOCK)}</span></div>`;
+  }
+  if(flexiBends>0)totalsHtml+=`<div class="jc-row"><span>Flexi bends total</span><span class="val">${flexiBends}</span></div>`;
+  if(tradeBends>0)totalsHtml+=`<div class="jc-row"><span>Top rail prefab bends</span><span class="val">${tradeBends}</span></div>`;
+  if(joiners>0)totalsHtml+=`<div class="jc-row"><span>Rail joiners</span><span class="val">${joiners}</span></div>`;
+  if(endCaps>0)totalsHtml+=`<div class="jc-row"><span>End caps</span><span class="val">${endCaps}</span></div>`;
+  totalsHtml+=`</div>`;
+
+  // Post types job total block (shared)
+  let typeTotal=0;
+  let postTypesHtml=`<div class="jc-section"><div class="jc-section-title">Post types — drilling sheet</div>`;
+  typeOrder.forEach(t=>{if(types[t]){postTypesHtml+=`<div class="jc-row"><span>${typeNames[t]||'Type '+t}</span><span class="val">${types[t]}</span></div>`;typeTotal+=types[t];}});
+  postTypesHtml+=`<div class="jc-total"><span>Total</span><span>${typeTotal}</span></div></div>`;
+
+  // Build FULL html (Job Card tab) — Option B: full post type table per section
+  let html=alertHtml+settingsHtml;
+  sections.forEach(sec=>{if(secGroups[sec.id]&&secGroups[sec.id].length>0)html+=renderSecBlock(secGroups[sec.id],sec.id,'full');});
+  if(unsec.length>0)html+=renderSecBlock(unsec,null,'full');
+  html+=totalsHtml+postTypesHtml;
+
+  // Build COMPACT html (side panel) — Option A: single-line type summary per section
+  let htmlSide=alertHtml+settingsHtml;
+  sections.forEach(sec=>{if(secGroups[sec.id]&&secGroups[sec.id].length>0)htmlSide+=renderSecBlock(secGroups[sec.id],sec.id,'compact');});
+  if(unsec.length>0)htmlSide+=renderSecBlock(unsec,null,'compact');
+  htmlSide+=totalsHtml+postTypesHtml;
+
+  const fixingExtrasHtml=`<div class="jc-section"><div class="jc-section-title">Fixing</div>${fixHtml}</div>`+
+    `<div class="jc-section"><div class="jc-section-title">Extras</div>`+
+    `<div class="jc-row"><span>Domed cover plates (1 per post)</span><span class="val">${totalPosts}</span></div>`+
+    (isPH?`<div class="jc-row"><span>Pipe holders (${lc} per post)</span><span class="val">${totalPosts*lc}</span></div>`:'')+
+    `</div>`;
+  html+=fixingExtrasHtml;
+  htmlSide+=fixingExtrasHtml;
+  document.getElementById('jcBody').innerHTML=html;
+  document.getElementById('jcBodySide').innerHTML=htmlSide;
+  document.getElementById('canvasSideJC').style.display='flex';
+  switchTab('canvas');
+  setTimeout(resizeCanvas,50);
+
+  const typeSummary=typeOrder.filter(t=>types[t]).map(t=>`  ${typeNames[t]||'Type '+t}: ${types[t]}`).join('\n');
+  lastCalcText=`JOB CARD — ${activeConfig.name.toUpperCase()}\n${'─'.repeat(40)}\nProduct:  ${activeConfig.name}\nInfill:   ${infillLbls[infill]||infill}\nPost:     ${postLbls[post]||post}\nTop rail: ${railLbls[rail]||rail}\nMaterial: ${mat}\n\nTOTALS\n${'─'.repeat(20)}\nTotal posts:  ${totalPosts}\nTop rail:     ${toM(totalRail)} / ${railStock} × ${toM(STOCK)}\n${totalInfill?(isCableInfill?`Cable:        ${toM(totalInfill)} (per metre — roll)`:`Infill:       ${toM(totalInfill)} / ${infillStock} × ${toM(STOCK)}`):''}${flexiBends?`\nFlexi bends:  ${flexiBends}`:''}${tradeBends?`\nPrefab bends: ${tradeBends}`:''}${joiners?`\nRail joiners: ${joiners}`:''}${endCaps?`\nEnd caps:     ${endCaps}`:''}\n\nPOST TYPES\n${'─'.repeat(20)}\n${typeSummary}\n\nFIXING\n${'─'.repeat(20)}\n${fixText}\n\nEXTRAS\n  Cover plates: ${totalPosts}${isPH?`\n  Pipe holders (${lc} per post): ${totalPosts*lc}`:''}`;
+
+  updateDsPreview();
+}
+
+// ═══════════════════════════════════════════════
+// DRILLING SHEET
+// ═══════════════════════════════════════════════
+function updateDsPreview(){
+  const el=document.getElementById('dsForm');if(!el)return;
+  const active=lines.filter(l=>l.dim);
+  if(active.length===0||!lastCalcText){el.innerHTML='<div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the drilling sheet.</div>';return;}
+  const infill=getInfill(),infillFix=getInfillFix(),fixing=getFixing(),post=getPost(),mat=getMaterial();
+  const isPH=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='side';
+  const isGlass=infill==='glass';const isCable=infill==='cable-9';
+  const OFF=activeConfig.edgeOffset;
+  const legs=active.map(l=>{const dim=parseInt(l.dim);const sd=isCorner(l.startEnd)?0:OFF,ed=isCorner(l.endEnd)?0:OFF;const eff=dim-sd-ed;const openings=Math.ceil(Math.max(eff,100)/activeConfig.maxPostSpacing);return{...l,dim,eff,openings,rawPosts:openings+1};});
+  const stairBtmConn=legs.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
+  const connEnds=legs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-stairBtmConn;
+  const totalPosts=legs.reduce((s,l)=>s+l.rawPosts,0)-(activeConfig.sharedPosts?Math.round(connEnds/2):0);
+  const types=getPostTypes(legs,infill,infillFix);
+  const postHeight=fixing==='top'?'1000':fixing==='side'?'1150':'900';
+  const numHoles=isGlass?'2':isCable?'9':isPH?'0':'8';
+  const holeSize=isGlass?'11':isCable?'5':isPH?'—':'16';
+  const chk=b=>`<span style="font-size:14px">${b?'☑':'☐'}</span>`;
+  const isR38=post==='round38',isR50=post==='round50',isSq40=post==='sq40',isSq50=post==='sq50',isRect=post==='rect50x25';
+  const mTop=fixing==='top',mSide=fixing==='side',mFlange=fixing==='flange',mPin=fixing==='pinfix';
+  const m304b=mat==='304-180',m304m=mat==='304-mirror',m316b=mat==='316-180',m316m=mat==='316-mirror',mMS=mat==='mild';
+  const typeOrder=['1LH','1RH','2LH','2RH','3LH','3RH','4','5','6','7','8','9','10','11','12','13'];
+  const typeNames={'1LH':'Corner post straight to degree up','1RH':'Corner post straight to degree up','2LH':'Corner post degree to degree up','2RH':'Corner post degree to degree up','3LH':'Corner post degree up to straight','3RH':'Corner post degree up to straight','4':'End post up at degree','5':'End post down at degree','6':'Centre post straight to degree up','7':'Centre post straight to degree down','8':'Centre post through at degree','9':'Open corner post 135°','10':'Corner post straight','11':'End post straight','12':'Centre post straight through','13':'Plain post'};
+  let postGrid='';
+  typeOrder.forEach(n=>{
+    const hasLH=['3LH','3RH'].includes(n)||n.endsWith('LH');
+    const key=n;
+    const qP=types[key]||0;
+    const qLH=types[n+'LH']||0;const qRH=types[n+'RH']||0;
+    const baseN=n.replace('LH','').replace('RH','');
+    const label=typeNames[n]||typeNames[baseN]||'Type '+n;
+    const hl=qP>0||qLH>0||qRH>0;
+    if(n==='3LH'){
+      postGrid+=`<tr style="background:${hl||types['3RH']>0?'#fffbe6':'#fff'};border-bottom:1px solid #eee">
+        <td style="padding:3px 8px;font-weight:bold;font-size:13px;text-align:center;width:30px;border-right:1px solid #ddd">3</td>
+        <td style="padding:3px 8px;font-size:10px;border-right:1px solid #ddd">Corner post degree up to straight</td>
+        <td style="text-align:center;padding:3px;width:60px;border-right:1px solid #ddd"><b style="font-size:12px;color:${types['3LH']>0?'#c8a028':'#999'}">${types['3LH']>0?types['3LH']:'—'}</b></td>
+        <td style="text-align:center;padding:3px;width:60px;border-right:1px solid #ddd"><b style="font-size:12px;color:${types['3RH']>0?'#c8a028':'#999'}">${types['3RH']>0?types['3RH']:'—'}</b></td>
+      </tr>`;
+    } else if(n==='3RH'){
+      // skip — rendered with 3LH
+    } else {
+      postGrid+=`<tr style="background:${hl?'#fffbe6':'#fff'};border-bottom:1px solid #eee">
+        <td style="padding:3px 8px;font-weight:bold;font-size:13px;text-align:center;width:30px;border-right:1px solid #ddd">${baseN}</td>
+        <td style="padding:3px 8px;font-size:10px;border-right:1px solid #ddd">${label}</td>
+        <td colspan="2" style="text-align:center;padding:3px;border-right:1px solid #ddd"><b style="font-size:12px;color:${qP>0?'#c8a028':'#999'}">${qP>0?qP:'—'}</b></td>
+      </tr>`;
+    }
+  });
+
+  el.innerHTML=`<div style="border:2px solid #333;padding:10px;background:#fff;font-family:'Courier New',monospace">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333">
+      <div style="flex:3"><span style="font-size:10px;color:#666;display:block">CLIENT</span><div style="border-bottom:1px solid #333;min-height:20px"> </div></div>
+      <div style="flex:2"><span style="font-size:10px;color:#666;display:block">QUOTE NO</span><div style="border-bottom:1px solid #333;min-height:20px"> </div></div>
+      <div style="flex:2"><span style="font-size:10px;color:#666;display:block">JOBCARD NO</span><div style="border-bottom:1px solid #333;min-height:20px"> </div></div>
+      <div style="flex:1"><span style="font-size:10px;color:#666;display:block">TOTAL POSTS</span><div style="border-bottom:1px solid #333;min-height:20px;font-weight:bold;font-size:16px;color:#c8a028;text-align:center">${totalPosts}</div></div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:2;min-width:300px">
+        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Types</div>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #ccc">
+          <thead><tr style="background:#f0f0f0">
+            <th style="padding:3px 6px;font-size:10px;border-right:1px solid #ddd;width:30px">#</th>
+            <th style="padding:3px 6px;font-size:10px;text-align:left;border-right:1px solid #ddd">Description</th>
+            <th style="padding:3px 6px;font-size:10px;width:60px;border-right:1px solid #ddd">LH QTY</th>
+            <th style="padding:3px 6px;font-size:10px;width:60px">RH / QTY</th>
+          </tr></thead>
+          <tbody>${postGrid}</tbody>
+        </table>
+      </div>
+      <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:10px">
+        <div>
+          <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Options</div>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="font-size:11px;padding:2px 4px">Round 38.1mm</td><td>${chk(isR38)}</td><td style="font-size:11px;padding:2px 8px">Height: <b>${postHeight}mm</b></td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Round 50mm</td><td>${chk(isR50)}</td><td style="font-size:11px;padding:2px 8px">Holes: <b>${numHoles}</b></td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Square 40×40</td><td>${chk(isSq40)}</td><td style="font-size:11px;padding:2px 8px">Hole size: <b>${holeSize}mm</b></td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Square 50×50</td><td>${chk(isSq50)}</td><td></td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Rect 50×25mm</td><td>${chk(isRect)}</td><td></td></tr>
+          </table>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Mounting</div>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="font-size:11px;padding:2px 4px">Core Drill</td><td>${chk(mTop)}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Side Mount</td><td>${chk(mSide)}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">3 Hole Flange</td><td>${chk(mFlange)}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Pin Fix</td><td>${chk(mPin)}</td></tr>
+          </table>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Finishing / Material</div>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="font-size:11px;padding:2px 4px">Weld on pin</td><td>${chk(!isGlass)}</td><td style="font-size:11px;padding:2px 4px">304 Brushed</td><td>${chk(m304b)}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">No pin</td><td>${chk(isGlass)}</td><td style="font-size:11px;padding:2px 4px">304 Mirror</td><td>${chk(m304m)}</td></tr>
+            <tr><td style="font-size:11px;padding:2px 4px">Cover domed</td><td>${chk(true)}</td><td style="font-size:11px;padding:2px 4px">316 Brushed</td><td>${chk(m316b)}</td></tr>
+            <tr><td></td><td></td><td style="font-size:11px;padding:2px 4px">316 Mirror</td><td>${chk(m316m)}</td></tr>
+            <tr><td></td><td></td><td style="font-size:11px;padding:2px 4px">Mild Steel</td><td>${chk(mMS)}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function printDrilling(){
+  const content=document.getElementById('dsForm').innerHTML;
+  const win=window.open('','_blank','width=850,height:1000');
+  win.document.write(`<!DOCTYPE html><html><head><title>Drilling Sheet — ${activeConfig.name}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;padding:20px}@media print{@page{size:A4 landscape;margin:8mm}}</style></head><body>${content}</body></html>`);
+  win.document.close();win.focus();setTimeout(()=>win.print(),400);
+}
+
+// ═══════════════════════════════════════════════
+// OUTPUT
+// ═══════════════════════════════════════════════
+function copyJobCard(){if(!lastCalcText){alert('Calculate first.');return;}if(navigator.clipboard){navigator.clipboard.writeText(lastCalcText).then(()=>alert('Copied — paste into Sage or WhatsApp.')).catch(()=>prompt('Copy this:',lastCalcText));}else{prompt('Copy this:',lastCalcText);}}
+function printJobCard(){
+  if(!lastCalcText){alert('Calculate first.');return;}
+  const jcHtml=document.getElementById('jcBody').innerHTML;
+  const win=window.open('','_blank','width=750,height=950');
+  win.document.write(`<!DOCTYPE html><html><head><title>Job Card — ${activeConfig.name}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;background:#fff;color:#111;padding:24px 28px;font-size:11px}.jc-section{margin-bottom:12px}.jc-section-title{font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:#666;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid #ddd}.jc-section-title.sec-hdr{padding:3px 7px;border-radius:3px;color:#fff;margin-bottom:7px}.jc-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f0f0f0;gap:8px}.jc-row .val{font-weight:bold;color:#b8860b}.jc-total{display:flex;justify-content:space-between;padding:5px 0;font-weight:bold;font-size:12px;border-top:1px solid #aaa;margin-top:3px;color:#b8860b}.jc-alert{background:#fff3cd;border:1px solid #e6a817;border-radius:3px;padding:5px 8px;font-size:10px;color:#856404;margin-bottom:8px}@media print{body{padding:12mm 14mm}@page{size:A4 portrait;margin:8mm}}</style></head><body>${jcHtml}</body></html>`);
+  win.document.close();win.focus();setTimeout(()=>win.print(),400);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// INIT — runs after full DOM is ready
+// ═══════════════════════════════════════════════
+document.body.classList.add('light');
+
+window.addEventListener('DOMContentLoaded', function(){
+  // Populate product selector
+  const sel = document.getElementById('productSelect');
+  PRODUCTS.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.value; opt.textContent = p.label;
+    sel.appendChild(opt);
+  });
+
+  // Read URL params from launcher (product, mount, client, quote, jobno)
+  const params = new URLSearchParams(window.location.search);
+  const urlProduct = params.get('product');
+  const urlMount   = params.get('mount');
+  const urlClient  = params.get('client');
+  const urlQuote   = params.get('quote');
+  const urlJobno   = params.get('jobno');
+
+  // Pre-select product from URL param, fall back to first product
+  const startProduct = (urlProduct && PRODUCTS.find(p => p.value === urlProduct))
+    ? urlProduct : PRODUCTS[0].value;
+  if(urlProduct) sel.value = startProduct;
+
+  // Init canvas size then switch to product
+  resizeCanvas();
+  switchProduct(startProduct);
+
+  // After product switch, pre-select fixing/mount if passed
+  if(urlMount){
+    const fixSel = document.getElementById('fixingSelect');
+    const mountMap = { top:'top', side:'side', flange:'flange', pinfix:'pinfix' };
+    if(fixSel && mountMap[urlMount]){
+      fixSel.value = mountMap[urlMount];
+      onSettingsChange();
+    }
+  }
+
+  // Pre-fill any job header fields if a launcher added them (future use)
+  // (client/quote/jobno stored for when job card header fields are added)
+  try {
+    if(urlClient) localStorage.setItem('bl_client', urlClient);
+    if(urlQuote)  localStorage.setItem('bl_quote',  urlQuote);
+    if(urlJobno)  localStorage.setItem('bl_jobno',  urlJobno);
+  } catch(e) {}
+});
+</script>
+</body>
+</html>
