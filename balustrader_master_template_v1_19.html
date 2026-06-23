@@ -1341,7 +1341,10 @@ function calculate(){
     }
 
     h+=`<div class="jc-row"><span>Top rail</span><span class="val">${toM(sRail)} / ${sRailSt}×${toM(STOCK)}</span></div>`;
-    if(sInfill>0)h+=`<div class="jc-row"><span>Infill ×${lc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}×${toM(STOCK)}</span></div>`;
+    if(sInfill>0){
+      if(isCableInfill)h+=`<div class="jc-row"><span>Cable ×${lc} lines (per metre)</span><span class="val">${toM(sInfill)}</span></div>`;
+      else h+=`<div class="jc-row"><span>Infill ×${lc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}×${toM(STOCK)}</span></div>`;
+    }
     if(sFlexi>0)h+=`<div class="jc-row"><span>Flexi bends (${sCorners} corners ×${lc})</span><span class="val">${sFlexi}</span></div>`;
     if(sTradeBends>0)h+=`<div class="jc-row"><span>Top rail prefab bends (${sCorners} corners)</span><span class="val">${sTradeBends}</span></div>`;
     if(sEC>0)h+=`<div class="jc-row"><span>End caps</span><span class="val">${sEC}</span></div>`;
