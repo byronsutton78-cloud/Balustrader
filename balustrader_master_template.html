@@ -1598,10 +1598,9 @@ function updateDsPreview(){
 
   el.innerHTML=`<div style="border:2px solid #333;padding:10px;background:#fff;font-family:'Courier New',monospace">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333">
-      <div style="flex:3"><span style="font-size:10px;color:#666;display:block">CLIENT</span><div style="border-bottom:1px solid #333;min-height:20px"> </div></div>
-      <div style="flex:2"><span style="font-size:10px;color:#666;display:block">QUOTE NO</span><div style="border-bottom:1px solid #333;min-height:20px"> </div></div>
-      <div style="flex:2"><span style="font-size:10px;color:#666;display:block">JOBCARD NO</span><div style="border-bottom:1px solid #333;min-height:20px"> </div></div>
-      <div style="flex:1"><span style="font-size:10px;color:#666;display:block">TOTAL POSTS</span><div style="border-bottom:1px solid #333;min-height:20px;font-weight:bold;font-size:16px;color:#c8a028;text-align:center">${totalPosts}</div></div>
+<div style="flex:3"><span style="font-size:10px;color:#666;display:block">CLIENT</span><div contenteditable="true" style="border-bottom:1px solid #333;min-height:20px;outline:none;padding:2px 4px"> </div></div>
+      <div style="flex:2"><span style="font-size:10px;color:#666;display:block">QUOTE NO</span><div contenteditable="true" style="border-bottom:1px solid #333;min-height:20px;outline:none;padding:2px 4px"> </div></div>
+      <div style="flex:2"><span style="font-size:10px;color:#666;display:block">JOBCARD NO</span><div contenteditable="true" style="border-bottom:1px solid #333;min-height:20px;outline:none;padding:2px 4px"> </div></div>      <div style="flex:1"><span style="font-size:10px;color:#666;display:block">TOTAL POSTS</span><div style="border-bottom:1px solid #333;min-height:20px;font-weight:bold;font-size:16px;color:#c8a028;text-align:center">${totalPosts}</div></div>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap">
       <div style="flex:2;min-width:300px">
@@ -1652,11 +1651,12 @@ function updateDsPreview(){
 }
 
 function printDrilling(){
+  if(!lastCalcText){alert('Calculate first.');return;}
   const content=document.getElementById('dsForm').innerHTML;
-  const win=window.open('','_blank','width=850,height:1000');
-  win.document.write(`<!DOCTYPE html><html><head><title>Drilling Sheet — ${activeConfig.name}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;padding:20px}@media print{@page{size:A4 landscape;margin:8mm}}</style></head><body>${content}</body></html>`);
-  win.document.close();win.focus();setTimeout(()=>win.print(),400);
-}
+  const win=window.open('','_blank','width=900,height=700');
+  win.document.write(`<!DOCTYPE html><html><head><title>Drilling Sheet — ${activeConfig.name}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;padding:16px;background:#fff;color:#111}[contenteditable]{outline:none}@media print{@page{size:A4 landscape;margin:8mm}button{display:none!important}}</style></head><body><button onclick="window.print()" style="margin-bottom:12px;padding:6px 16px;background:#1a5c33;color:#bef0d0;border:none;border-radius:3px;cursor:pointer;font-size:12px">🖨️ Print / Save PDF</button>${content}</body></html>`);
+  win.document.close();win.focus();
+}}
 
 // ═══════════════════════════════════════════════
 // OUTPUT
@@ -2027,3 +2027,4 @@ window.addEventListener('DOMContentLoaded', function(){
 </script>
 </body>
 </html>
+
