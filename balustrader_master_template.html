@@ -855,6 +855,8 @@ function calculate(){
     const nP=leg.rawPosts;const postTypesList=[];
     for(let i=0;i<nP;i++){
       const isStart=i===0,isEnd=i===nP-1;
+      if(srcLine.type!=='stairs'&&isPH){postTypesList.push('13');continue;}
+      if(srcLine.type!=='stairs'&&isCableInfill){postTypesList.push('12');continue;}
       if(srcLine.type==='stairs'){
         if(isStart){const bt=srcLine.bottomType||'free';if(bt==='turn')postTypesList.push(srcLine.dir==='RH'?'1RH':'1LH');else if(bt==='deg-deg')postTypesList.push(srcLine.dir==='RH'?'2RH':'2LH');else if(bt==='inline')postTypesList.push('6');else postTypesList.push('4');}
         else if(isEnd){const tt=srcLine.topType||'turn';if(tt==='inline')postTypesList.push('7');else if(tt==='deg-deg')postTypesList.push(srcLine.dir==='RH'?'2RH':'2LH');else if(srcLine.endEnd==='connected')postTypesList.push(srcLine.dir==='RH'?'3RH':'3LH');else postTypesList.push('5');}
@@ -903,8 +905,8 @@ function calculate(){
     let h=`<div class="jc-section"><div class="jc-section-title sec-hdr" style="background:${sColor}aa;border-color:${sColor}">${sName}</div>`;
     sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');h+=`<div class="jc-row"><span>${lbl} ${toM(l.dim)}</span><span class="val">${l.rawPosts} posts</span></div>`;});
     h+=`<div class="jc-row" style="font-size:10px"><span>Posts (${sRaw}-${sShared} shared)</span><span class="val">${sTotal}</span></div>`;
-    if(mode==='full'){const hasTypes=typeOrder.some(t=>sTypes[t]);if(hasTypes){h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Post types</div>`;typeOrder.forEach(t=>{if(!sTypes[t])return;h+=`<div class="jc-row"><span style="font-size:10px">${typeNames[t]||'Type '+t}</span><span class="val">${sTypes[t]}</span></div>`;});h+=`<div class="jc-row"><span>Cover plates (domed)</span><span class="val">${sTotal}</span></div>`;}}
-    else{const typeParts=typeOrder.filter(t=>sTypes[t]).map(t=>`${t} x${sTypes[t]}`);if(typeParts.length){h+=`<div class="jc-row" style="font-size:10px"><span style="color:var(--text4)">Types:</span><span class="val" style="font-size:10px;white-space:normal;text-align:right">${typeParts.join('  ')}</span></div>`;}h+=`<div class="jc-row" style="font-size:10px"><span>Cover plates</span><span class="val">${sTotal}</span></div>`;}
+    if(mode==='full'){const hasTypes=typeOrder.some(t=>sTypes[t]);if(hasTypes){h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Post types</div>`;typeOrder.forEach(t=>{if(!sTypes[t])return;h+=`<div class="jc-row"><span style="font-size:10px">${typeNames[t]||'Type '+t}</span><span class="val">${sTypes[t]}</span></div>`;});if(fixing!=='side')h+=`<div class="jc-row"><span>Cover plates (domed)</span><span class="val">${sTotal}</span></div>`;}}
+    else{const typeParts=typeOrder.filter(t=>sTypes[t]).map(t=>`${t} x${sTypes[t]}`);if(typeParts.length){h+=`<div class="jc-row" style="font-size:10px"><span style="color:var(--text4)">Types:</span><span class="val" style="font-size:10px;white-space:normal;text-align:right">${typeParts.join('  ')}</span></div>`;}if(fixing!=='side')h+=`<div class="jc-row" style="font-size:10px"><span>Cover plates</span><span class="val">${sTotal}</span></div>`;}
     h+=`<div class="jc-row"><span>Top rail</span><span class="val">${toM(sRail)} / ${sRailSt}x${toM(STOCK)}</span></div>`;
     if(sInfill>0){if(isCableInfill)h+=`<div class="jc-row"><span>Cable x${lc} lines</span><span class="val">${toM(sInfill)}</span></div>`;else h+=`<div class="jc-row"><span>Infill x${lc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}x${toM(STOCK)}</span></div>`;}
     if(sRailBends>0)h+=`<div class="jc-row"><span>Top rail bends</span><span class="val">${sRailBends}</span></div>`;
@@ -1126,4 +1128,4 @@ window.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 </body>
-</htm
+</html>
