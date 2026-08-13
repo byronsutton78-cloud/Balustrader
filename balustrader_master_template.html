@@ -51,12 +51,13 @@ body{font-family:'Courier New',monospace;background:var(--bg);color:var(--text);
 .tab-btn.ds-tab{color:#7ab8e8}
 .canvas-wrap{position:relative;border:1px solid var(--border);border-radius:4px;background:var(--canvas-bg);overflow:hidden;flex:1;min-height:0}
 canvas{display:block}
-.popup{position:absolute;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:11px 13px;display:none;z-index:100;width:230px;box-shadow:0 4px 20px var(--popup-shadow)}
+.popup-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:190;display:none}
+.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:11px 13px;display:none;z-index:200;width:230px;box-shadow:0 8px 30px var(--popup-shadow);max-height:85vh;overflow-y:auto}
 .popup h4{font-size:11px;font-weight:bold;color:var(--accent);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px}
 .popup label{font-size:10px;color:var(--text3);display:block;margin-bottom:2px;margin-top:5px;text-transform:uppercase;letter-spacing:0.5px}
 .popup input,.popup select{width:100%;padding:4px 6px;border:1px solid var(--border2);border-radius:3px;font-size:12px;background:var(--bg);color:var(--text);outline:none;font-family:'Courier New',monospace}
 .popup input:focus,.popup select:focus{border-color:var(--accent)}
-.popup-btns{display:flex;gap:4px;margin-top:9px}
+.popup-btns{display:flex;gap:4px;margin-top:9px;position:sticky;bottom:-11px;background:var(--bg2);padding:8px 0 2px;margin-left:-13px;margin-right:-13px;padding-left:13px;padding-right:13px;border-top:1px solid var(--border2);box-shadow:0 -8px 10px -6px var(--popup-shadow)}
 .btn-save{flex:1;padding:5px;border-radius:3px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-text);cursor:pointer;font-size:11px;font-weight:bold;font-family:'Courier New',monospace}
 .btn-cancel{padding:5px 7px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
 .btn-del{padding:5px 7px;border-radius:3px;border:1px solid var(--danger);background:transparent;color:var(--danger-text);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
@@ -85,9 +86,34 @@ canvas{display:block}
 <body>
 
 <script>
+const HR_PROFILE_OPTIONS = [
+  { value: 'round38',   label: '38.1mm round'   },
+  { value: 'round50',   label: '50.8mm round'   },
+  { value: 'rect50x25', label: '50x25mm rect'   },
+  { value: 'sq40',      label: '40x40mm square' },
+];
+const HR_END_TYPES = [
+  { value: 'bracket',   label: 'Handrail bracket'          },
+  { value: 'stanchion', label: 'Stanchion post'             },
+  { value: 'joined',    label: 'Joins another handrail (corner/bend)' },
+];
+const HR_WALL_FIX_OPTIONS = [
+  { value: 'drill-pin',         label: 'Drill-fixed + pin'              },
+  { value: 'drill-saddle',      label: 'Drill-fixed + saddle'           },
+  { value: 'drill-flexsaddle',  label: 'Drill-fixed + flexible saddle'  },
+  { value: 'flange-pin',        label: 'Flange-fixed + pin'             },
+  { value: 'flange-saddle',     label: 'Flange-fixed + saddle'          },
+  { value: 'flange-flexsaddle', label: 'Flange-fixed + flexible saddle' },
+];
+const HR_STANCHION_FIX_OPTIONS = [
+  { value: 'top',   label: 'Core drill + grout'            },
+  { value: 'side',  label: 'Side mount — M10 rod + epoxy'  },
+  { value: 'flange',label: 'Flange plate'                  },
+];
+
 const PRODUCT = {
   name:    '8-Line Horizontal — Top Mount',
-  version: 'v1.22',
+  version: 'v1.27',
   showInfillSelect:      true,
   showInfillFixing:      true,
   showFixingSelect:      true,
@@ -142,6 +168,7 @@ const PRODUCT = {
     { value: 'connected',           label: 'Connected — joins another run'     },
   ],
   showStairsTool:  true,
+  showRunTool:     true,
   showSections:    true,
   sharedPosts:     true,
   edgeOffset:      100,
@@ -235,6 +262,22 @@ const PRODUCTS = [
       sharedPosts: false,
     }
   },
+  {
+    value: 'handrail-only',
+    label: 'Handrail Only',
+    overrides: {
+      name: 'Handrail Only',
+      showInfillSelect:      false,
+      showInfillFixing:      false,
+      showFixingSelect:      false,
+      showPostSelect:        false,
+      showRailSelect:        false,
+      showMaterialSelect:    false,
+      showStairsTool:        false,
+      showRunTool:           false,
+      sharedPosts:           false,
+    }
+  },
 ];
 </script>
 
@@ -285,6 +328,7 @@ const PRODUCTS = [
   <div class="sep"></div>
   <button class="tool-btn active" id="tool-run" onclick="setTool('run')">Run</button>
   <button class="tool-btn" id="tool-stairs" onclick="setTool('stairs')">Stairs</button>
+  <button class="tool-btn" id="tool-handrail" onclick="setTool('handrail')">Handrail</button>
   <div class="sep"></div>
   <button class="tool-btn" id="tool-select" onclick="setTool('select')">Select/Edit</button>
   <button class="tool-btn" id="tool-pan" onclick="setTool('pan')">Pan</button>
@@ -297,7 +341,11 @@ const PRODUCTS = [
   <button class="tool-btn danger" onclick="clearCanvas()">Clear</button>
   <div class="sep" id="secSep"></div>
   <button class="tool-btn sec-btn" id="secBtn" onclick="newSection()">+ Section</button>
-  <span id="secIndicator"><span id="secDot"></span><span id="secLabel">No section</span></span>
+  <label style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;white-space:nowrap" id="secIndicator">
+    <span id="secDot" style="width:9px;height:9px;border-radius:50%;display:inline-block;background:#aaa"></span>
+    <select id="activeSectionSelect" class="tb-select" onchange="switchActiveSection(this.value)" style="max-width:150px"></select>
+  </label>
+  <button class="tool-btn sec-btn" id="secUpdateBtn" onclick="resnapshotActiveSection()" title="Save the current Product/Infill/Fixing/Post/Rail/Material settings to the active section">Update section</button>
   <div class="sep"></div>
   <span style="font-size:10px;color:var(--text4)">Select: drag to move · R = rotate · DEL = delete</span>
   <div style="margin-left:auto">
@@ -312,6 +360,7 @@ const PRODUCTS = [
     <div style="display:flex;flex-direction:column;flex:1;min-width:0;min-height:0">
     <div class="canvas-wrap" id="canvasWrap">
       <canvas id="canvas"></canvas>
+      <div class="popup-backdrop" id="popupBackdrop" onclick="onBackdropClick()"></div>
 
       <div class="popup" id="selectPopup">
         <h4 id="selectTitle">Edit run</h4>
@@ -328,6 +377,7 @@ const PRODUCTS = [
             <option value="RH">RH — Right hand up</option>
             <option value="standalone">Standalone</option>
           </select>
+          <div id="selBottomTypeWrap">
           <label>Bottom connection type</label>
           <select id="selBottomType">
             <option value="free">Free or wall end (Type 4)</option>
@@ -335,18 +385,29 @@ const PRODUCTS = [
             <option value="deg-deg">Degree to degree (Type 2)</option>
             <option value="inline">Continues straight up (Type 6)</option>
           </select>
+          </div>
+          <div id="selTopTypeWrap">
           <label>Top connection type</label>
           <select id="selTopType">
             <option value="turn">Turns 90 (Type 3)</option>
             <option value="inline">Continues straight (Type 7)</option>
             <option value="deg-deg">Connects to stairs degree to degree (Type 2)</option>
           </select>
+          </div>
         </div>
         <div id="selEndsRow">
           <label>Start end</label>
           <select id="selStartEnd"></select>
+          <div id="selHrStartFixWrap" style="display:none">
+          <label id="selHrStartFixLbl">Wall fixing</label>
+          <select id="selHrStartFix"></select>
+          </div>
           <label>Finish end</label>
           <select id="selEndEnd"></select>
+          <div id="selHrEndFixWrap" style="display:none">
+          <label id="selHrEndFixLbl">Wall fixing</label>
+          <select id="selHrEndFix"></select>
+          </div>
           <button onclick="swapSelEnds()" style="margin-top:5px;width:100%;padding:4px;border-radius:3px;border:1px solid var(--border3);background:var(--bg);color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace">Swap ends</button>
         </div>
         <div class="popup-btns">
@@ -385,6 +446,7 @@ const PRODUCTS = [
         </select>
         <label>Start end (bottom)</label>
         <select id="stairStart"></select>
+        <div id="stairBottomTypeWrap">
         <label>Bottom connection type</label>
         <select id="stairBottomType">
           <option value="free">Free or wall end (Type 4)</option>
@@ -392,17 +454,45 @@ const PRODUCTS = [
           <option value="deg-deg">Degree to degree (Type 2)</option>
           <option value="inline">Continues straight up (Type 6)</option>
         </select>
+        </div>
         <label>Finish end (top)</label>
         <select id="stairEnd"></select>
+        <div id="stairTopTypeWrap">
         <label>Top connection type</label>
         <select id="stairTopType">
           <option value="turn">Turns 90 (Type 3)</option>
           <option value="inline">Continues straight (Type 7)</option>
           <option value="deg-deg">Connects to stairs degree to degree (Type 2)</option>
         </select>
+        </div>
         <button onclick="swapStairEnds()" style="margin-top:5px;width:100%;padding:4px;border-radius:3px;border:1px solid var(--border3);background:var(--bg);color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace">Swap ends</button>
         <div class="popup-btns">
           <button class="btn-save" onclick="saveStair()">Save</button>
+          <button class="btn-cancel" onclick="cancelPending()">Cancel</button>
+        </div>
+      </div>
+
+      <div class="popup" id="handrailPopup">
+        <h4>Handrail section</h4>
+        <label>Length (mm)</label>
+        <input type="text" id="hrDimVal" placeholder="e.g. 3000" autocomplete="off"/>
+        <label>Label (optional)</label>
+        <input type="text" id="hrLabelVal" placeholder="e.g. Stair rail" autocomplete="off"/>
+        <label>Start end</label>
+        <select id="hrStartEnd"></select>
+        <div id="hrStartFixWrap">
+        <label id="hrStartFixLbl">Wall fixing</label>
+        <select id="hrStartFix"></select>
+        </div>
+        <label>Finish end</label>
+        <select id="hrEndEnd"></select>
+        <div id="hrEndFixWrap">
+        <label id="hrEndFixLbl">Wall fixing</label>
+        <select id="hrEndFix"></select>
+        </div>
+        <button onclick="swapHrEnds()" style="margin-top:5px;width:100%;padding:4px;border-radius:3px;border:1px solid var(--border3);background:var(--bg);color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace">Swap ends</button>
+        <div class="popup-btns">
+          <button class="btn-save" onclick="saveHandrail()">Save</button>
           <button class="btn-cancel" onclick="cancelPending()">Cancel</button>
         </div>
       </div>
@@ -441,10 +531,8 @@ const PRODUCTS = [
       <span style="font-size:11px;color:var(--text3);flex:1">Supplier drilling sheet — run Calculate first</span>
       <button onclick="printDrilling()" style="padding:4px 10px;border-radius:3px;border:1px solid #27ae60;background:#1a5c33;color:#bef0d0;cursor:pointer;font-size:11px;font-family:'Courier New',monospace">Print</button>
     </div>
-    <div id="dsBody" style="flex:1;overflow-y:auto;padding:12px 14px;background:var(--bg)">
-      <div id="dsForm" style="background:#fff;color:#111;border-radius:4px;padding:14px 16px;font-family:'Courier New',monospace;font-size:11px;max-width:900px;margin:0 auto;border:1px solid #ccc">
-        <div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the drilling sheet.</div>
-      </div>
+    <div id="dsBody" style="flex:1;overflow:hidden;background:var(--bg);position:relative">
+      <iframe id="dsFrame" src="drilling_sheet_v3.html" onload="dsFrameLoaded=true;sendDsData();" style="width:100%;height:100%;border:0;background:#fff;display:block"></iframe>
     </div>
   </div>
 
@@ -480,11 +568,11 @@ function clearSettingsWarn(){document.getElementById('settingsChangedWarn').styl
 function switchProduct(value){
   const entry=PRODUCTS.find(p=>p.value===value);
   if(!entry)return;
-  activeConfig={};
-  Object.keys(PRODUCT).forEach(k=>{activeConfig[k]=(entry.overrides&&entry.overrides.hasOwnProperty(k))?entry.overrides[k]:PRODUCT[k];});
+  currentProductValue=value;
+  activeConfig=computeConfigForProduct(value);
   document.title='Balustrader — '+activeConfig.name;
   buildSettingsBar(activeConfig);
-  setTool('run');
+  setTool(activeConfig.showRunTool?'run':'handrail');
   redraw();
 }
 
@@ -514,21 +602,87 @@ function buildSettingsBar(cfg){
   if(cfg.showPostSelect){bar.appendChild(lbl('Post:',buildSelect('postSelect',cfg.postOptions)));bar.appendChild(sep());}
   if(cfg.showRailSelect){bar.appendChild(lbl('Top rail:',buildSelect('railSelect',cfg.railOptions)));bar.appendChild(sep());}
   if(cfg.showMaterialSelect){bar.appendChild(lbl('Material:',buildSelect('materialSelect',cfg.materialOptions)));}
+  bar.appendChild(sep());
+  bar.appendChild(lbl('Handrail:',buildSelect('hrProfileSelect',HR_PROFILE_OPTIONS)));
+  bar.appendChild(sep());
+  bar.appendChild(lbl('HR finish:',buildSelect('hrMaterialSelect',cfg.materialOptions)));
   ['selStartEnd','selEndEnd','runStartEnd','runEndEnd','stairStart','stairEnd'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){el.innerHTML='';cfg.endTypes.forEach(o=>{const opt=document.createElement('option');opt.value=o.value;opt.textContent=o.label;el.appendChild(opt);});}
   });
   const stairsBtn=document.getElementById('tool-stairs');if(stairsBtn)stairsBtn.style.display=cfg.showStairsTool?'':'none';
-  ['secBtn','secIndicator','secSep'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=cfg.showSections?'':'none';});
+  const runBtn=document.getElementById('tool-run');if(runBtn)runBtn.style.display=cfg.showRunTool?'':'none';
+  ['secBtn','secIndicator','secSep','secUpdateBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=cfg.showSections?'':'none';});
   onSettingsChange();
 }
 
 const SEC_COLORS=['#4a90d9','#27ae60','#e67e22','#9b59b6','#e74c3c','#1abc9c','#f39c12','#2980b9','#8e44ad','#16a085'];
 let sections=[],activeSectionId=null;
+let currentProductValue='8line';
 
-function newSection(){const idx=sections.length;const name='Section '+String.fromCharCode(65+idx);const color=SEC_COLORS[idx%SEC_COLORS.length];const id=String(Date.now());sections.push({id,name,color});activeSectionId=id;updateSecIndicator();rebuildSecDropdown();}
-function updateSecIndicator(){const s=sections.find(x=>x.id===activeSectionId);document.getElementById('secDot').style.background=s?s.color:'#aaa';document.getElementById('secLabel').textContent=s?s.name:'No section';}
-function rebuildSecDropdown(){const sel=document.getElementById('selSection');sel.innerHTML='<option value="">— None —</option>';sections.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name;sel.appendChild(o);});}
+function computeConfigForProduct(value){
+  const entry=PRODUCTS.find(p=>p.value===value)||PRODUCTS[0];
+  const cfg={};
+  Object.keys(PRODUCT).forEach(k=>{cfg[k]=(entry.overrides&&entry.overrides.hasOwnProperty(k))?entry.overrides[k]:PRODUCT[k];});
+  cfg.value=entry.value;
+  return cfg;
+}
+
+function snapshotCurrentSettings(){
+  return{product:currentProductValue,infill:getInfill(),infillFix:getInfillFix(),fixing:getFixing(),post:getPost(),rail:getRail(),material:getMaterial()};
+}
+
+// Resolve which settings a given line should be calculated with: its own
+// section's snapshot if it belongs to one, otherwise whatever the toolbar
+// dropdowns currently show (the pre-existing single-product behaviour).
+function resolveLine(l){
+  const sec=l.sectionId?sections.find(s=>String(s.id)===String(l.sectionId)):null;
+  if(sec&&sec.settings){
+    const s=sec.settings;
+    return{cfg:computeConfigForProduct(s.product),infill:s.infill,infillFix:s.infillFix,fixing:s.fixing,post:s.post,rail:s.rail,material:s.material,productValue:s.product};
+  }
+  return{cfg:activeConfig,infill:getInfill(),infillFix:getInfillFix(),fixing:getFixing(),post:getPost(),rail:getRail(),material:getMaterial(),productValue:currentProductValue};
+}
+
+function newSection(){
+  const idx=sections.length;const name='Section '+String.fromCharCode(65+idx);const color=SEC_COLORS[idx%SEC_COLORS.length];const id=String(Date.now());
+  sections.push({id,name,color,settings:snapshotCurrentSettings()});
+  activeSectionId=id;updateSecIndicator();rebuildSecDropdown();
+}
+function switchActiveSection(value){
+  if(!value){activeSectionId=null;updateSecIndicator();return;}
+  const s=sections.find(x=>String(x.id)===String(value));
+  if(!s)return;
+  activeSectionId=s.id;
+  if(s.settings){
+    const sel=document.getElementById('productSelect');if(sel)sel.value=s.settings.product;
+    switchProduct(s.settings.product);
+    ['infillSelect','infillFixingSelect','fixingSelect','postSelect','railSelect','materialSelect'].forEach(id=>{
+      const el=document.getElementById(id);if(!el)return;
+      const map={infillSelect:'infill',infillFixingSelect:'infillFix',fixingSelect:'fixing',postSelect:'post',railSelect:'rail',materialSelect:'material'};
+      if(s.settings[map[id]]!==undefined)el.value=s.settings[map[id]];
+    });
+    onSettingsChange();
+  }
+  updateSecIndicator();
+}
+function resnapshotActiveSection(){
+  if(!activeSectionId){alert('No active section selected — use "+ Section" first, or pick one from the section list.');return;}
+  const s=sections.find(x=>x.id===activeSectionId);if(!s)return;
+  s.settings=snapshotCurrentSettings();
+  showSettingsWarn();
+}
+function updateSecIndicator(){
+  const s=sections.find(x=>x.id===activeSectionId);
+  document.getElementById('secDot').style.background=s?s.color:'#aaa';
+  const sel=document.getElementById('activeSectionSelect');if(sel)sel.value=s?String(s.id):'';
+}
+function rebuildSecDropdown(){
+  const sel=document.getElementById('selSection');
+  if(sel){sel.innerHTML='<option value="">— None —</option>';sections.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name;sel.appendChild(o);});}
+  const asel=document.getElementById('activeSectionSelect');
+  if(asel){asel.innerHTML='<option value="">No section</option>';sections.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name+(s.settings?' — '+(computeConfigForProduct(s.settings.product).name):'');asel.appendChild(o);});asel.value=activeSectionId?String(activeSectionId):'';}
+}
 function getSecColor(id){if(!id)return null;const s=sections.find(x=>String(x.id)===String(id));return s?s.color:null;}
 function getSecName(id){if(!id)return null;const s=sections.find(x=>String(x.id)===String(id));return s?s.name:null;}
 
@@ -537,15 +691,21 @@ const ctx=canvas.getContext('2d');
 const canvasWrap=document.getElementById('canvasWrap');
 const GRID=10,SNAP=14,PAD=6;
 let tool='run',lines=[],drawing=false;
+let history=[];
+function pushHistory(){try{history.push(JSON.stringify(lines));if(history.length>60)history.shift();}catch(e){}}
 let startX=0,startY=0,curX=0,curY=0;
 let selectedIdx=null,pendingIdx=null;
 let panX=0,panY=0,zoom=1;
 let isPanning=false,panSX=0,panSY=0,panOX=0,panOY=0;
 let lastCalcText='';
 let lastDsData=null;
-let isDraggingLine=false,dragLineStart=null,dragMoved=false,dragSnapInfo=null;
+let dsFrameLoaded=false;
+let isDraggingLine=false,dragLineStart=null,dragMoved=false,dragSnapInfo=null,dragHistorySaved=false;
+let dragEndpointIdx=null,dragEndpointWhich=null;
 let isLight=true;
 let lastCalcLegs=[];
+let lastCalcHrLegs=[];
+let lastCalcHrLegRows=[];
 
 function resizeCanvas(){canvas.width=canvasWrap.clientWidth||800;canvas.height=canvasWrap.clientHeight||500;redraw();}
 window.addEventListener('resize',resizeCanvas);
@@ -557,6 +717,8 @@ function getFixing(){return getVal('fixingSelect','top');}
 function getPost(){return getVal('postSelect','round38');}
 function getRail(){return getVal('railSelect','50.8');}
 function getMaterial(){return getVal('materialSelect','304-180');}
+function getHrProfile(){return getVal('hrProfileSelect','round38');}
+function getHrMaterial(){return getVal('hrMaterialSelect','304-180');}
 function toM(mm){const m=mm/1000;return(Number.isInteger(m)?m.toFixed(1):parseFloat(m.toFixed(3)).toString())+'m';}
 function lineCount(){const i=getInfill();if(i==='cable-9')return 9;if(i==='glass-8mm'||i==='glass-10mm'||i.startsWith('v-'))return 0;return 8;}
 
@@ -606,21 +768,17 @@ function setTool(t){
   document.querySelectorAll('.tool-btn[id^="tool-"]').forEach(b=>b.classList.remove('active'));
   const b=document.getElementById('tool-'+t);if(b)b.classList.add('active');
   closeAll();
-  const tips={run:'Run: click and drag. Popup asks for length, label, end types.',stairs:'Stairs: click and drag. Popup asks for length, direction and end types.',select:'Select: click to select, drag to move, R = rotate 90, DEL = delete, double-click to edit.',pan:'Pan: click and drag. Scroll to zoom.'};
+  const tips={run:'Run: click and drag. Popup asks for length, label, end types.',stairs:'Stairs: click and drag. Popup asks for length, direction and end types.',handrail:'Handrail: click and drag. Popup asks for length, wall bracket / stanchion ends.',select:'Select: click to select, drag body to move, drag an endpoint dot to stretch/shorten, R = rotate 90, DEL = delete, double-click to edit.',pan:'Pan: click and drag. Scroll to zoom.'};
   document.getElementById('instr').textContent=activeConfig.name+' — '+(tips[t]||t);
   canvas.style.cursor=t==='pan'?'grab':t==='select'?'pointer':'crosshair';
   redraw();
 }
 
 function placePopup(id,sx,sy){
-  const p=document.getElementById(id);p.style.display='block';
-  const pw=p.offsetWidth||230,ph=p.offsetHeight||280;
-  const cw=canvasWrap.clientWidth||canvas.width,ch=canvasWrap.clientHeight||canvas.height;
-  let x=sx+14,y=sy-Math.round(ph/2);
-  if(x+pw>cw-PAD)x=sx-pw-14;if(x<PAD)x=PAD;if(x+pw>cw-PAD)x=cw-pw-PAD;
-  if(y<PAD)y=PAD;if(y+ph>ch-PAD)y=ch-ph-PAD;if(y<PAD)y=PAD;
-  p.style.left=x+'px';p.style.top=y+'px';
+  document.getElementById('popupBackdrop').style.display='block';
+  document.getElementById(id).style.display='block';
 }
+function onBackdropClick(){if(pendingIdx!==null)cancelPending();else closeAll();}
 
 canvas.addEventListener('wheel',e=>{e.preventDefault();const{sx,sy}=getMouse(e);const{x:wx,y:wy}=toWorld(sx,sy);zoom*=e.deltaY<0?1.1:0.9;zoom=Math.max(0.2,Math.min(5,zoom));panX=sx-wx*zoom;panY=sy-wy*zoom;redraw();},{passive:false});
 
@@ -630,9 +788,18 @@ canvas.addEventListener('mousedown',e=>{
   if(anyPopupOpen()){closeAll();return;}
   const{x:wx,y:wy}=toWorld(sx,sy);
   if(tool==='select'){
+    const epR=12/zoom;let epHit=-1,epWhich=null,epBd=epR;
+    lines.forEach((l,i)=>{
+      const d1=dist(wx,wy,l.x1,l.y1);if(d1<epBd){epBd=d1;epHit=i;epWhich='start';}
+      const d2=dist(wx,wy,l.x2,l.y2);if(d2<epBd){epBd=d2;epHit=i;epWhich='end';}
+    });
+    if(epHit>=0){
+      selectedIdx=epHit;dragEndpointIdx=epHit;dragEndpointWhich=epWhich;dragHistorySaved=false;
+      canvas.style.cursor='crosshair';redraw();return;
+    }
     let best=-1,bd=10/zoom;
     lines.forEach((l,i)=>{const d=ptLineDist(wx,wy,l.x1,l.y1,l.x2,l.y2);if(d<bd){bd=d;best=i;}});
-    if(best>=0){selectedIdx=best;isDraggingLine=true;dragMoved=false;const l=lines[best];dragLineStart={wx,wy,x1:l.x1,y1:l.y1,x2:l.x2,y2:l.y2};canvas.style.cursor='grabbing';}else{selectedIdx=null;}
+    if(best>=0){selectedIdx=best;isDraggingLine=true;dragMoved=false;const l=lines[best];dragLineStart={wx,wy,x1:l.x1,y1:l.y1,x2:l.x2,y2:l.y2};dragHistorySaved=false;canvas.style.cursor='grabbing';}else{selectedIdx=null;}
     redraw();return;
   }
   const s=snapPt(wx,wy);startX=s.x;startY=s.y;curX=s.x;curY=s.y;drawing=true;
@@ -641,9 +808,18 @@ canvas.addEventListener('mousedown',e=>{
 canvas.addEventListener('mousemove',e=>{
   const{sx,sy}=getMouse(e);
   if(isPanning){panX=panOX+(e.clientX-panSX);panY=panOY+(e.clientY-panSY);redraw();return;}
+  if(dragEndpointIdx!==null){
+    const{x:wx,y:wy}=toWorld(sx,sy);
+    if(!dragHistorySaved){pushHistory();dragHistorySaved=true;}
+    const s2=snapPt(wx,wy);
+    const l=lines[dragEndpointIdx];
+    if(dragEndpointWhich==='start'){l.x1=s2.x;l.y1=s2.y;}else{l.x2=s2.x;l.y2=s2.y;}
+    redraw();return;
+  }
   if(isDraggingLine&&dragLineStart&&selectedIdx!==null){
     const{x:wx,y:wy}=toWorld(sx,sy);const dx=wx-dragLineStart.wx,dy=wy-dragLineStart.wy;
     if(Math.abs(dx)>2/zoom||Math.abs(dy)>2/zoom){
+      if(!dragHistorySaved){pushHistory();dragHistorySaved=true;}
       dragMoved=true;
       let nx1=dragLineStart.x1+dx,ny1=dragLineStart.y1+dy,nx2=dragLineStart.x2+dx,ny2=dragLineStart.y2+dy;
       const sd=20/zoom;dragSnapInfo=null;let snapped=false;
@@ -662,13 +838,20 @@ canvas.addEventListener('mousemove',e=>{
   if(!drawing)return;
   const{x:wx,y:wy}=toWorld(sx,sy);const s2=snapPt(wx,wy);const c=constrain(startX,startY,s2.x,s2.y);curX=c.x;curY=c.y;redraw();
   const p1=toScreen(startX,startY),p2=toScreen(curX,curY);
-  const pc=getSecColor(activeSectionId)||(tool==='stairs'?'#e67e22':'#4a90d9');
-  ctx.save();ctx.strokeStyle=pc;ctx.lineWidth=2.5*zoom;if(tool==='stairs')ctx.setLineDash([10*zoom,5*zoom]);ctx.lineCap='round';ctx.globalAlpha=0.4;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
+  const pc=getSecColor(activeSectionId)||(tool==='stairs'?'#e67e22':tool==='handrail'?'#16a085':'#4a90d9');
+  ctx.save();ctx.strokeStyle=pc;ctx.lineWidth=2.5*zoom;if(tool==='stairs')ctx.setLineDash([10*zoom,5*zoom]);else if(tool==='handrail')ctx.setLineDash([3*zoom,3*zoom]);ctx.lineCap='round';ctx.globalAlpha=0.4;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
 });
 
 canvas.addEventListener('mouseup',e=>{
   if(e.button!==0)return;
   if(isPanning){isPanning=false;canvas.style.cursor='grab';return;}
+  if(dragEndpointIdx!==null){
+    const idx=dragEndpointIdx;canvas.style.cursor='pointer';
+    dragEndpointIdx=null;dragEndpointWhich=null;dragHistorySaved=false;
+    const l=lines[idx];const scB=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);const sc=bufToCSS(scB.x,scB.y);
+    selectedIdx=idx;openSelectPopup(idx,sc.x,sc.y);
+    return;
+  }
   if(isDraggingLine){
     isDraggingLine=false;canvas.style.cursor='pointer';
     if(!dragMoved&&selectedIdx!==null){const l=lines[selectedIdx];const scB=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);const sc=bufToCSS(scB.x,scB.y);openSelectPopup(selectedIdx,sc.x,sc.y);}
@@ -680,66 +863,218 @@ canvas.addEventListener('mouseup',e=>{
     dragLineStart=null;dragMoved=false;dragSnapInfo=null;redraw();return;
   }
   if(!drawing)return;drawing=false;if(dist(startX,startY,curX,curY)<4/zoom)return;
+  pushHistory();
   const idx=lines.length;
-  lines.push({type:tool,x1:startX,y1:startY,x2:curX,y2:curY,dim:'',label:'',dir:'LH',startEnd:'wall',endEnd:'wall',topType:'turn',bottomType:'free',sectionId:activeSectionId?String(activeSectionId):null});
+  lines.push({type:tool,x1:startX,y1:startY,x2:curX,y2:curY,dim:'',label:'',dir:'LH',startEnd:tool==='handrail'?'bracket':'wall',endEnd:tool==='handrail'?'stanchion':'wall',topType:'turn',bottomType:'free',hrStartFix:'drill-pin',hrEndFix:'top',sectionId:activeSectionId?String(activeSectionId):null});
   pendingIdx=idx;
   const scB=toScreen((startX+curX)/2,(startY+curY)/2);const sc=bufToCSS(scB.x,scB.y);
-  if(tool==='stairs')openStairPopup(idx,sc.x,sc.y);else openRunPopup(idx,sc.x,sc.y);
+  if(tool==='stairs')openStairPopup(idx,sc.x,sc.y);else if(tool==='handrail')openHandrailPopup(idx,sc.x,sc.y);else openRunPopup(idx,sc.x,sc.y);
 });
 
-canvas.addEventListener('mouseleave',()=>{if(isPanning){isPanning=false;canvas.style.cursor='grab';}if(isDraggingLine){isDraggingLine=false;dragLineStart=null;dragMoved=false;canvas.style.cursor='pointer';}});
+canvas.addEventListener('mouseleave',()=>{if(isPanning){isPanning=false;canvas.style.cursor='grab';}if(isDraggingLine){isDraggingLine=false;dragLineStart=null;dragMoved=false;canvas.style.cursor='pointer';}if(dragEndpointIdx!==null){dragEndpointIdx=null;dragEndpointWhich=null;canvas.style.cursor='pointer';}});
 canvas.addEventListener('dblclick',e=>{if(tool==='select'&&selectedIdx!==null&&!anyPopupOpen()){const l=lines[selectedIdx];const scB=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);const sc=bufToCSS(scB.x,scB.y);openSelectPopup(selectedIdx,sc.x,sc.y);}});
 
 document.addEventListener('keydown',e=>{
   if(e.target.matches('input,select,textarea'))return;
-  if((e.key==='Delete'||e.key==='Backspace')&&selectedIdx!==null){lines.splice(selectedIdx,1);selectedIdx=null;closeAll();redraw();return;}
+  if((e.key==='Delete'||e.key==='Backspace')&&selectedIdx!==null){pushHistory();lines.splice(selectedIdx,1);selectedIdx=null;closeAll();redraw();return;}
   if(e.key==='Escape'){closeAll();return;}
-  if((e.key==='r'||e.key==='R')&&selectedIdx!==null&&!anyPopupOpen()){const l=lines[selectedIdx];const cx=(l.x1+l.x2)/2,cy=(l.y1+l.y2)/2;const dx1=l.x1-cx,dy1=l.y1-cy,dx2=l.x2-cx,dy2=l.y2-cy;l.x1=cx+dy1;l.y1=cy-dx1;l.x2=cx+dy2;l.y2=cy-dx2;redraw();return;}
+  if((e.key==='r'||e.key==='R')&&selectedIdx!==null&&!anyPopupOpen()){pushHistory();const l=lines[selectedIdx];const cx=(l.x1+l.x2)/2,cy=(l.y1+l.y2)/2;const dx1=l.x1-cx,dy1=l.y1-cy,dx2=l.x2-cx,dy2=l.y2-cy;l.x1=cx+dy1;l.y1=cy-dx1;l.x2=cx+dy2;l.y2=cy-dx2;redraw();return;}
 });
 
-function anyPopupOpen(){return['selectPopup','runPopup','stairPopup'].some(id=>document.getElementById(id).style.display==='block');}
-function closeAll(){['selectPopup','runPopup','stairPopup'].forEach(id=>document.getElementById(id).style.display='none');selectedIdx=null;pendingIdx=null;redraw();}
+function anyPopupOpen(){return['selectPopup','runPopup','stairPopup','handrailPopup'].some(id=>document.getElementById(id).style.display==='block');}
+function closeAll(){['selectPopup','runPopup','stairPopup','handrailPopup'].forEach(id=>document.getElementById(id).style.display='none');document.getElementById('popupBackdrop').style.display='none';selectedIdx=null;pendingIdx=null;redraw();}
 function cancelPending(){if(pendingIdx!==null)lines.splice(pendingIdx,1);closeAll();}
 
 function openSelectPopup(idx,sx,sy){
-  const l=lines[idx];const isStair=l.type==='stairs';
-  document.getElementById('selectTitle').textContent=isStair?'Edit stairs':'Edit run';
+  const l=lines[idx];const isStair=l.type==='stairs';const isHr=l.type==='handrail';
+  document.getElementById('selectTitle').textContent=isStair?'Edit stairs':isHr?'Edit handrail':'Edit run';
   document.getElementById('selDim').value=l.dim?l.dim.replace('mm',''):'';
   document.getElementById('selLabel').value=l.label||'';
   rebuildSecDropdown();document.getElementById('selSection').value=l.sectionId?String(l.sectionId):'';
   document.getElementById('stairDirRow').style.display=isStair?'block':'none';
   if(isStair){document.getElementById('selDir').value=l.dir||'LH';document.getElementById('selBottomType').value=l.bottomType||'free';document.getElementById('selTopType').value=l.topType||'turn';}
-  document.getElementById('selStartEnd').value=l.startEnd||'wall';document.getElementById('selEndEnd').value=l.endEnd||'wall';
+  const sEl=document.getElementById('selStartEnd'),eEl=document.getElementById('selEndEnd');
+  if(isHr){
+    sEl.innerHTML='';eEl.innerHTML='';
+    HR_END_TYPES.forEach(o=>{[sEl,eEl].forEach(el=>{const opt=document.createElement('option');opt.value=o.value;opt.textContent=o.label;el.appendChild(opt);});});
+    sEl.value=l.startEnd||'bracket';eEl.value=l.endEnd||'stanchion';
+  }else{
+    buildEndTypeOptions(sEl);buildEndTypeOptions(eEl);
+    sEl.value=l.startEnd||'wall';eEl.value=l.endEnd||'wall';
+  }
+  updateConnTypeVisibility();
+  if(isHr){document.getElementById('selHrStartFix').value=l.hrStartFix||'';document.getElementById('selHrEndFix').value=l.hrEndFix||'';}
   placePopup('selectPopup',sx,sy);setTimeout(()=>{const d=document.getElementById('selDim');d.focus();d.select();},30);
 }
 function saveSelect(){
   if(selectedIdx===null)return;
+  pushHistory();
   const v=document.getElementById('selDim').value.trim();
   lines[selectedIdx].dim=v?v.replace('mm','')+'mm':'';lines[selectedIdx].label=document.getElementById('selLabel').value.trim();
   lines[selectedIdx].sectionId=document.getElementById('selSection').value||null;
   if(lines[selectedIdx].type==='stairs'){lines[selectedIdx].dir=document.getElementById('selDir').value;lines[selectedIdx].bottomType=document.getElementById('selBottomType').value;lines[selectedIdx].topType=document.getElementById('selTopType').value;}
+  if(lines[selectedIdx].type==='handrail'){
+    const se=document.getElementById('selStartEnd').value,ee=document.getElementById('selEndEnd').value;
+    lines[selectedIdx].hrStartFix=hrFixOptionsFor(se)?document.getElementById('selHrStartFix').value:null;
+    lines[selectedIdx].hrEndFix=hrFixOptionsFor(ee)?document.getElementById('selHrEndFix').value:null;
+  }
   lines[selectedIdx].startEnd=document.getElementById('selStartEnd').value;lines[selectedIdx].endEnd=document.getElementById('selEndEnd').value;
   closeAll();redraw();
 }
-function deleteLine(){if(selectedIdx===null)return;lines.splice(selectedIdx,1);closeAll();redraw();}
+function deleteLine(){if(selectedIdx===null)return;pushHistory();lines.splice(selectedIdx,1);closeAll();redraw();}
 document.getElementById('selDim').addEventListener('keydown',e=>{if(e.key==='Enter')saveSelect();if(e.key==='Escape')closeAll();});
-function swapSelEnds(){const s=document.getElementById('selStartEnd').value,en=document.getElementById('selEndEnd').value;document.getElementById('selStartEnd').value=en;document.getElementById('selEndEnd').value=s;if(selectedIdx!==null){const l=lines[selectedIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}}
+function swapSelEnds(){
+  const s=document.getElementById('selStartEnd').value,en=document.getElementById('selEndEnd').value;
+  document.getElementById('selStartEnd').value=en;document.getElementById('selEndEnd').value=s;
+  const isStair=selectedIdx!==null&&lines[selectedIdx].type==='stairs';
+  const isHr=selectedIdx!==null&&lines[selectedIdx].type==='handrail';
+  const oldSFix=isHr?document.getElementById('selHrStartFix').value:null;
+  const oldEFix=isHr?document.getElementById('selHrEndFix').value:null;
+  if(isStair){
+    const dirEl=document.getElementById('selDir');
+    if(dirEl.value==='LH')dirEl.value='RH';else if(dirEl.value==='RH')dirEl.value='LH';
+    // Bottom/top connection type vocab is shared (turn/deg-deg/inline) between the two ends —
+    // the new bottom (old top) inherits the old top's type, and vice versa. 'free' only
+    // applies to the bottom slot, so a non-connected end resets to its own vocab's default.
+    const btEl=document.getElementById('selBottomType'),ttEl=document.getElementById('selTopType');
+    const oldBt=btEl.value,oldTt=ttEl.value;
+    btEl.value=(en==='connected')?oldTt:'free';
+    ttEl.value=(s==='connected')?oldBt:'turn';
+  }
+  updateConnTypeVisibility();
+  if(isHr){
+    const sFixEl=document.getElementById('selHrStartFix'),eFixEl=document.getElementById('selHrEndFix');
+    populateHrFix(sFixEl,en,oldEFix);populateHrFix(eFixEl,s,oldSFix);
+  }
+  if(selectedIdx!==null){const l=lines[selectedIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}
+}
 
 function openRunPopup(idx,sx,sy){document.getElementById('runDimVal').value='';document.getElementById('runLabelVal').value='';document.getElementById('runStartEnd').value='wall';document.getElementById('runEndEnd').value='wall';placePopup('runPopup',sx,sy);setTimeout(()=>document.getElementById('runDimVal').focus(),30);}
 function saveRun(){const idx=pendingIdx;if(idx===null)return;const v=document.getElementById('runDimVal').value.trim();lines[idx].dim=v?v.replace('mm','')+'mm':'';lines[idx].label=document.getElementById('runLabelVal').value.trim();lines[idx].startEnd=document.getElementById('runStartEnd').value;lines[idx].endEnd=document.getElementById('runEndEnd').value;closeAll();redraw();}
 document.getElementById('runDimVal').addEventListener('keydown',e=>{if(e.key==='Enter')saveRun();if(e.key==='Escape')cancelPending();});
 function swapRunEnds(){const s=document.getElementById('runStartEnd').value,en=document.getElementById('runEndEnd').value;document.getElementById('runStartEnd').value=en;document.getElementById('runEndEnd').value=s;if(pendingIdx!==null){const l=lines[pendingIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}}
 
-function openStairPopup(idx,sx,sy){document.getElementById('stairDimVal').value='';document.getElementById('stairDirVal').value='LH';document.getElementById('stairStart').value='free';document.getElementById('stairEnd').value='connected';document.getElementById('stairBottomType').value='free';document.getElementById('stairTopType').value='turn';placePopup('stairPopup',sx,sy);setTimeout(()=>document.getElementById('stairDimVal').focus(),30);}
+function openStairPopup(idx,sx,sy){document.getElementById('stairDimVal').value='';document.getElementById('stairDirVal').value='LH';document.getElementById('stairStart').value='free';document.getElementById('stairEnd').value='connected';document.getElementById('stairBottomType').value='free';document.getElementById('stairTopType').value='turn';updateConnTypeVisibility();placePopup('stairPopup',sx,sy);setTimeout(()=>document.getElementById('stairDimVal').focus(),30);}
 function saveStair(){const idx=pendingIdx;if(idx===null)return;const v=document.getElementById('stairDimVal').value.trim();lines[idx].dim=v?v.replace('mm','')+'mm':'';lines[idx].dir=document.getElementById('stairDirVal').value;lines[idx].startEnd=document.getElementById('stairStart').value;lines[idx].endEnd=document.getElementById('stairEnd').value;lines[idx].bottomType=document.getElementById('stairBottomType').value;lines[idx].topType=document.getElementById('stairTopType').value;closeAll();redraw();}
+
+function openHandrailPopup(idx,sx,sy){
+  document.getElementById('hrDimVal').value='';document.getElementById('hrLabelVal').value='';
+  const sEl=document.getElementById('hrStartEnd'),eEl=document.getElementById('hrEndEnd');
+  sEl.innerHTML='';eEl.innerHTML='';
+  HR_END_TYPES.forEach(o=>{[sEl,eEl].forEach(el=>{const opt=document.createElement('option');opt.value=o.value;opt.textContent=o.label;el.appendChild(opt);});});
+  sEl.value='bracket';eEl.value='stanchion';
+  updateHrCreateFixUI();
+  document.getElementById('hrStartFix').value='drill-pin';document.getElementById('hrEndFix').value='top';
+  placePopup('handrailPopup',sx,sy);setTimeout(()=>document.getElementById('hrDimVal').focus(),30);
+}
+function saveHandrail(){
+  const idx=pendingIdx;if(idx===null)return;
+  const v=document.getElementById('hrDimVal').value.trim();
+  lines[idx].dim=v?v.replace('mm','')+'mm':'';
+  lines[idx].label=document.getElementById('hrLabelVal').value.trim();
+  const se=document.getElementById('hrStartEnd').value,ee=document.getElementById('hrEndEnd').value;
+  lines[idx].startEnd=se;
+  lines[idx].endEnd=ee;
+  lines[idx].hrStartFix=hrFixOptionsFor(se)?document.getElementById('hrStartFix').value:null;
+  lines[idx].hrEndFix=hrFixOptionsFor(ee)?document.getElementById('hrEndFix').value:null;
+  closeAll();redraw();
+}
+document.getElementById('hrDimVal').addEventListener('keydown',e=>{if(e.key==='Enter')saveHandrail();if(e.key==='Escape')cancelPending();});
+function swapHrEnds(){
+  const sEl=document.getElementById('hrStartEnd'),eEl=document.getElementById('hrEndEnd');
+  const sFixEl=document.getElementById('hrStartFix'),eFixEl=document.getElementById('hrEndFix');
+  const sType=sEl.value,eType=eEl.value,sFix=sFixEl.value,eFix=eFixEl.value;
+  sEl.value=eType;eEl.value=sType;
+  updateHrCreateFixUI();
+  document.getElementById('hrStartFix').value=eFix;document.getElementById('hrEndFix').value=sFix;
+  if(pendingIdx!==null){const l=lines[pendingIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}
+}
+
+// Bottom/top connection type only matter when that end is actually "Connected" —
+// otherwise the value is meaningless and stale selections can silently leak into
+// the post-type calculation. Hide the row and reset it to a neutral default
+// whenever the corresponding end isn't Connected.
+function hrFixOptionsFor(endType){
+  if(endType==='bracket')return HR_WALL_FIX_OPTIONS;
+  if(endType==='stanchion')return HR_STANCHION_FIX_OPTIONS;
+  return null;
+}
+function populateHrFix(selectEl,endType,currentVal){
+  const opts=hrFixOptionsFor(endType);selectEl.innerHTML='';if(!opts)return;
+  opts.forEach(o=>{const opt=document.createElement('option');opt.value=o.value;opt.textContent=o.label;selectEl.appendChild(opt);});
+  if(currentVal&&opts.some(o=>o.value===currentVal))selectEl.value=currentVal;
+}
+function updateHrCreateFixUI(){
+  const sEl=document.getElementById('hrStartEnd'),eEl=document.getElementById('hrEndEnd');
+  if(!sEl)return;
+  const sWrap=document.getElementById('hrStartFixWrap'),sLbl=document.getElementById('hrStartFixLbl'),sSel=document.getElementById('hrStartFix');
+  const eWrap=document.getElementById('hrEndFixWrap'),eLbl=document.getElementById('hrEndFixLbl'),eSel=document.getElementById('hrEndFix');
+  const sOpts=hrFixOptionsFor(sEl.value),eOpts=hrFixOptionsFor(eEl.value);
+  sWrap.style.display=sOpts?'block':'none';if(sOpts){sLbl.textContent=sEl.value==='bracket'?'Wall fixing':'Stanchion fixing';populateHrFix(sSel,sEl.value,sSel.value);}
+  eWrap.style.display=eOpts?'block':'none';if(eOpts){eLbl.textContent=eEl.value==='bracket'?'Wall fixing':'Stanchion fixing';populateHrFix(eSel,eEl.value,eSel.value);}
+}
+function updateHrEditFixUI(){
+  const sWrap=document.getElementById('selHrStartFixWrap'),sLbl=document.getElementById('selHrStartFixLbl'),sSel=document.getElementById('selHrStartFix');
+  const eWrap=document.getElementById('selHrEndFixWrap'),eLbl=document.getElementById('selHrEndFixLbl'),eSel=document.getElementById('selHrEndFix');
+  const l=selectedIdx!==null?lines[selectedIdx]:null;
+  if(!l||l.type!=='handrail'){sWrap.style.display='none';eWrap.style.display='none';return;}
+  const sEl=document.getElementById('selStartEnd'),eEl=document.getElementById('selEndEnd');
+  const sOpts=hrFixOptionsFor(sEl.value),eOpts=hrFixOptionsFor(eEl.value);
+  sWrap.style.display=sOpts?'block':'none';if(sOpts){sLbl.textContent=sEl.value==='bracket'?'Wall fixing':'Stanchion fixing';populateHrFix(sSel,sEl.value,sSel.value||l.hrStartFix);}
+  eWrap.style.display=eOpts?'block':'none';if(eOpts){eLbl.textContent=eEl.value==='bracket'?'Wall fixing':'Stanchion fixing';populateHrFix(eSel,eEl.value,eSel.value||l.hrEndFix);}
+}
+
+function updateConnTypeVisibility(){
+  const sStart=document.getElementById('selStartEnd'),sEnd=document.getElementById('selEndEnd');
+  if(sStart&&sEnd){
+    const bw=document.getElementById('selBottomTypeWrap'),tw=document.getElementById('selTopTypeWrap');
+    const showB=sStart.value==='connected',showT=sEnd.value==='connected';
+    if(bw)bw.style.display=showB?'block':'none';
+    if(tw)tw.style.display=showT?'block':'none';
+    const bt=document.getElementById('selBottomType'),tt=document.getElementById('selTopType');
+    if(!showB&&bt)bt.value='free';
+    if(!showT&&tt)tt.value='turn';
+  }
+  const stStart=document.getElementById('stairStart'),stEnd=document.getElementById('stairEnd');
+  if(stStart&&stEnd){
+    const bw=document.getElementById('stairBottomTypeWrap'),tw=document.getElementById('stairTopTypeWrap');
+    const showB=stStart.value==='connected',showT=stEnd.value==='connected';
+    if(bw)bw.style.display=showB?'block':'none';
+    if(tw)tw.style.display=showT?'block':'none';
+    const bt=document.getElementById('stairBottomType'),tt=document.getElementById('stairTopType');
+    if(!showB&&bt)bt.value='free';
+    if(!showT&&tt)tt.value='turn';
+  }
+  updateHrEditFixUI();
+}
+['selStartEnd','selEndEnd','stairStart','stairEnd'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',updateConnTypeVisibility);});
+['hrStartEnd','hrEndEnd'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',updateHrCreateFixUI);});
 document.getElementById('stairDimVal').addEventListener('keydown',e=>{if(e.key==='Enter')saveStair();if(e.key==='Escape')cancelPending();});
-function swapStairEnds(){const s=document.getElementById('stairStart').value,en=document.getElementById('stairEnd').value;document.getElementById('stairStart').value=en;document.getElementById('stairEnd').value=s;if(pendingIdx!==null){const l=lines[pendingIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}}
+function swapStairEnds(){
+  const s=document.getElementById('stairStart').value,en=document.getElementById('stairEnd').value;
+  document.getElementById('stairStart').value=en;document.getElementById('stairEnd').value=s;
+  const dirEl=document.getElementById('stairDirVal');
+  if(dirEl.value==='LH')dirEl.value='RH';else if(dirEl.value==='RH')dirEl.value='LH';
+  const btEl=document.getElementById('stairBottomType'),ttEl=document.getElementById('stairTopType');
+  const oldBt=btEl.value,oldTt=ttEl.value;
+  btEl.value=(en==='connected')?oldTt:'free';
+  ttEl.value=(s==='connected')?oldBt:'turn';
+  updateConnTypeVisibility();
+  if(pendingIdx!==null){const l=lines[pendingIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}
+}
 
 function zoomIn(){zoom=Math.min(5,zoom*1.2);redraw();}
 function zoomOut(){zoom=Math.max(0.2,zoom/1.2);redraw();}
 function resetView(){zoom=1;panX=0;panY=0;redraw();}
-function undo(){if(lines.length>0){lines.splice(lines.length-1,1);selectedIdx=null;closeAll();redraw();}}
-function clearCanvas(){lines=[];selectedIdx=null;pendingIdx=null;drawing=false;lastCalcText='';lastCalcLegs=[];sections=[];activeSectionId=null;updateSecIndicator();['selectPopup','runPopup','stairPopup'].forEach(id=>document.getElementById(id).style.display='none');document.getElementById('jcBody').innerHTML='';document.getElementById('jcBodySide').innerHTML='';document.getElementById('canvasSideJC').style.display='none';document.getElementById('dsForm').innerHTML='<div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the drilling sheet.</div>';switchTab('canvas');setTimeout(resizeCanvas,50);}
+function undo(){
+  if(history.length>0){
+    try{lines=JSON.parse(history.pop());}catch(e){return;}
+    selectedIdx=null;pendingIdx=null;closeAll();redraw();
+    return;
+  }
+  if(lines.length>0){lines.splice(lines.length-1,1);selectedIdx=null;closeAll();redraw();}
+}
+function clearCanvas(){lines=[];history=[];selectedIdx=null;pendingIdx=null;drawing=false;lastCalcText='';lastCalcLegs=[];lastCalcHrLegs=[];lastCalcHrLegRows=[];sections=[];activeSectionId=null;updateSecIndicator();rebuildSecDropdown();['selectPopup','runPopup','stairPopup','handrailPopup'].forEach(id=>document.getElementById(id).style.display='none');document.getElementById('popupBackdrop').style.display='none';document.getElementById('jcBody').innerHTML='';document.getElementById('jcBodySide').innerHTML='';document.getElementById('canvasSideJC').style.display='none';lastDsData=null;(function(){const _f=document.getElementById('dsFrame');if(_f)_f.src=_f.src;})();switchTab('canvas');setTimeout(resizeCanvas,50);}
 function closeSideJC(){document.getElementById('canvasSideJC').style.display='none';setTimeout(resizeCanvas,50);}
 function switchTab(tab){['canvas','jobcard','drilling','layout'].forEach(t=>{document.getElementById('tab-'+t).classList.toggle('active',t===tab);document.getElementById('panel-'+t).classList.toggle('active',t===tab);});if(tab==='canvas')setTimeout(resizeCanvas,50);if(tab==='drilling')updateDsPreview();if(tab==='layout')renderLayout();}
 function toggleMode(){isLight=!isLight;document.body.classList.toggle('light',isLight);document.getElementById('modeToggle').textContent=isLight?'🌙':'☀️';redraw();}
@@ -752,16 +1087,16 @@ function redraw(){
   const g=GRID*zoom,ox2=((panX%g)+g)%g,oy2=((panY%g)+g)%g;
   for(let x=ox2-g;x<cw+g;x+=g){for(let y=oy2-g;y<ch+g;y+=g){const major=(Math.round((x-ox2)/g)%5===0&&Math.round((y-oy2)/g)%5===0);ctx.fillStyle=major?(isLight?'rgba(0,0,0,0.15)':'rgba(255,255,255,0.08)'):(isLight?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.025)');ctx.beginPath();ctx.arc(x,y,major?1.5:0.7,0,Math.PI*2);ctx.fill();}}
   lines.forEach((l,i)=>{
-    const baseColor=getSecColor(l.sectionId)||(l.type==='stairs'?'#e67e22':'#4a90d9');
-    const dash=l.type==='stairs'?[10,5]:[];const p1=toScreen(l.x1,l.y1),p2=toScreen(l.x2,l.y2);
+    const baseColor=getSecColor(l.sectionId)||(l.type==='stairs'?'#e67e22':l.type==='handrail'?'#16a085':'#4a90d9');
+    const dash=l.type==='stairs'?[10,5]:l.type==='handrail'?[3,3]:[];const p1=toScreen(l.x1,l.y1),p2=toScreen(l.x2,l.y2);
     const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;const horiz=Math.abs(l.x2-l.x1)>=Math.abs(l.y2-l.y1);const sel=(i===selectedIdx);
     if(sel){ctx.save();ctx.strokeStyle='#c8a028';ctx.lineWidth=(2.5+6)*zoom;ctx.setLineDash([]);ctx.lineCap='round';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();}
     ctx.save();ctx.strokeStyle=sel?'#c8a028':baseColor;ctx.lineWidth=2.5*zoom;ctx.setLineDash(dash.map(d=>d*zoom));ctx.lineCap='round';ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
-    if(zoom>0.4){let ax1=l.x1,ay1=l.y1,ax2=l.x2,ay2=l.y2;if(l.type==='stairs'&&p1.y<p2.y){ax1=l.x2;ay1=l.y2;ax2=l.x1;ay2=l.y1;}const wp1=toScreen(ax1,ay1),wp2=toScreen(ax2,ay2);drawArrow(wp1.x,wp1.y,wp2.x,wp2.y,sel?'#c8a028':baseColor);}
+    if(zoom>0.4){drawArrow(p1.x,p1.y,p2.x,p2.y,sel?'#c8a028':baseColor);}
     [[p1.x,p1.y],[p2.x,p2.y]].forEach(([ex,ey])=>{ctx.save();ctx.fillStyle=sel?'#c8a028':baseColor;ctx.beginPath();ctx.arc(ex,ey,Math.max(3,4*Math.min(zoom,1.5)),0,Math.PI*2);ctx.fill();ctx.restore();});
     if(l.startEnd&&zoom>0.5){
-      const etShort=v=>({'wall':'W','free':'F','outside-capped':'OS','outside-continuous':'OC','connected':'C'}[v]||'');
-      const etColor=v=>v==='free'?'#e74c3c':v==='wall'?'#95a5a6':v==='connected'?'#27ae60':'#9b59b6';
+      const etShort=v=>({'wall':'W','free':'F','outside-capped':'OS','outside-continuous':'OC','connected':'C','bracket':'WB','stanchion':'ST','joined':'CJ'}[v]||'');
+      const etColor=v=>v==='free'?'#e74c3c':v==='wall'?'#95a5a6':v==='connected'?'#27ae60':v==='bracket'?'#2980b9':v==='stanchion'?'#8e44ad':v==='joined'?'#27ae60':'#9b59b6';
       const bg=isLight?'rgba(240,242,245,0.92)':'rgba(20,20,20,0.85)';
       const drawET=(ex,ey,v)=>{const lbl=etShort(v);if(!lbl)return;let dlx,dly;if(horiz){dlx=ex;dly=ey-18;}else{dlx=ex+22;dly=ey;}ctx.save();ctx.font=`bold ${Math.max(8,9*Math.min(zoom,1.2))}px Courier New`;const tw=ctx.measureText(lbl).width;ctx.fillStyle=bg;ctx.fillRect(dlx-tw/2-3,dly-8,tw+6,13);ctx.fillStyle=etColor(v);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,dlx,dly);ctx.restore();};
       drawET(p1.x,p1.y,l.startEnd);drawET(p2.x,p2.y,l.endEnd);
@@ -782,13 +1117,59 @@ function redraw(){
 
 function isCorner(v){return v==='outside-capped'||v==='outside-continuous'||v==='connected';}
 
-function getPostTypes(legs,infill,infillFix){
+// A single global pass that decides, for every RUN leg's 'connected' corner
+// endpoint, whether it's a physically shared post or its own separate post.
+// Two endpoints at the same coordinate only ever merge into ONE physical post
+// when they belong to the SAME resolved product (same drilling/fixing spec)
+// AND that product allows shared posts. Everything else — different products,
+// a lone unmatched endpoint, 3+ legs meeting where some don't match — gets its
+// own full post. Built once from the COMPLETE leg list so that per-section
+// job-card blocks (which only see a subset of legs) still get the right
+// answer instead of guessing from partial information.
+function buildCornerResolution(legs,stairJunctionMap){
+  const jKey=(x,y)=>`${Math.round(x*2)/2},${Math.round(y*2)/2}`;
+  const groups={};
+  legs.filter(l=>l.type==='run').forEach(l=>{
+    [['start',l.startEnd,l.x1,l.y1],['end',l.endEnd,l.x2,l.y2]].forEach(([which,end,x,y])=>{
+      if(end!=='connected')return;
+      const k=jKey(x,y);if(stairJunctionMap&&stairJunctionMap.get(k))return;
+      (groups[k]=groups[k]||[]).push({leg:l,which});
+    });
+  });
+  const resolution=new Map();
+  const setStatus=(leg,which,status)=>{const cur=resolution.get(leg)||{};cur[which]=status;resolution.set(leg,cur);};
+  Object.values(groups).forEach(list=>{
+    const shareable=list.filter(item=>item.leg.res.cfg.sharedPosts);
+    const notShareable=list.filter(item=>!item.leg.res.cfg.sharedPosts);
+    notShareable.forEach(item=>setStatus(item.leg,item.which,'separate'));
+    const byProduct={};
+    shareable.forEach(item=>{(byProduct[item.leg.res.productValue]=byProduct[item.leg.res.productValue]||[]).push(item);});
+    Object.values(byProduct).forEach(sub=>{
+      if(sub.length>=2){
+        setStatus(sub[0].leg,sub[0].which,'own');
+        for(let i=1;i<sub.length;i++)setStatus(sub[i].leg,sub[i].which,'absorbed');
+      }else{
+        setStatus(sub[0].leg,sub[0].which,'separate');
+      }
+    });
+  });
+  return resolution;
+}
+function cornerStatus(resolution,leg,which){
+  const r=resolution&&resolution.get(leg);
+  return r&&r[which]?r[which]:'separate';
+}
+
+function getPostTypes(legs,junctionMap,cornerResolution){
   const types={};const add=(t,q=1)=>{types[t]=(types[t]||0)+q;};
-  const isPH=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='side';
-  const isCable=infill==='cable-9';
+  const jKey=(x,y)=>`${Math.round(x*2)/2},${Math.round(y*2)/2}`;
   legs.forEach(l=>{
-    const dim=parseInt(l.dim);const sd=isCorner(l.startEnd)?0:activeConfig.edgeOffset;const ed=isCorner(l.endEnd)?0:activeConfig.edgeOffset;
-    const eff=dim-sd-ed;const openings=Math.ceil(Math.max(eff,100)/activeConfig.maxPostSpacing);const rawPosts=openings+1;
+    const res=l.res||resolveLine(l);
+    const{cfg,infill,infillFix}=res;
+    const isPH=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='side';
+    const isCable=infill==='cable-9';
+    const dim=parseInt(l.dim);const sd=isCorner(l.startEnd)?0:cfg.edgeOffset;const ed=isCorner(l.endEnd)?0:cfg.edgeOffset;
+    const eff=dim-sd-ed;const openings=Math.ceil(Math.max(eff,100)/cfg.maxPostSpacing);const rawPosts=openings+1;
     if(l.type==='stairs'){
       const bt=l.bottomType||'free';
       if(bt==='turn'){l.dir==='LH'?add('1LH'):add('1RH');}else if(bt==='deg-deg'){l.dir==='LH'?add('2LH'):add('2RH');}else if(bt==='inline'){add('6');}else{add('4');}
@@ -798,72 +1179,183 @@ function getPostTypes(legs,infill,infillFix){
     }
     if(isPH){add('13',rawPosts);return;}
     if(isCable){add('12',rawPosts);return;}
-    if(l.startEnd==='outside-continuous')add('12');else if(l.startEnd==='connected')add('10');else add('11');
+    if(l.startEnd==='outside-continuous')add('12');
+    else if(l.startEnd==='connected'){
+      if(!(junctionMap&&junctionMap.get(jKey(l.x1,l.y1)))&&cornerStatus(cornerResolution,l,'start')!=='absorbed')add('10');
+    }
+    else add('11');
     const thru=Math.max(0,rawPosts-2);if(thru>0)add('12',thru);
-    if(l.endEnd==='outside-continuous')add('12');else if(l.endEnd==='connected')add('10');else add('11');
+    if(l.endEnd==='outside-continuous')add('12');
+    else if(l.endEnd==='connected'){
+      if(!(junctionMap&&junctionMap.get(jKey(l.x2,l.y2)))&&cornerStatus(cornerResolution,l,'end')!=='absorbed')add('10');
+    }
+    else add('11');
   });
-  if(activeConfig.sharedPosts){
-    const connRunEnds=legs.filter(l=>l.type==='run').reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0);
-    const stairTopToRun=legs.filter(l=>l.type==='stairs'&&l.endEnd==='connected'&&l.topType!=='deg-deg').length;
-    const stairTopToDegDeg=legs.filter(l=>l.type==='stairs'&&l.endEnd==='connected'&&l.topType==='deg-deg').length;
-    const runRunCorners=Math.round((connRunEnds-stairTopToRun)/2);
-    if(types['10'])types['10']=Math.max(0,types['10']-runRunCorners-stairTopToRun);
-    if(stairTopToDegDeg>0){if(types['2LH'])types['2LH']=Math.max(0,types['2LH']-Math.min(stairTopToDegDeg,types['2LH']));if(types['2RH'])types['2RH']=Math.max(0,types['2RH']-Math.min(stairTopToDegDeg,types['2RH']));}
-  }
   return types;
+}
+
+function hrEndClass(v){
+  if(v==='bracket')return 'bracket';
+  if(v==='joined')return 'joined';
+  return 'stanchion';
+}
+function hrLegSupports(l){
+  const dim=parseInt(l.dim);
+  const sReal=hrEndClass(l.startEnd),eReal=hrEndClass(l.endEnd);
+  const hasStanchion=sReal==='stanchion'||eReal==='stanchion';
+  const effOf=c=>c==='joined'?(hasStanchion?'stanchion':'bracket'):c;
+  const sEff=effOf(sReal),eEff=effOf(eReal);
+  // A joined (corner) end that resolves to 'bracket' gets its own 200mm inset and its own bracket,
+  // same as a true wall-bracket end — the corner is two brackets (one per leg) approaching the
+  // bend, not one shared bracket. A joined end resolving to 'stanchion' has no separate hardware
+  // right at that point (0 inset) since the true stanchion elsewhere on the leg absorbs it.
+  const deductFor=(real,eff)=>real==='bracket'?200:real==='stanchion'?100:(eff==='bracket'?200:0);
+  const sDeduct=deductFor(sReal,sEff),eDeduct=deductFor(eReal,eEff);
+  const bothBracket=sEff==='bracket'&&eEff==='bracket';
+  const effLen=Math.max(dim-sDeduct-eDeduct,100);
+  const openings=Math.ceil(effLen/(bothBracket?1500:1200));
+  const total=Math.max(1,openings+1);
+  const mode=bothBracket?'A — continuous wall bracket':(sEff==='bracket'||eEff==='bracket')?'B — wall bracket + posts':'C — posts only';
+  const points=[];
+  for(let i=0;i<total;i++){
+    const posMm=total>1?sDeduct+(i*(dim-sDeduct-eDeduct)/(total-1)):sDeduct;
+    let kind;
+    if(bothBracket)kind='bracket';
+    else if(!(sEff==='bracket'||eEff==='bracket'))kind='post';
+    else kind=(sEff==='bracket'?i===0:i===total-1)?'bracket':'post';
+    points.push({t:dim>0?posMm/dim:0,posMm,kind});
+  }
+  return {points,mode,sReal,eReal,sEff,eEff};
+}
+function calculateHandrail(hrLegs){
+  if(!hrLegs.length)return null;
+  const profile=getHrProfile(),material=getHrMaterial();
+  const profileLbls={round38:'38.1mm round',round50:'50.8mm round',rect50x25:'50x25mm rect',sq40:'40x40mm square'};
+  const wallFixLbls=Object.fromEntries(HR_WALL_FIX_OPTIONS.map(o=>[o.value,o.label]));
+  const stFixLbls=Object.fromEntries(HR_STANCHION_FIX_OPTIONS.map(o=>[o.value,o.label]));
+  const STOCK=activeConfig.stockLength;
+  const isDIY=activeConfig.showInfillFixing;
+  const bendLbl=isDIY?'Flexi bends':'Prefab bends';
+  const bracketCount={};const addBracket=(fix,q=1)=>{bracketCount[fix]=(bracketCount[fix]||0)+q;};
+  const postCount={};const addPost=(fix,q=1)=>{postCount[fix]=(postCount[fix]||0)+q;};
+  let totalTube=0,joiners=0,endCaps=0,totalCoverPlates=0,joinedEndsTotal=0;
+  const legRows=[];
+  hrLegs.forEach(l=>{
+    const dim=parseInt(l.dim);totalTube+=dim;if(dim>STOCK)joiners++;
+    const defaultPostFix=getFixing();
+    const sup=hrLegSupports(l);
+    const n=sup.points.length;
+    const brackets=sup.points.filter(p=>p.kind==='bracket').length;
+    const posts=sup.points.filter(p=>p.kind==='post').length;
+    sup.points.forEach((p,i)=>{
+      const nearStart=i<n/2;
+      if(p.kind==='bracket'){const raw=nearStart?l.hrStartFix:l.hrEndFix;addBracket(HR_WALL_FIX_OPTIONS.some(o=>o.value===raw)?raw:'drill-pin',1);}
+      else{const fix=nearStart?l.hrStartFix:l.hrEndFix;addPost(HR_STANCHION_FIX_OPTIONS.some(o=>o.value===fix)?fix:defaultPostFix,1);}
+    });
+    totalCoverPlates+=posts;
+    if(sup.sReal!=='joined')endCaps++;if(sup.eReal!=='joined')endCaps++;
+    if(sup.sReal==='joined')joinedEndsTotal++;if(sup.eReal==='joined')joinedEndsTotal++;
+    legRows.push({label:l.label||'Handrail',dim,mode:sup.mode,brackets,posts,sectionId:l.sectionId});
+  });
+  const cornerJoints=Math.round(joinedEndsTotal/2);
+  const tubeStock=Math.ceil(totalTube/STOCK);
+  let grout=0,rods=0,epoxy=0,flanges=0;
+  Object.keys(postCount).forEach(fix=>{const q=postCount[fix];if(fix==='top')grout+=Math.ceil(q/6)*2;else if(fix==='side'){rods+=q*2;epoxy+=Math.ceil(q/5);}else if(fix==='flange')flanges+=q;});
+  let html=`<div class="jc-section"><div class="jc-section-title sec-hdr" style="background:#16a085aa;border-color:#16a085">HANDRAIL</div>`;
+  html+=`<div class="jc-row"><span>Profile</span><span class="val">${profileLbls[profile]||profile}</span></div><div class="jc-row"><span>Material</span><span class="val">${material}</span></div>`;
+  const hrLegGroups=new Map();const hrUngrouped=[];
+  legRows.forEach(r=>{
+    if(!r.sectionId){hrUngrouped.push(r);return;}
+    const key=r.sectionId+'|'+r.label+'|'+r.dim+'|'+r.mode+'|'+r.brackets+'|'+r.posts;
+    if(!hrLegGroups.has(key))hrLegGroups.set(key,{...r,count:0});
+    hrLegGroups.get(key).count++;
+  });
+  hrLegGroups.forEach(g=>{const suf=g.count>1?` ×${g.count}`:'';const brktTot=g.brackets*g.count,postTot=g.posts*g.count;html+=`<div class="jc-row"><span>${g.label} ${toM(g.dim)}${suf} (${g.mode})</span><span class="val">${brktTot?brktTot+' brkt':''}${brktTot&&postTot?' / ':''}${postTot?postTot+' post':''}</span></div>`;});
+  hrUngrouped.forEach(r=>{html+=`<div class="jc-row"><span>${r.label} ${toM(r.dim)} (${r.mode})</span><span class="val">${r.brackets?r.brackets+' brkt':''}${r.brackets&&r.posts?' / ':''}${r.posts?r.posts+' post':''}</span></div>`;});
+  html+=`<div class="jc-row"><span>Tubing total</span><span class="val">${toM(totalTube)} / ${tubeStock}x${toM(STOCK)}</span></div>`;
+  if(joiners>0)html+=`<div class="jc-row"><span>Tube joiners</span><span class="val">${joiners}</span></div>`;
+  if(Object.keys(bracketCount).length){html+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Wall brackets</div>`;Object.entries(bracketCount).forEach(([fix,q])=>{html+=`<div class="jc-row"><span style="font-size:10px">${wallFixLbls[fix]||fix}</span><span class="val">${q}</span></div>`;});}
+  if(Object.keys(postCount).length){html+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Stanchion posts (Type 13)</div>`;Object.entries(postCount).forEach(([fix,q])=>{html+=`<div class="jc-row"><span style="font-size:10px">${stFixLbls[fix]||fix}</span><span class="val">${q}</span></div>`;});html+=`<div class="jc-row"><span>Cover plates (domed)</span><span class="val">${totalCoverPlates}</span></div>`;}
+  if(grout>0)html+=`<div class="jc-row"><span>Non-shrink grout</span><span class="val">${grout}kg</span></div>`;
+  if(rods>0)html+=`<div class="jc-row"><span>M10 rods x2 / Epoxy</span><span class="val">${rods} / ${epoxy}x300ml</span></div>`;
+  if(flanges>0)html+=`<div class="jc-row"><span>Flange plates</span><span class="val">${flanges}</span></div>`;
+  if(endCaps>0)html+=`<div class="jc-row"><span>Tube end caps</span><span class="val">${endCaps}</span></div>`;
+  if(cornerJoints>0)html+=`<div class="jc-row"><span>${bendLbl} (corners)</span><span class="val">${cornerJoints}</span></div>`;
+  html+=`</div>`;
+  const text=`\nHANDRAIL\n${'─'.repeat(20)}\nProfile: ${profileLbls[profile]||profile}\nMaterial: ${material}\nTubing: ${toM(totalTube)} / ${tubeStock} x ${toM(STOCK)}${joiners?`\nJoiners: ${joiners}`:''}\nBrackets: ${Object.entries(bracketCount).map(([f,q])=>`${q}x ${wallFixLbls[f]||f}`).join(', ')||'none'}\nStanchion posts: ${Object.entries(postCount).map(([f,q])=>`${q}x ${stFixLbls[f]||f}`).join(', ')||'none'}${totalCoverPlates?`\nCover plates: ${totalCoverPlates}`:''}${cornerJoints?`\n${bendLbl}: ${cornerJoints}`:''}\nEnd caps: ${endCaps}`;
+  return {html,text,legRows};
 }
 
 function calculate(){
   clearSettingsWarn();
-  const active=lines.filter(l=>l.dim);
-  if(active.length===0){alert('Draw at least one run or stair with a dimension first.');return;}
+  const active=lines.filter(l=>l.dim&&l.type!=='handrail');
+  const hrActive=lines.filter(l=>l.dim&&l.type==='handrail');
+  if(active.length===0&&hrActive.length===0){alert('Draw at least one run, stair, or handrail with a dimension first.');return;}
+  // Global dropdowns — still the settings used for any UNSECTIONED line, i.e.
+  // the entire single-product workflow behaves exactly as before. Sectioned
+  // lines instead resolve their own settings via resolveLine()/leg.res.
   const infill=getInfill(),infillFix=getInfillFix(),fixing=getFixing(),post=getPost(),rail=getRail(),mat=getMaterial();
-  const lc=lineCount();const OFF=activeConfig.edgeOffset;const STOCK=activeConfig.stockLength;
-  const isPH=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='side';
-  const isGlassInfill=infill==='glass-8mm'||infill==='glass-10mm';
-  const isCableInfill=infill==='cable-9';
-  const legs=active.map(l=>{const dim=parseInt(l.dim);const sd=isCorner(l.startEnd)?0:OFF,ed=isCorner(l.endEnd)?0:OFF;const eff=dim-sd-ed;const openings=Math.ceil(Math.max(eff,100)/activeConfig.maxPostSpacing);return{...l,dim,eff,openings,rawPosts:openings+1};});
+
+  const legs=active.map(l=>{
+    const res=resolveLine(l);
+    const dim=parseInt(l.dim);const sd=isCorner(l.startEnd)?0:res.cfg.edgeOffset,ed=isCorner(l.endEnd)?0:res.cfg.edgeOffset;
+    const eff=dim-sd-ed;const openings=Math.ceil(Math.max(eff,100)/res.cfg.maxPostSpacing);
+    return{...l,dim,eff,openings,rawPosts:openings+1,res};
+  });
   const rawTotal=legs.reduce((s,l)=>s+l.rawPosts,0);
   const stairBottomConnected=legs.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
   const stairTopDegDeg=legs.filter(l=>l.type==='stairs'&&l.endEnd==='connected'&&l.topType==='deg-deg').length;
-  const connEnds=legs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-stairBottomConnected;
-  const sharedPosts=activeConfig.sharedPosts?Math.round(connEnds/2)+stairTopDegDeg:0;
+  const jKey=(x,y)=>`${Math.round(x*2)/2},${Math.round(y*2)/2}`;
+  const stairJunctionMap=new Map();
+  legs.filter(l=>l.type==='stairs').forEach(l=>{
+    if(l.startEnd==='connected'){
+      const bt=l.bottomType||'free';let t=null;
+      if(bt==='turn')t=l.dir==='RH'?'1RH':'1LH';else if(bt==='deg-deg')t=l.dir==='RH'?'2RH':'2LH';else if(bt==='inline')t='6';
+      if(t)stairJunctionMap.set(jKey(l.x1,l.y1),t);
+    }
+    if(l.endEnd==='connected'){
+      const tt=l.topType||'turn';let t;
+      if(tt==='inline')t='7';else if(tt==='deg-deg')t=l.dir==='RH'?'2RH':'2LH';else t=l.dir==='RH'?'3RH':'3LH';
+      stairJunctionMap.set(jKey(l.x2,l.y2),t);
+    }
+  });
+
+  const cornerResolution=buildCornerResolution(legs,stairJunctionMap);
+
+  // Run-to-run corner sharing, resolved globally (see buildCornerResolution)
+  // so it's correct regardless of which section each leg happens to be in.
+  let sharedPosts=0;
+  legs.filter(l=>l.type==='run').forEach(l=>{
+    if(l.startEnd==='connected'&&!stairJunctionMap.get(jKey(l.x1,l.y1))&&cornerStatus(cornerResolution,l,'start')==='absorbed')sharedPosts++;
+    if(l.endEnd==='connected'&&!stairJunctionMap.get(jKey(l.x2,l.y2))&&cornerStatus(cornerResolution,l,'end')==='absorbed')sharedPosts++;
+  });
+  // Stair-to-run/stair-to-stair sharing — legacy formula, unchanged (kept
+  // separate from the run-corner logic above; a stair leg meeting a run of a
+  // DIFFERENT product at the top junction is a known follow-up, not yet
+  // product-aware like run-to-run corners are).
+  const stairConnEnds=legs.filter(l=>l.type==='stairs').reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-stairBottomConnected;
+  sharedPosts+=activeConfig.sharedPosts?Math.round(stairConnEnds/2)+stairTopDegDeg:0;
   const totalPosts=rawTotal-sharedPosts;
-  const showEC=!isCableInfill&&!isGlassInfill;
-  const endCaps=showEC?legs.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?1:0)+(l.endEnd==='wall'||l.endEnd==='free'?1:0),0):0;
-  const totalRail=legs.reduce((s,l)=>s+l.dim,0);
-  const joiners=legs.filter(l=>l.dim>STOCK).length;
-  const railStock=Math.ceil(totalRail/STOCK);
-  const totalInfill=!isGlassInfill?totalRail*lc:0;
-  const infillStock=totalInfill>0?Math.ceil(totalInfill/STOCK):0;
-  const outsideCapCorners=legs.reduce((s,l)=>s+(l.startEnd==='outside-capped'?1:0)+(l.endEnd==='outside-capped'?1:0),0);
-  const outsideContCorners=legs.reduce((s,l)=>s+(l.startEnd==='outside-continuous'?1:0)+(l.endEnd==='outside-continuous'?1:0),0);
-  const totalOutsideCorners=Math.round((outsideCapCorners+outsideContCorners)/2);
-  const hasTopRail=infill!=='glass-10mm';
-  const railBends=hasTopRail?totalOutsideCorners:0;
-  const contCornerCount=Math.round(outsideContCorners/2);
-  const capCornerCount=Math.round(outsideCapCorners/2);
-  const isDIY=activeConfig.showInfillFixing;
-  const isPD=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='through';
-  const infillFlexiBends=(isDIY&&isPD&&!isCableInfill&&!isGlassInfill&&lc>0)?contCornerCount*lc:0;
-  const infillEndCaps=(isDIY&&!isCableInfill&&!isGlassInfill&&lc>0)?legs.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?lc:0)+(l.endEnd==='wall'||l.endEnd==='free'?lc:0)+(l.startEnd==='outside-capped'?lc:0)+(l.endEnd==='outside-capped'?lc:0),0):0;
-  const infillEndCapSize=infill==='12.7-8'?'12.7mm':'15.88mm';
-  const types=getPostTypes(legs,infill,infillFix);
+
+  const types=getPostTypes(legs,stairJunctionMap,cornerResolution);
 
   lastCalcLegs=legs.map(leg=>{
     const srcLine=active.find(ln=>ln.x1===leg.x1&&ln.y1===leg.y1&&ln.x2===leg.x2&&ln.y2===leg.y2)||leg;
+    const res=leg.res;
+    const legIsPH=(res.infill==='15.88-8'||res.infill==='12.7-8')&&res.infillFix==='side';
+    const legIsCable=res.infill==='cable-9';
     const nP=leg.rawPosts;const postTypesList=[];
     for(let i=0;i<nP;i++){
       const isStart=i===0,isEnd=i===nP-1;
-      if(srcLine.type!=='stairs'&&isPH){postTypesList.push('13');continue;}
-      if(srcLine.type!=='stairs'&&isCableInfill){postTypesList.push('12');continue;}
+      if(srcLine.type!=='stairs'&&legIsPH){postTypesList.push('13');continue;}
+      if(srcLine.type!=='stairs'&&legIsCable){postTypesList.push('12');continue;}
       if(srcLine.type==='stairs'){
         if(isStart){const bt=srcLine.bottomType||'free';if(bt==='turn')postTypesList.push(srcLine.dir==='RH'?'1RH':'1LH');else if(bt==='deg-deg')postTypesList.push(srcLine.dir==='RH'?'2RH':'2LH');else if(bt==='inline')postTypesList.push('6');else postTypesList.push('4');}
         else if(isEnd){const tt=srcLine.topType||'turn';if(tt==='inline')postTypesList.push('7');else if(tt==='deg-deg')postTypesList.push(srcLine.dir==='RH'?'2RH':'2LH');else if(srcLine.endEnd==='connected')postTypesList.push(srcLine.dir==='RH'?'3RH':'3LH');else postTypesList.push('5');}
         else{postTypesList.push('8');}
       }else{
-        if(isStart){const se=srcLine.startEnd||'wall';postTypesList.push(se==='connected'||se==='outside-capped'||se==='outside-continuous'?'10':'11');}
-        else if(isEnd){const ee=srcLine.endEnd||'wall';postTypesList.push(ee==='connected'||ee==='outside-capped'||ee==='outside-continuous'?'10':'11');}
+        if(isStart){const se=srcLine.startEnd||'wall';const jt=stairJunctionMap.get(jKey(srcLine.x1,srcLine.y1));postTypesList.push(jt||(se==='connected'||se==='outside-capped'||se==='outside-continuous'?'10':'11'));}
+        else if(isEnd){const ee=srcLine.endEnd||'wall';const jt=stairJunctionMap.get(jKey(srcLine.x2,srcLine.y2));postTypesList.push(jt||(ee==='connected'||ee==='outside-capped'||ee==='outside-continuous'?'10':'11'));}
         else{postTypesList.push('12');}
       }
     }
@@ -877,69 +1369,133 @@ function calculate(){
   const postLbls={'round38':'Round 38.1mm','round50':'Round 50.8mm','sq40':'Square 40x40','sq50':'Square 50x50','rect50x25':'Rect 50x25mm'};
   const railLbls={'50.8':'50.8mm round','38.1':'38.1mm round','50x50':'50x50 square','40x40':'40x40 square','50x25':'50x25 rect'};
 
-  let fixHtml='',fixText='';
-  if(fixing==='top'){const grout=Math.ceil(totalPosts/6)*2;fixHtml=`<div class="jc-row"><span>Method</span><span class="val">Core drill + non-shrink grout</span></div><div class="jc-row"><span>Depth</span><span class="val">100mm into slab</span></div><div class="jc-row"><span>Non-shrink grout</span><span class="val">${grout}kg</span></div>`;fixText=`  Method: Core drill + non-shrink grout\n  Depth: 100mm\n  Grout: ${grout}kg`;}
-  else if(fixing==='side'){const rods=totalPosts*2,epoxy=Math.ceil(totalPosts/5),rodStock=Math.ceil(rods/6);fixHtml=`<div class="jc-row"><span>Method</span><span class="val">Side mount — M10 rod + epoxy</span></div><div class="jc-row"><span>M10 rods x2 per post</span><span class="val">${rods}</span></div><div class="jc-row"><span>Rod stock (1m lengths)</span><span class="val">${rodStock}</span></div><div class="jc-row"><span>Epoxy 300ml tubes</span><span class="val">${epoxy}</span></div>`;fixText=`  Method: Side mount — M10 rod + epoxy\n  Rods: ${rods}\n  Rod stock: ${rodStock} x 1m\n  Epoxy: ${epoxy} x 300ml`;}
-  else if(fixing==='pinfix'){const rods=Math.ceil(totalPosts/6),epoxy=Math.ceil(totalPosts/10);fixHtml=`<div class="jc-row"><span>Method</span><span class="val">Pin fix — M16 rod + grommet</span></div><div class="jc-row"><span>M16 rod stock</span><span class="val">${rods} x 1m</span></div><div class="jc-row"><span>Epoxy</span><span class="val">${epoxy} x 300ml</span></div><div class="jc-row"><span>Grommets</span><span class="val">${totalPosts}</span></div>`;fixText=`  Method: Pin fix\n  Rod stock: ${rods} x 1m\n  Epoxy: ${epoxy} x 300ml\n  Grommets: ${totalPosts}`;}
-  else{fixHtml=`<div class="jc-row"><span>Method</span><span class="val">Flange plate</span></div><div class="jc-row"><span>Flange plates</span><span class="val">${totalPosts}</span></div>`;fixText=`  Method: Flange plate\n  Flange plates: ${totalPosts}`;}
-
   const secGroups={};const unsec=[];
   legs.forEach(l=>{if(l.sectionId){if(!secGroups[l.sectionId])secGroups[l.sectionId]=[];secGroups[l.sectionId].push(l);}else unsec.push(l);});
 
-  const renderSecBlock=(sl,sid,mode)=>{
+  // Renders one section's (or the unsectioned group's) job-card block,
+  // fully resolved to ITS OWN product/infill/fixing/post/rail/material —
+  // not the global dropdowns — so a mixed-product job shows correct numbers
+  // per area. Pass `accum` only on ONE of the two render passes (full/compact
+  // render the same data twice for different verbosity) or totals double-count.
+  const renderSecBlock=(sl,sid,mode,accum)=>{
     const sName=getSecName(sid)||'Unsectioned';const sColor=getSecColor(sid)||'#888';
+    const sRes=sid?sl[0].res:{cfg:activeConfig,infill,infillFix,fixing,post,rail,material:mat,productValue:currentProductValue};
+    const sIsGlassInfill=sRes.infill==='glass-8mm'||sRes.infill==='glass-10mm';
+    const sIsCableInfill=sRes.infill==='cable-9';
+    const sLc=sIsCableInfill?9:(sIsGlassInfill?0:8);
+    const sSTOCK=sRes.cfg.stockLength;
+    const sHasTopRail=sRes.infill!=='glass-10mm';
+    const sIsDIY=sRes.cfg.showInfillFixing;
+    const sIsPD=(sRes.infill==='15.88-8'||sRes.infill==='12.7-8')&&sRes.infillFix==='through';
+    const sShowEC=!sIsCableInfill&&!sIsGlassInfill;
+    const sInfillEndCapSize=sRes.infill==='12.7-8'?'12.7mm':'15.88mm';
+    const sGlassClampBack=sRes.post.startsWith('sq')?'flat-back':'round-back';
     const sRaw=sl.reduce((s,l)=>s+l.rawPosts,0);
     const sStairBtmConn=sl.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
-    const sConn=sl.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-sStairBtmConn;
-    const sShared=activeConfig.sharedPosts?Math.round(sConn/2):0;const sTotal=sRaw-sShared;
-    const sRail=sl.reduce((s,l)=>s+l.dim,0);const sInfill=!isGlassInfill?sRail*lc:0;
-    const sRailSt=Math.ceil(sRail/STOCK);const sInfillSt=sInfill>0?Math.ceil(sInfill/STOCK):0;
+    const sRunAbsorbed=sl.filter(l=>l.type==='run').reduce((s,l)=>{
+      let c=0;
+      if(l.startEnd==='connected'&&!stairJunctionMap.get(jKey(l.x1,l.y1))&&cornerStatus(cornerResolution,l,'start')==='absorbed')c++;
+      if(l.endEnd==='connected'&&!stairJunctionMap.get(jKey(l.x2,l.y2))&&cornerStatus(cornerResolution,l,'end')==='absorbed')c++;
+      return s+c;
+    },0);
+    const sStairConnEnds=sl.filter(l=>l.type==='stairs').reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-sStairBtmConn;
+    const sStairShared=sRes.cfg.sharedPosts?Math.round(sStairConnEnds/2):0;
+    const sShared=sRunAbsorbed+sStairShared;const sTotal=sRaw-sShared;
+    const sGlassPanels=sIsGlassInfill?sl.reduce((s,l)=>s+l.openings,0):0;const sGlassClamps=sGlassPanels*4;
+    const sRail=sl.reduce((s,l)=>s+l.dim,0);const sInfill=!sIsGlassInfill?sRail*sLc:0;
+    const sRailSt=Math.ceil(sRail/sSTOCK);const sInfillSt=sInfill>0?Math.ceil(sInfill/sSTOCK):0;
     const sOutsideCap=sl.reduce((s,l)=>s+(l.startEnd==='outside-capped'?1:0)+(l.endEnd==='outside-capped'?1:0),0);
     const sOutsideCont=sl.reduce((s,l)=>s+(l.startEnd==='outside-continuous'?1:0)+(l.endEnd==='outside-continuous'?1:0),0);
     const sTotalOutside=Math.round((sOutsideCap+sOutsideCont)/2);
-    const sContCorners=Math.round(sOutsideCont/2);const sRailBends=hasTopRail?sTotalOutside:0;
-    const sFlexi=(isDIY&&isPD&&!isCableInfill&&!isGlassInfill&&lc>0)?sContCorners*lc:0;
-    const sEC=showEC?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?1:0)+(l.endEnd==='wall'||l.endEnd==='free'?1:0),0):0;
-    const sInfillEC=(isDIY&&!isCableInfill&&!isGlassInfill&&lc>0)?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?lc:0)+(l.endEnd==='wall'||l.endEnd==='free'?lc:0)+(l.startEnd==='outside-capped'?lc:0)+(l.endEnd==='outside-capped'?lc:0),0):0;
-    const sTypes=getPostTypes(sl,infill,infillFix);
-    let h=`<div class="jc-section"><div class="jc-section-title sec-hdr" style="background:${sColor}aa;border-color:${sColor}">${sName}</div>`;
-    sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');h+=`<div class="jc-row"><span>${lbl} ${toM(l.dim)}</span><span class="val">${l.rawPosts} posts</span></div>`;});
+    const sContCorners=Math.round(sOutsideCont/2);const sRailBends=sHasTopRail?sTotalOutside:0;
+    const sFlexi=(sIsDIY&&sIsPD&&!sIsCableInfill&&!sIsGlassInfill&&sLc>0)?sContCorners*sLc:0;
+    const sEC=sShowEC?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?1:0)+(l.endEnd==='wall'||l.endEnd==='free'?1:0),0):0;
+    const sInfillEC=(sIsDIY&&!sIsCableInfill&&!sIsGlassInfill&&sLc>0)?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?sLc:0)+(l.endEnd==='wall'||l.endEnd==='free'?sLc:0)+(l.startEnd==='outside-capped'?sLc:0)+(l.endEnd==='outside-capped'?sLc:0),0):0;
+    const sJoiners=sl.filter(l=>l.dim>sSTOCK).length;
+    const sTypes=getPostTypes(sl,stairJunctionMap,cornerResolution);
+    let h=`<div class="jc-section"><div class="jc-section-title sec-hdr" style="background:${sColor}aa;border-color:${sColor}">${sName}${sid?' — '+sRes.cfg.name:''}</div>`;
+    if(sid){
+      const legGroups=new Map();
+      sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');const key=lbl+'|'+l.dim+'|'+l.rawPosts;if(!legGroups.has(key))legGroups.set(key,{lbl,dim:l.dim,rawPosts:l.rawPosts,count:0});legGroups.get(key).count++;});
+      legGroups.forEach(g=>{const suf=g.count>1?` ×${g.count}`:'';h+=`<div class="jc-row"><span>${g.lbl} ${toM(g.dim)}${suf}</span><span class="val">${g.rawPosts*g.count} posts</span></div>`;});
+    }else{
+      sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');h+=`<div class="jc-row"><span>${lbl} ${toM(l.dim)}</span><span class="val">${l.rawPosts} posts</span></div>`;});
+    }
     h+=`<div class="jc-row" style="font-size:10px"><span>Posts (${sRaw}-${sShared} shared)</span><span class="val">${sTotal}</span></div>`;
-    if(mode==='full'){const hasTypes=typeOrder.some(t=>sTypes[t]);if(hasTypes){h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Post types</div>`;typeOrder.forEach(t=>{if(!sTypes[t])return;h+=`<div class="jc-row"><span style="font-size:10px">${typeNames[t]||'Type '+t}</span><span class="val">${sTypes[t]}</span></div>`;});if(fixing!=='side')h+=`<div class="jc-row"><span>Cover plates (domed)</span><span class="val">${sTotal}</span></div>`;}}
-    else{const typeParts=typeOrder.filter(t=>sTypes[t]).map(t=>`${t} x${sTypes[t]}`);if(typeParts.length){h+=`<div class="jc-row" style="font-size:10px"><span style="color:var(--text4)">Types:</span><span class="val" style="font-size:10px;white-space:normal;text-align:right">${typeParts.join('  ')}</span></div>`;}if(fixing!=='side')h+=`<div class="jc-row" style="font-size:10px"><span>Cover plates</span><span class="val">${sTotal}</span></div>`;}
-    h+=`<div class="jc-row"><span>Top rail</span><span class="val">${toM(sRail)} / ${sRailSt}x${toM(STOCK)}</span></div>`;
-    if(sInfill>0){if(isCableInfill)h+=`<div class="jc-row"><span>Cable x${lc} lines</span><span class="val">${toM(sInfill)}</span></div>`;else h+=`<div class="jc-row"><span>Infill x${lc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}x${toM(STOCK)}</span></div>`;}
+    const sShowCoverPlates=sRes.fixing!=='side';
+    if(mode==='full'){const hasTypes=typeOrder.some(t=>sTypes[t]);if(hasTypes){h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Post types</div>`;typeOrder.forEach(t=>{if(!sTypes[t])return;h+=`<div class="jc-row"><span style="font-size:10px">${typeNames[t]||'Type '+t}</span><span class="val">${sTypes[t]}</span></div>`;});if(sShowCoverPlates)h+=`<div class="jc-row"><span>Cover plates (domed)</span><span class="val">${sTotal}</span></div>`;}}
+    else{const typeParts=typeOrder.filter(t=>sTypes[t]).map(t=>`${t} x${sTypes[t]}`);if(typeParts.length){h+=`<div class="jc-row" style="font-size:10px"><span style="color:var(--text4)">Types:</span><span class="val" style="font-size:10px;white-space:normal;text-align:right">${typeParts.join('  ')}</span></div>`;}if(sShowCoverPlates)h+=`<div class="jc-row" style="font-size:10px"><span>Cover plates</span><span class="val">${sTotal}</span></div>`;}
+    h+=`<div class="jc-row"><span>Top rail</span><span class="val">${toM(sRail)} / ${sRailSt}x${toM(sSTOCK)}</span></div>`;
+    if(sInfill>0){if(sIsCableInfill)h+=`<div class="jc-row"><span>Cable x${sLc} lines</span><span class="val">${toM(sInfill)}</span></div>`;else h+=`<div class="jc-row"><span>Infill x${sLc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}x${toM(sSTOCK)}</span></div>`;}
+    if(sGlassPanels>0)h+=`<div class="jc-row"><span>Glass panels (est.)</span><span class="val">${sGlassPanels}</span></div><div class="jc-row"><span>D-clamps (${sGlassClampBack})</span><span class="val">${sGlassClamps}</span></div>`;
     if(sRailBends>0)h+=`<div class="jc-row"><span>Top rail bends</span><span class="val">${sRailBends}</span></div>`;
     if(sFlexi>0)h+=`<div class="jc-row"><span>Infill flexi bends</span><span class="val">${sFlexi}</span></div>`;
     if(sEC>0)h+=`<div class="jc-row"><span>Rail end caps</span><span class="val">${sEC}</span></div>`;
-    if(sInfillEC>0)h+=`<div class="jc-row"><span>Infill end caps ${infillEndCapSize}</span><span class="val">${sInfillEC}</span></div>`;
-    h+=`</div>`;return h;
+    if(sInfillEC>0)h+=`<div class="jc-row"><span>Infill end caps ${sInfillEndCapSize}</span><span class="val">${sInfillEC}</span></div>`;
+    let sFixHtml='',sFixText='';
+    if(sRes.fixing==='top'){const grout=Math.ceil(sTotal/6)*2;sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Core drill + grout</span></div><div class="jc-row"><span>Non-shrink grout</span><span class="val">${grout}kg</span></div>`;sFixText=`Fixing: Core drill + grout, ${grout}kg`;}
+    else if(sRes.fixing==='side'){const rods=sTotal*2,epoxy=Math.ceil(sTotal/5);sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Side mount — M10 rod</span></div><div class="jc-row"><span>M10 rods x2</span><span class="val">${rods}</span></div><div class="jc-row"><span>Epoxy 300ml</span><span class="val">${epoxy}</span></div>`;sFixText=`Fixing: Side mount, ${rods} rods, ${epoxy}x300ml epoxy`;}
+    else if(sRes.fixing==='pinfix'){const rods=Math.ceil(sTotal/6),epoxy=Math.ceil(sTotal/10);sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Pin fix — M16 rod</span></div><div class="jc-row"><span>Rod stock</span><span class="val">${rods}x1m</span></div><div class="jc-row"><span>Epoxy 300ml</span><span class="val">${epoxy}</span></div>`;sFixText=`Fixing: Pin fix, ${rods}x1m rod, ${epoxy}x300ml epoxy`;}
+    else{sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Flange plate</span></div><div class="jc-row"><span>Flange plates</span><span class="val">${sTotal}</span></div>`;sFixText=`Fixing: Flange plate x${sTotal}`;}
+    h+=sFixHtml;
+    h+=`</div>`;
+    if(accum){accum.rail+=sRail;accum.infill+=sInfill;accum.glassPanels+=sGlassPanels;accum.railBends+=sRailBends;accum.flexi+=sFlexi;accum.ec+=sEC;accum.infillEc+=sInfillEC;accum.joiners+=sJoiners;}
+    let t=`\n${sName}${sid?' — '+sRes.cfg.name:''}\n${'─'.repeat(20)}\n`;
+    sl.forEach(l=>{t+=`  ${l.label||(l.type==='stairs'?'Stairs':'Run')} ${toM(l.dim)}\n`;});
+    t+=`  Posts: ${sTotal} (${sRaw}-${sShared} shared)\n`;
+    const sTypeSummary=typeOrder.filter(tt=>sTypes[tt]).map(tt=>`    ${typeNames[tt]||'Type '+tt}: ${sTypes[tt]}`).join('\n');
+    if(sTypeSummary)t+=sTypeSummary+'\n';
+    t+=`  Top rail: ${toM(sRail)}\n`;
+    if(sInfill>0)t+=`  Infill x${sLc}: ${toM(sInfill)}\n`;
+    if(sGlassPanels>0)t+=`  Glass panels: ${sGlassPanels} / D-clamps (${sGlassClampBack}): ${sGlassClamps}\n`;
+    t+=`  ${sFixText}\n`;
+    return{html:h,text:t};
   };
 
-  const alerts=[];if(joiners>0)legs.filter(l=>l.dim>STOCK).forEach(l=>alerts.push(`${l.label||l.type} (${toM(l.dim)}) exceeds ${toM(STOCK)} — joiner required`));
+  const alerts=[];legs.forEach(l=>{if(l.dim>l.res.cfg.stockLength)alerts.push(`${l.label||l.type} (${toM(l.dim)}) exceeds ${toM(l.res.cfg.stockLength)} — joiner required`);});
   const alertHtml=alerts.length?`<div class="jc-alert">${alerts.join('<br>')}</div>`:'';
-  const settingsHtml=`<div class="jc-section"><div class="jc-section-title">Job settings</div><div class="jc-row"><span>Product</span><span class="val">${activeConfig.name}</span></div><div class="jc-row"><span>Infill</span><span class="val">${infillLbls[infill]||infill}</span></div><div class="jc-row"><span>Post</span><span class="val">${postLbls[post]||post}</span></div><div class="jc-row"><span>Top rail</span><span class="val">${railLbls[rail]||rail}</span></div><div class="jc-row"><span>Material</span><span class="val">${mat}</span></div></div>`;
+  const settingsHtml=unsec.length?`<div class="jc-section"><div class="jc-section-title">Job settings — unsectioned lines</div><div class="jc-row"><span>Product</span><span class="val">${activeConfig.name}</span></div><div class="jc-row"><span>Infill</span><span class="val">${infillLbls[infill]||infill}</span></div><div class="jc-row"><span>Post</span><span class="val">${postLbls[post]||post}</span></div><div class="jc-row"><span>Top rail</span><span class="val">${railLbls[rail]||rail}</span></div><div class="jc-row"><span>Material</span><span class="val">${mat}</span></div></div>`:'';
 
-  let totalsHtml=`<div class="jc-section"><div class="jc-section-title">Job totals</div><div class="jc-total"><span>Total posts</span><span>${totalPosts}</span></div><div class="jc-row"><span>Top rail total</span><span class="val">${toM(totalRail)} / ${railStock}x${toM(STOCK)}</span></div>`;
-  if(totalInfill>0){if(isCableInfill)totalsHtml+=`<div class="jc-row"><span>Cable total (roll)</span><span class="val">${toM(totalInfill)}</span></div>`;else totalsHtml+=`<div class="jc-row"><span>Infill total</span><span class="val">${toM(totalInfill)} / ${infillStock}x${toM(STOCK)}</span></div>`;}
-  if(railBends>0)totalsHtml+=`<div class="jc-row"><span>Top rail bends</span><span class="val">${railBends}</span></div>`;
-  if(infillFlexiBends>0)totalsHtml+=`<div class="jc-row"><span>Infill flexi bends</span><span class="val">${infillFlexiBends}</span></div>`;
-  if(joiners>0)totalsHtml+=`<div class="jc-row"><span>Rail joiners</span><span class="val">${joiners}</span></div>`;
-  if(endCaps>0)totalsHtml+=`<div class="jc-row"><span>Rail end caps</span><span class="val">${endCaps}</span></div>`;
-  if(infillEndCaps>0)totalsHtml+=`<div class="jc-row"><span>Infill end caps ${infillEndCapSize}</span><span class="val">${infillEndCaps}</span></div>`;
+  const accum={rail:0,infill:0,glassPanels:0,railBends:0,flexi:0,ec:0,infillEc:0,joiners:0};
+  let html=alertHtml+settingsHtml,htmlSide=alertHtml+settingsHtml;
+  const sectionTexts=[];
+  sections.forEach(sec=>{
+    if(secGroups[sec.id]&&secGroups[sec.id].length>0){
+      const full=renderSecBlock(secGroups[sec.id],sec.id,'full',accum);
+      html+=full.html;sectionTexts.push(full.text);
+      htmlSide+=renderSecBlock(secGroups[sec.id],sec.id,'compact',null).html;
+    }
+  });
+  if(unsec.length>0){
+    const full=renderSecBlock(unsec,null,'full',accum);
+    html+=full.html;sectionTexts.push(full.text);
+    htmlSide+=renderSecBlock(unsec,null,'compact',null).html;
+  }
+
+  const STOCK=activeConfig.stockLength;
+  const railStock=accum.rail>0?Math.ceil(accum.rail/STOCK):0;
+  const infillStock=accum.infill>0?Math.ceil(accum.infill/STOCK):0;
+  let totalsHtml=`<div class="jc-section"><div class="jc-section-title">Job totals</div><div class="jc-total"><span>Total posts</span><span>${totalPosts}</span></div><div class="jc-row"><span>Top rail total</span><span class="val">${toM(accum.rail)} / ${railStock}x${toM(STOCK)}</span></div>`;
+  if(accum.infill>0)totalsHtml+=`<div class="jc-row"><span>Infill/cable total</span><span class="val">${toM(accum.infill)}${infillStock?' / '+infillStock+'x'+toM(STOCK):''}</span></div>`;
+  if(accum.glassPanels>0)totalsHtml+=`<div class="jc-row"><span>Glass panels (est.)</span><span class="val">${accum.glassPanels}</span></div>`;
+  if(accum.railBends>0)totalsHtml+=`<div class="jc-row"><span>Top rail bends</span><span class="val">${accum.railBends}</span></div>`;
+  if(accum.flexi>0)totalsHtml+=`<div class="jc-row"><span>Infill flexi bends</span><span class="val">${accum.flexi}</span></div>`;
+  if(accum.joiners>0)totalsHtml+=`<div class="jc-row"><span>Rail joiners</span><span class="val">${accum.joiners}</span></div>`;
+  if(accum.ec>0)totalsHtml+=`<div class="jc-row"><span>Rail end caps</span><span class="val">${accum.ec}</span></div>`;
+  if(accum.infillEc>0)totalsHtml+=`<div class="jc-row"><span>Infill end caps</span><span class="val">${accum.infillEc}</span></div>`;
   totalsHtml+=`</div>`;
 
   let typeTotal=0;
-  let postTypesHtml=`<div class="jc-section"><div class="jc-section-title">Post types — drilling sheet</div>`;
+  let postTypesHtml=`<div class="jc-section"><div class="jc-section-title">Post types — drilling sheet (all sections)</div>`;
   typeOrder.forEach(t=>{if(types[t]){postTypesHtml+=`<div class="jc-row"><span>${typeNames[t]||'Type '+t}</span><span class="val">${types[t]}</span></div>`;typeTotal+=types[t];}});
   postTypesHtml+=`<div class="jc-total"><span>Total</span><span>${typeTotal}</span></div></div>`;
 
-  let html=alertHtml+settingsHtml;sections.forEach(sec=>{if(secGroups[sec.id]&&secGroups[sec.id].length>0)html+=renderSecBlock(secGroups[sec.id],sec.id,'full');});if(unsec.length>0)html+=renderSecBlock(unsec,null,'full');html+=totalsHtml+postTypesHtml;
-  let htmlSide=alertHtml+settingsHtml;sections.forEach(sec=>{if(secGroups[sec.id]&&secGroups[sec.id].length>0)htmlSide+=renderSecBlock(secGroups[sec.id],sec.id,'compact');});if(unsec.length>0)htmlSide+=renderSecBlock(unsec,null,'compact');htmlSide+=totalsHtml+postTypesHtml;
+  html+=totalsHtml+postTypesHtml;htmlSide+=totalsHtml+postTypesHtml;
 
-  const showCoverPlates=fixing!=='side';
-  const fixingExtrasHtml=`<div class="jc-section"><div class="jc-section-title">Fixing</div>${fixHtml}</div><div class="jc-section"><div class="jc-section-title">Extras</div>${showCoverPlates?`<div class="jc-row"><span>Domed cover plates</span><span class="val">${totalPosts}</span></div>`:''}</div>`;
-  html+=fixingExtrasHtml;htmlSide+=fixingExtrasHtml;
+  const hrResult=calculateHandrail(hrActive);
+  if(hrResult){html+=hrResult.html;htmlSide+=hrResult.html;}
+  lastCalcHrLegs=hrActive.map(l=>({...l,_src:l}));
+  lastCalcHrLegRows=hrResult?hrResult.legRows:[];
 
   document.getElementById('jcBody').innerHTML=html;
   document.getElementById('jcBodySide').innerHTML=htmlSide;
@@ -947,100 +1503,114 @@ function calculate(){
   switchTab('canvas');setTimeout(resizeCanvas,50);
 
   const typeSummary=typeOrder.filter(t=>types[t]).map(t=>`  ${typeNames[t]||'Type '+t}: ${types[t]}`).join('\n');
-  lastCalcText=`JOB CARD — ${activeConfig.name.toUpperCase()}\n${'─'.repeat(40)}\nProduct:  ${activeConfig.name}\nInfill:   ${infillLbls[infill]||infill}\nPost:     ${postLbls[post]||post}\nTop rail: ${railLbls[rail]||rail}\nMaterial: ${mat}\n\nTOTALS\n${'─'.repeat(20)}\nTotal posts: ${totalPosts}\nTop rail:    ${toM(totalRail)} / ${railStock} x ${toM(STOCK)}\n${totalInfill?`Infill:      ${toM(totalInfill)} / ${infillStock} x ${toM(STOCK)}`:''}\n\nPOST TYPES\n${'─'.repeat(20)}\n${typeSummary}\n\nFIXING\n${'─'.repeat(20)}\n${fixText}\n\nEXTRAS\n${showCoverPlates?`  Cover plates: ${totalPosts}\n`:''}`;
+  lastCalcText=`JOB CARD\n${'─'.repeat(40)}\nTotal posts: ${totalPosts}\n${sectionTexts.join('')}\n\nPOST TYPES — ALL SECTIONS\n${'─'.repeat(20)}\n${typeSummary}\n`;
+  if(hrResult)lastCalcText+=hrResult.text;
   updateDsPreview();
 }
 
 function updateDsPreview(){
-  const el=document.getElementById('dsForm');if(!el)return;
-  const active=lines.filter(l=>l.dim);
-  if(active.length===0||!lastCalcText){el.innerHTML='<div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the drilling sheet.</div>';return;}
-  const infill=getInfill(),infillFix=getInfillFix(),fixing=getFixing(),post=getPost(),mat=getMaterial();
-  const isPH=(infill==='15.88-8'||infill==='12.7-8')&&infillFix==='side';
-  const isGlass=infill==='glass-8mm'||infill==='glass-10mm';const isCable=infill==='cable-9';
-  const OFF=activeConfig.edgeOffset;
-  const legs=active.map(l=>{const dim=parseInt(l.dim);const sd=isCorner(l.startEnd)?0:OFF,ed=isCorner(l.endEnd)?0:OFF;const eff=dim-sd-ed;const openings=Math.ceil(Math.max(eff,100)/activeConfig.maxPostSpacing);return{...l,dim,eff,openings,rawPosts:openings+1};});
-  const stairBtmConn=legs.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
-  const connEnds=legs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-stairBtmConn;
-  const totalPosts=legs.reduce((s,l)=>s+l.rawPosts,0)-(activeConfig.sharedPosts?Math.round(connEnds/2):0);
-  const types=getPostTypes(legs,infill,infillFix);
-  const postHeight=fixing==='top'?'1000':fixing==='side'?'1150':'900';
-  const numHoles=isGlass?'2':isCable?'9':isPH?'0':'8';
-  const holeSize=isGlass?'11':isCable?'5':isPH?'—':'16';
-  // Store data for print function
-  lastDsData={type:'balustrader_jobcard',totalPosts,types,postHeight,holeSize,numHoles,postSize:post,mount:fixing,material:mat,noPin:isGlass,weldPin:!isGlass,summary:legs.map(l=>(l.label||l.type)+' '+l.dim+'mm').join('\n')};
-  const chk=b=>`<span style="font-size:14px">${b?'☑':'☐'}</span>`;
-  const isR38=post==='round38',isR50=post==='round50',isSq40=post==='sq40',isSq50=post==='sq50',isRect=post==='rect50x25';
-  const mTop=fixing==='top',mSide=fixing==='side',mFlange=fixing==='flange',mPin=fixing==='pinfix';
-  const m304b=mat==='304-180',m304m=mat==='304-mirror',m316b=mat==='316-180',m316m=mat==='316-mirror',mMS=mat==='mild';
-  const typeOrder=['1LH','1RH','2LH','2RH','3LH','3RH','4','5','6','7','8','9','10','11','12','13'];
-  const typeNames={'1LH':'Corner straight to degree up','1RH':'Corner straight to degree up','2LH':'Corner degree to degree up','2RH':'Corner degree to degree up','3LH':'Corner degree up to straight','3RH':'Corner degree up to straight','4':'End post up at degree','5':'End post down at degree','6':'Centre straight to degree up','7':'Centre straight to degree down','8':'Centre through at degree','9':'Open corner 135','10':'Corner post straight','11':'End post straight','12':'Centre post through','13':'Plain post'};
-  let postGrid='';
-  typeOrder.forEach(n=>{
-    if(n==='3RH')return;
-    const qP=types[n]||0;const baseN=n.replace('LH','').replace('RH','');const label=typeNames[n]||'Type '+n;const hl=qP>0;
-    if(n==='3LH'){postGrid+=`<tr style="background:${hl||types['3RH']>0?'#fffbe6':'#fff'};border-bottom:1px solid #eee"><td style="padding:3px 8px;font-weight:bold;font-size:13px;text-align:center;width:30px;border-right:1px solid #ddd">3</td><td style="padding:3px 8px;font-size:10px;border-right:1px solid #ddd">Corner degree up to straight</td><td style="text-align:center;padding:3px;width:60px;border-right:1px solid #ddd"><b style="font-size:12px;color:${types['3LH']>0?'#c8a028':'#999'}">${types['3LH']>0?types['3LH']:'—'}</b></td><td style="text-align:center;padding:3px;width:60px;border-right:1px solid #ddd"><b style="font-size:12px;color:${types['3RH']>0?'#c8a028':'#999'}">${types['3RH']>0?types['3RH']:'—'}</b></td></tr>`;}
-    else{postGrid+=`<tr style="background:${hl?'#fffbe6':'#fff'};border-bottom:1px solid #eee"><td style="padding:3px 8px;font-weight:bold;font-size:13px;text-align:center;width:30px;border-right:1px solid #ddd">${baseN}</td><td style="padding:3px 8px;font-size:10px;border-right:1px solid #ddd">${label}</td><td colspan="2" style="text-align:center;padding:3px;border-right:1px solid #ddd"><b style="font-size:12px;color:${hl?'#c8a028':'#999'}">${hl?qP:'—'}</b></td></tr>`;}
+  const active=lines.filter(l=>l.dim&&l.type!=='handrail');
+  if(active.length===0||!lastCalcText){lastDsData=null;return;}
+  // Mirrors calculate()'s per-leg resolution and cross-product correction —
+  // must not drift, or the drilling sheet and job card disagree on post count.
+  const legs=active.map(l=>{
+    const res=resolveLine(l);
+    const dim=parseInt(l.dim);const sd=isCorner(l.startEnd)?0:res.cfg.edgeOffset,ed=isCorner(l.endEnd)?0:res.cfg.edgeOffset;
+    const eff=dim-sd-ed;const openings=Math.ceil(Math.max(eff,100)/res.cfg.maxPostSpacing);
+    return{...l,dim,eff,openings,rawPosts:openings+1,res};
   });
-  el.innerHTML=`<div style="border:2px solid #333;padding:10px;background:#fff;font-family:'Courier New',monospace">
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333">
-      <div style="flex:3"><span style="font-size:10px;color:#666;display:block">CLIENT</span><div contenteditable="true" style="border-bottom:1px solid #333;min-height:20px;outline:none;padding:2px 4px"> </div></div>
-      <div style="flex:2"><span style="font-size:10px;color:#666;display:block">QUOTE NO</span><div contenteditable="true" style="border-bottom:1px solid #333;min-height:20px;outline:none;padding:2px 4px"> </div></div>
-      <div style="flex:2"><span style="font-size:10px;color:#666;display:block">JOBCARD NO</span><div contenteditable="true" style="border-bottom:1px solid #333;min-height:20px;outline:none;padding:2px 4px"> </div></div>
-      <div style="flex:1"><span style="font-size:10px;color:#666;display:block">TOTAL POSTS</span><div style="border-bottom:1px solid #333;min-height:20px;font-weight:bold;font-size:16px;color:#c8a028;text-align:center">${totalPosts}</div></div>
-    </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <div style="flex:2;min-width:300px">
-        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Types</div>
-        <table style="width:100%;border-collapse:collapse;border:1px solid #ccc">
-          <thead><tr style="background:#f0f0f0"><th style="padding:3px 6px;font-size:10px;border-right:1px solid #ddd;width:30px">#</th><th style="padding:3px 6px;font-size:10px;text-align:left;border-right:1px solid #ddd">Description</th><th style="padding:3px 6px;font-size:10px;width:60px;border-right:1px solid #ddd">LH QTY</th><th style="padding:3px 6px;font-size:10px;width:60px">RH / QTY</th></tr></thead>
-          <tbody>${postGrid}</tbody>
-        </table>
-      </div>
-      <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:10px">
-        <div><div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Options</div>
-          <table style="border-collapse:collapse;width:100%">
-            <tr><td style="font-size:11px;padding:2px 4px">Round 38.1mm</td><td>${chk(isR38)}</td><td style="font-size:11px;padding:2px 8px">Height: <b>${postHeight}mm</b></td></tr>
-            <tr><td style="font-size:11px;padding:2px 4px">Round 50mm</td><td>${chk(isR50)}</td><td style="font-size:11px;padding:2px 8px">Holes: <b>${numHoles}</b></td></tr>
-            <tr><td style="font-size:11px;padding:2px 4px">Square 40x40</td><td>${chk(isSq40)}</td><td style="font-size:11px;padding:2px 8px">Hole size: <b>${holeSize}mm</b></td></tr>
-            <tr><td style="font-size:11px;padding:2px 4px">Square 50x50</td><td>${chk(isSq50)}</td><td></td></tr>
-          </table>
-        </div>
-        <div><div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Post Mounting</div>
-          <table style="border-collapse:collapse;width:100%">
-            <tr><td style="font-size:11px;padding:2px 4px">Core Drill</td><td>${chk(mTop)}</td></tr>
-            <tr><td style="font-size:11px;padding:2px 4px">Side Mount</td><td>${chk(mSide)}</td></tr>
-            <tr><td style="font-size:11px;padding:2px 4px">3 Hole Flange</td><td>${chk(mFlange)}</td></tr>
-            <tr><td style="font-size:11px;padding:2px 4px">Pin Fix</td><td>${chk(mPin)}</td></tr>
-          </table>
-        </div>
-        <div><div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#666;margin-bottom:4px">Finishing / Material</div>
-          <table style="border-collapse:collapse;width:100%">
-            <tr><td style="font-size:11px;padding:2px 4px">Weld on pin</td><td>${chk(!isGlass)}</td><td style="font-size:11px;padding:2px 4px">304 Brushed</td><td>${chk(m304b)}</td></tr>
-            <tr><td style="font-size:11px;padding:2px 4px">No pin</td><td>${chk(isGlass)}</td><td style="font-size:11px;padding:2px 4px">304 Mirror</td><td>${chk(m304m)}</td></tr>
-            <tr><td style="font-size:11px;padding:2px 4px">Cover domed</td><td>${chk(true)}</td><td style="font-size:11px;padding:2px 4px">316 Brushed</td><td>${chk(m316b)}</td></tr>
-            <tr><td></td><td></td><td style="font-size:11px;padding:2px 4px">316 Mirror</td><td>${chk(m316m)}</td></tr>
-            <tr><td></td><td></td><td style="font-size:11px;padding:2px 4px">Mild Steel</td><td>${chk(mMS)}</td></tr>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>`;
+  const rawTotal=legs.reduce((s,l)=>s+l.rawPosts,0);
+  const stairBottomConnected=legs.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
+  const stairTopDegDeg=legs.filter(l=>l.type==='stairs'&&l.endEnd==='connected'&&l.topType==='deg-deg').length;
+  const jKey=(x,y)=>`${Math.round(x*2)/2},${Math.round(y*2)/2}`;
+  const stairJunctionMap=new Map();
+  legs.filter(l=>l.type==='stairs').forEach(l=>{
+    if(l.startEnd==='connected'){
+      const bt=l.bottomType||'free';let t=null;
+      if(bt==='turn')t=l.dir==='RH'?'1RH':'1LH';else if(bt==='deg-deg')t=l.dir==='RH'?'2RH':'2LH';else if(bt==='inline')t='6';
+      if(t)stairJunctionMap.set(jKey(l.x1,l.y1),t);
+    }
+    if(l.endEnd==='connected'){
+      const tt=l.topType||'turn';let t;
+      if(tt==='inline')t='7';else if(tt==='deg-deg')t=l.dir==='RH'?'2RH':'2LH';else t=l.dir==='RH'?'3RH':'3LH';
+      stairJunctionMap.set(jKey(l.x2,l.y2),t);
+    }
+  });
+  const cornerResolution=buildCornerResolution(legs,stairJunctionMap);
+  let sharedPosts=0;
+  legs.filter(l=>l.type==='run').forEach(l=>{
+    if(l.startEnd==='connected'&&!stairJunctionMap.get(jKey(l.x1,l.y1))&&cornerStatus(cornerResolution,l,'start')==='absorbed')sharedPosts++;
+    if(l.endEnd==='connected'&&!stairJunctionMap.get(jKey(l.x2,l.y2))&&cornerStatus(cornerResolution,l,'end')==='absorbed')sharedPosts++;
+  });
+  const stairConnEnds=legs.filter(l=>l.type==='stairs').reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-stairBottomConnected;
+  sharedPosts+=activeConfig.sharedPosts?Math.round(stairConnEnds/2)+stairTopDegDeg:0;
+  const totalPosts=rawTotal-sharedPosts;
+  const types=getPostTypes(legs,stairJunctionMap,cornerResolution);
+
+  // The drilling sheet form has one Post Options/Mounting/Hole Size/Material
+  // block, so it can only show ONE spec per printed sheet. Rather than picking
+  // a single "dominant" product and hiding the rest, send one full spec PER
+  // SECTION (plus the unsectioned group, if any) — drilling_sheet_v3.html can
+  // then render/print one form per section instead of one blended form.
+  const secGroups={};const unsecLegs=[];
+  legs.forEach(l=>{if(l.sectionId){if(!secGroups[l.sectionId])secGroups[l.sectionId]=[];secGroups[l.sectionId].push(l);}else unsecLegs.push(l);});
+
+  function groupDsSpec(sl,sid){
+    const sName=getSecName(sid)||'Unsectioned';
+    const sRes=sid?sl[0].res:{cfg:activeConfig,infill:getInfill(),infillFix:getInfillFix(),fixing:getFixing(),post:getPost(),material:getMaterial(),productValue:currentProductValue};
+    const sStairBtmConn=sl.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
+    const sRunAbsorbed=sl.filter(l=>l.type==='run').reduce((s,l)=>{
+      let c=0;
+      if(l.startEnd==='connected'&&!stairJunctionMap.get(jKey(l.x1,l.y1))&&cornerStatus(cornerResolution,l,'start')==='absorbed')c++;
+      if(l.endEnd==='connected'&&!stairJunctionMap.get(jKey(l.x2,l.y2))&&cornerStatus(cornerResolution,l,'end')==='absorbed')c++;
+      return s+c;
+    },0);
+    const sStairConnEnds=sl.filter(l=>l.type==='stairs').reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)-sStairBtmConn;
+    const sStairShared=sRes.cfg.sharedPosts?Math.round(sStairConnEnds/2):0;
+    const sRaw=sl.reduce((s,l)=>s+l.rawPosts,0);
+    const sTotal=sRaw-sRunAbsorbed-sStairShared;
+    const sTypes=getPostTypes(sl,stairJunctionMap,cornerResolution);
+    const isPH=(sRes.infill==='15.88-8'||sRes.infill==='12.7-8')&&sRes.infillFix==='side';
+    const isGlass=sRes.infill==='glass-8mm'||sRes.infill==='glass-10mm';const isCable=sRes.infill==='cable-9';
+    const postHeight=sRes.fixing==='top'?'1000':sRes.fixing==='side'?'1150':'900';
+    const numHoles=isGlass?'2':isCable?'9':isPH?'0':'8';
+    const holeSize=isGlass?'11':isCable?'5':isPH?'—':'16';
+    return{name:sName,product:sRes.cfg.name,totalPosts:sTotal,types:sTypes,postHeight,holeSize,numHoles,postSize:sRes.post,mount:sRes.fixing,material:sRes.material,noPin:isGlass,weldPin:!isGlass,legsSummary:sl.map(l=>(l.label||l.type)+' '+l.dim+'mm').join(', ')};
+  }
+
+  const dsSections=[];
+  sections.forEach(sec=>{if(secGroups[sec.id]&&secGroups[sec.id].length)dsSections.push(groupDsSpec(secGroups[sec.id],sec.id));});
+  if(unsecLegs.length)dsSections.push(groupDsSpec(unsecLegs,null));
+  const mixedProducts=dsSections.length>1;
+
+  lastDsData={type:'balustrader_jobcard',totalPosts,types,mixedProducts,sections:dsSections,summary:legs.map(l=>(l.label||l.type)+' '+l.dim+'mm'+(mixedProducts?' — '+l.res.cfg.name:'')).join('\n')};
+  sendDsData();
+}
+
+function sendDsData(){
+  if(!lastDsData)return;
+  const frame=document.getElementById('dsFrame');
+  if(!frame||!frame.contentWindow||!dsFrameLoaded)return;
+  try{frame.contentWindow.postMessage(lastDsData,'*');}catch(e){}
 }
 
 function printDrilling(){
   if(!lastDsData){alert('Calculate first.');return;}
-  const win=window.open('drilling_sheet_v2.html','_blank','width=1100,height=800');
+  const win=window.open('drilling_sheet_v3.html','_blank','width=1100,height=800');
   if(!win){alert('Popup blocked. Allow popups for this page.');return;}
-  // Use interval to wait for the page to be ready before posting
-  const iv=setInterval(function(){
-    try{
-      if(win.document.readyState==='complete'){
-        clearInterval(iv);
-        win.postMessage(lastDsData,'*');
-      }
-    }catch(e){clearInterval(iv);}
-  },100);
+  // win.document.readyState hits 'complete' on the initial blank stub before
+  // drilling_sheet_v3.html has actually finished loading/running its script,
+  // so posting on that check fires too early and the message gets dropped.
+  // Wait for the real 'load' event instead, then re-send a couple of times
+  // as a safety net in case the child's listener attaches a beat late.
+  let sent=0;
+  function send(){
+    try{win.postMessage(lastDsData,'*');sent++;}catch(e){}
+  }
+  win.addEventListener('load',function(){
+    send();
+    const iv=setInterval(function(){send();if(sent>=4)clearInterval(iv);},300);
+  });
 }
 
 function copyJobCard(){if(!lastCalcText){alert('Calculate first.');return;}if(navigator.clipboard){navigator.clipboard.writeText(lastCalcText).then(()=>alert('Copied — paste into Sage or WhatsApp.')).catch(()=>prompt('Copy this:',lastCalcText));}else{prompt('Copy this:',lastCalcText);}}
@@ -1055,9 +1625,11 @@ function printJobCard(){
 
 function renderLayout(){
   const inner=document.getElementById('layoutInner');
-  if(!lastCalcLegs.length){inner.innerHTML='<div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the layout.</div>';return;}
+  if(!lastCalcLegs.length&&!lastCalcHrLegs.length){inner.innerHTML='<div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the layout.</div>';return;}
   const fixing=getFixing?getFixing():'';const fixName={top:'Top Mount',side:'Side Mount',flange:'Flange Mount',pinfix:'Pin Fix'}[fixing]||fixing;
-  const dateStr=new Date().toLocaleDateString('en-ZA');const prodName=activeConfig?activeConfig.name:'';
+  const dateStr=new Date().toLocaleDateString('en-ZA');
+  const distinctProducts=new Set(lastCalcLegs.map(leg=>leg.res?leg.res.productValue:currentProductValue));
+  const prodName=distinctProducts.size>1?'Mixed products':(activeConfig?activeConfig.name:'');
   const active=lines.filter(l=>l.type!=='wall'&&l.dim);const allWalls=lines.filter(l=>l.type==='wall');const allLines=[...active,...allWalls];
   if(!allLines.length){inner.innerHTML='<div style="color:#999;text-align:center;padding:30px 0">No lines drawn yet.</div>';return;}
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
@@ -1079,15 +1651,32 @@ function renderLayout(){
     const mx=(x1+x2)/2,my=(y1+y2)/2;const dimLbl=(l.label?l.label+' ':'')+(l.dim||'');const dw=Math.max(72,dimLbl.length*7+8);
     if(horiz){svgParts.push(`<rect x="${mx-dw/2}" y="${my-32}" width="${dw}" height="15" rx="2" fill="rgba(255,255,255,0.92)"/><text x="${mx}" y="${my-21}" font-family="Courier New,monospace" font-size="12" fill="${runColor}" text-anchor="middle" font-weight="bold">${dimLbl}</text>`);}
     else{svgParts.push(`<rect x="${mx+12}" y="${my-9}" width="${dw}" height="15" rx="2" fill="rgba(255,255,255,0.92)"/><text x="${mx+16}" y="${my+2}" font-family="Courier New,monospace" font-size="12" fill="${runColor}" font-weight="bold">${dimLbl}</text>`);}
+    const secN=l.sectionId?getSecName(l.sectionId):null;
+    if(secN){const sdw=Math.max(50,secN.length*6.5+10);if(horiz){svgParts.push(`<rect x="${mx-sdw/2}" y="${my+10}" width="${sdw}" height="14" rx="2" fill="${runColor}22" stroke="${runColor}" stroke-width="0.75"/><text x="${mx}" y="${my+20}" font-family="Courier New,monospace" font-size="9" fill="${runColor}" text-anchor="middle">${secN}</text>`);}else{svgParts.push(`<rect x="${mx+12}" y="${my+10}" width="${sdw}" height="14" rx="2" fill="${runColor}22" stroke="${runColor}" stroke-width="0.75"/><text x="${mx+16+sdw/2}" y="${my+20}" font-family="Courier New,monospace" font-size="9" fill="${runColor}" text-anchor="middle">${secN}</text>`);}}
     const nP=leg.rawPosts;
     for(let i=0;i<nP;i++){const t2=nP>1?i/(nP-1):0;const px=x1+(x2-x1)*t2,py=y1+(y2-y1)*t2;const key=`${Math.round(px*2)/2},${Math.round(py*2)/2}`;const isS=i===0,isE=i===nP-1;let pcat;if(isStair)pcat=(isS||isE)?'stair-end':'stair-thru';else if(isS)pcat=(l.startEnd==='connected'||l.startEnd==='outside-capped'||l.startEnd==='outside-continuous')?'corner':'end';else if(isE)pcat=(l.endEnd==='connected'||l.endEnd==='outside-capped'||l.endEnd==='outside-continuous')?'corner':'end';else pcat='through';const typeNum=leg._postTypes?leg._postTypes[i]||'':'';postsToDraw.push({px,py,pcat,typeNum,key});}
   });
   const drawnKeys=new Set();
   postsToDraw.forEach(({px,py,pcat,typeNum,key})=>{if(drawnKeys.has(key))return;drawnKeys.add(key);const dotColor=POST_COLORS[pcat]||'#888';const DOT_R=10;svgParts.push(`<circle cx="${px}" cy="${py}" r="${DOT_R}" fill="${dotColor}" stroke="#fff" stroke-width="2"/>`);const fs=typeNum.length>2?7:9;svgParts.push(`<text x="${px}" y="${py+fs/2+1}" font-family="Courier New,monospace" font-size="${fs}" fill="#fff" text-anchor="middle" font-weight="bold">${typeNum}</text>`);});
-  const legendItems=[{col:'#4a90d9',lbl:'End post (11)'},{col:'#27ae60',lbl:'Corner post (10)'},{col:'#888888',lbl:'Through post (12)'},{col:'#e67e22',lbl:'Stair posts'}];
-  const LGX=CW-168,LGY=CH-legendItems.length*20-16;svgParts.push(`<rect x="${LGX-6}" y="${LGY-14}" width="166" height="${legendItems.length*20+10}" rx="3" fill="rgba(255,255,255,0.94)" stroke="#ccc"/>`);
-  legendItems.forEach((it,idx)=>{const ly=LGY+idx*20;svgParts.push(`<circle cx="${LGX+8}" cy="${ly}" r="8" fill="${it.col}" stroke="#fff" stroke-width="1.5"/><text x="${LGX+22}" y="${ly+4}" font-family="Courier New,monospace" font-size="10" fill="#333">${it.lbl}</text>`);});
-  const svgStr=`<svg xmlns="http://www.w3.org/2000/svg" width="${CW}" height="${CH}" style="display:block;max-width:100%;border-radius:4px"><rect width="${CW}" height="${CH}" fill="#f8f8f8" rx="4"/>${svgParts.join('\n')}</svg>`;
+  const HR_COLOR='#16a085';
+  lastCalcHrLegs.forEach(l=>{
+    const x1=tx(l.x1),y1=ty(l.y1),x2=tx(l.x2),y2=ty(l.y2);const horiz=Math.abs(l.x2-l.x1)>=Math.abs(l.y2-l.y1);
+    const secColor=l.sectionId?getSecColor(l.sectionId):null;const runColor=secColor||HR_COLOR;
+    svgParts.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${runColor}" stroke-width="2.5" stroke-dasharray="3,3" stroke-linecap="round" opacity="0.9"/>`);
+    const mx=(x1+x2)/2,my=(y1+y2)/2;const dimLbl='HR '+(l.label?l.label+' ':'')+(l.dim||'');const dw=Math.max(80,dimLbl.length*7+8);
+    if(horiz){svgParts.push(`<rect x="${mx-dw/2}" y="${my-32}" width="${dw}" height="15" rx="2" fill="rgba(255,255,255,0.92)"/><text x="${mx}" y="${my-21}" font-family="Courier New,monospace" font-size="12" fill="${runColor}" text-anchor="middle" font-weight="bold">${dimLbl}</text>`);}
+    else{svgParts.push(`<rect x="${mx+12}" y="${my-9}" width="${dw}" height="15" rx="2" fill="rgba(255,255,255,0.92)"/><text x="${mx+16}" y="${my+2}" font-family="Courier New,monospace" font-size="12" fill="${runColor}" font-weight="bold">${dimLbl}</text>`);}
+    const sup=hrLegSupports(l);
+    sup.points.forEach(p=>{
+      const px=x1+(x2-x1)*p.t,py=y1+(y2-y1)*p.t;
+      const kindColor=p.kind==='bracket'?runColor:'#8e44ad';const kindLbl=p.kind==='bracket'?'B':'P';
+      svgParts.push(`<circle cx="${px}" cy="${py}" r="7" fill="${kindColor}" stroke="#fff" stroke-width="1.5"/><text x="${px}" y="${py+3}" font-family="Courier New,monospace" font-size="7" fill="#fff" text-anchor="middle" font-weight="bold">${kindLbl}</text>`);
+    });
+    [[x1,y1,l.startEnd],[x2,y2,l.endEnd]].forEach(([ex,ey,et])=>{if(et!=='joined')return;svgParts.push(`<circle cx="${ex}" cy="${ey}" r="5" fill="#666" stroke="#fff" stroke-width="1.5"/>`);});
+  });
+  const svgStr=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CW} ${CH}" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style="display:block;max-width:100%;border-radius:4px"><rect width="${CW}" height="${CH}" fill="#f8f8f8" rx="4"/>${svgParts.join('\n')}</svg>`;
+  const legendItems=[{col:'#4a90d9',lbl:'End post (11)'},{col:'#27ae60',lbl:'Corner post (10)'},{col:'#888888',lbl:'Through post (12)'},{col:'#e67e22',lbl:'Stair posts'},{col:'#16a085',lbl:'Handrail bracket (B)'},{col:'#8e44ad',lbl:'Handrail post (P)'}];
+  const legendHtml=`<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:6px 4px 10px 4px;font-family:'Courier New',monospace;font-size:10px;color:#333">${legendItems.map(it=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${it.col};border:1.5px solid #fff;box-shadow:0 0 0 1px #ccc"></span>${it.lbl}</span>`).join('')}</div>`;
   const sectionMap=new Map();lastCalcLegs.forEach(leg=>{const sid=leg._src.sectionId||'';if(!sectionMap.has(sid))sectionMap.set(sid,[]);sectionMap.get(sid).push(leg);});
   let tableBodyHtml='';let grandTotalPosts=0,grandTotalRail=0,grandTotalInfill=0;
   sectionMap.forEach((sLegs,sid)=>{
@@ -1100,16 +1689,30 @@ function renderLayout(){
     grandTotalPosts+=secNet;grandTotalRail+=secRail;grandTotalInfill+=secInfill;
   });
   const tableHtml=`<table style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:11px;margin-top:2px"><thead><tr style="background:#e8e8e8"><th style="padding:5px 8px;border:1px solid #ccc;text-align:left">Leg</th><th style="padding:5px 8px;border:1px solid #ccc">Type</th><th style="padding:5px 8px;border:1px solid #ccc">Length</th><th style="padding:5px 8px;border:1px solid #ccc">Posts</th><th style="padding:5px 8px;border:1px solid #ccc;text-align:left">Post types</th><th style="padding:5px 8px;border:1px solid #ccc">Rail</th><th style="padding:5px 8px;border:1px solid #ccc">Infills (x8)</th></tr></thead><tbody>${tableBodyHtml}</tbody><tfoot><tr style="background:#fff3cd;font-weight:bold"><td colspan="3" style="padding:6px 10px;border:1px solid #ccc;font-size:12px">GRAND TOTAL</td><td style="padding:6px 8px;border:1px solid #ccc;text-align:center;color:#b8860b;font-size:13px">${grandTotalPosts}</td><td style="padding:6px 8px;border:1px solid #ccc"></td><td style="padding:6px 8px;border:1px solid #ccc;text-align:right;color:#b8860b">${grandTotalRail}mm</td><td style="padding:6px 8px;border:1px solid #ccc;text-align:right;color:#b8860b">${grandTotalInfill}mm</td></tr></tfoot></table>`;
+  let hrTableHtml='';
+  if(lastCalcHrLegRows.length){
+    const hrSectionMap=new Map();lastCalcHrLegRows.forEach(row=>{const sid=row.sectionId||'';if(!hrSectionMap.has(sid))hrSectionMap.set(sid,[]);hrSectionMap.get(sid).push(row);});
+    let hrBodyHtml='';let hrGrandLen=0,hrGrandBrkt=0,hrGrandPost=0;
+    hrSectionMap.forEach((rows,sid)=>{
+      const sec=sections.find(s=>String(s.id)===String(sid));const secName=sec?sec.name:'Unsectioned';const secColor=sec?sec.color:'#16a085';
+      hrBodyHtml+=`<tr><td colspan="5" style="padding:5px 10px;background:${secColor};color:#fff;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;border:1px solid ${secColor}">${secName.toUpperCase()}</td></tr>`;
+      let secLen=0,secBrkt=0,secPost=0;
+      rows.forEach(r=>{secLen+=r.dim;secBrkt+=r.brackets;secPost+=r.posts;hrBodyHtml+=`<tr style="background:#fff"><td style="padding:4px 8px;border:1px solid #e0e0e0;border-left:3px solid ${secColor};font-weight:bold">${r.label}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${r.dim}mm</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center">${r.brackets}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center">${r.posts}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;font-size:10px">${r.mode}</td></tr>`;});
+      hrBodyHtml+=`<tr style="background:#f0f9f6;font-weight:bold"><td colspan="1" style="padding:4px 10px;border:1px solid #ddd;color:${secColor};font-size:10px">${secName} total</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#0e7a5f">${secLen}mm</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#0e7a5f">${secBrkt}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#0e7a5f">${secPost}</td><td style="padding:4px 8px;border:1px solid #ddd"></td></tr>`;
+      hrGrandLen+=secLen;hrGrandBrkt+=secBrkt;hrGrandPost+=secPost;
+    });
+    hrTableHtml=`<div style="margin-top:14px;font-size:13px;font-weight:bold;color:#16a085;letter-spacing:1px">HANDRAIL BREAKDOWN</div><table style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:11px;margin-top:4px"><thead><tr style="background:#e0f2ee"><th style="padding:5px 8px;border:1px solid #b8ded4;text-align:left">Leg</th><th style="padding:5px 8px;border:1px solid #b8ded4">Length</th><th style="padding:5px 8px;border:1px solid #b8ded4">Brackets</th><th style="padding:5px 8px;border:1px solid #b8ded4">Posts</th><th style="padding:5px 8px;border:1px solid #b8ded4;text-align:left">Mode</th></tr></thead><tbody>${hrBodyHtml}</tbody><tfoot><tr style="background:#d4f0e8;font-weight:bold"><td style="padding:6px 10px;border:1px solid #b8ded4;font-size:12px">GRAND TOTAL</td><td style="padding:6px 8px;border:1px solid #b8ded4;text-align:right;color:#0e7a5f">${hrGrandLen}mm</td><td style="padding:6px 8px;border:1px solid #b8ded4;text-align:center;color:#0e7a5f;font-size:13px">${hrGrandBrkt}</td><td style="padding:6px 8px;border:1px solid #b8ded4;text-align:center;color:#0e7a5f;font-size:13px">${hrGrandPost}</td><td style="padding:6px 8px;border:1px solid #b8ded4"></td></tr></tfoot></table>`;
+  }
   const headerHtml=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333"><div><div style="font-size:15px;font-weight:bold;letter-spacing:1px">BALUSTRADER — RUN LAYOUT</div><div style="font-size:11px;color:#555;margin-top:3px">${prodName}${fixName?' — '+fixName:''}</div></div><div style="font-size:11px;color:#444;text-align:right;line-height:1.7"><b>Date:</b> ${dateStr}</div></div>`;
-  inner.innerHTML=headerHtml+svgStr+'<div style="margin-top:8px">'+tableHtml+'</div>';
+  inner.innerHTML=headerHtml+svgStr+legendHtml+'<div style="margin-top:2px" class="layout-table-wrap">'+(lastCalcLegs.length?tableHtml:'')+hrTableHtml+'</div>';
 }
 
 function printLayout(){
-  if(!lastCalcLegs.length){alert('Calculate first.');return;}
+  if(!lastCalcLegs.length&&!lastCalcHrLegs.length){alert('Calculate first.');return;}
   renderLayout();const html=document.getElementById('layoutInner').innerHTML;
   const win=window.open('','_blank','width=1100,height=850');
   if(!win){alert('Popup blocked.');return;}
-  win.document.write(`<!DOCTYPE html><html><head><title>Layout</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;background:#fff;color:#111;padding:12mm 10mm;font-size:11px}table{border-collapse:collapse;width:100%}th,td{padding:4px 7px;border:1px solid #ccc;font-size:10px}thead tr{background:#e8e8e8}tfoot tr{background:#fff3cd;font-weight:bold}@media print{body{padding:7mm 7mm}@page{size:A4 landscape;margin:5mm}}</style></head><body>${html}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html><head><title>Layout</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;background:#fff;color:#111;padding:12mm 10mm;font-size:11px}table{border-collapse:collapse;width:100%}th,td{padding:4px 7px;border:1px solid #ccc;font-size:10px}thead{display:table-header-group}thead tr{background:#e8e8e8}tfoot{display:table-footer-group}tfoot tr{background:#fff3cd;font-weight:bold}tr,td,th{page-break-inside:avoid}.layout-table-wrap{page-break-before:always}@media print{body{padding:7mm 7mm}@page{size:A4 landscape;margin:5mm}}</style></head><body>${html}</body></html>`);
   win.document.close();win.focus();setTimeout(()=>win.print(),500);
 }
 
