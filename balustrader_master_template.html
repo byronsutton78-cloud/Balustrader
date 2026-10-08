@@ -113,7 +113,7 @@ const HR_STANCHION_FIX_OPTIONS = [
 
 const PRODUCT = {
   name:    '8-Line Horizontal — Top Mount',
-  version: 'v1.27',
+  version: 'v1.28',
   showInfillSelect:      true,
   showInfillFixing:      true,
   showFixingSelect:      true,
@@ -1283,7 +1283,11 @@ function calculateHandrail(hrLegs){
   if(cornerJoints>0)html+=`<div class="jc-row"><span>${bendLbl} (corners)</span><span class="val">${cornerJoints}</span></div>`;
   html+=`</div>`;
   const text=`\nHANDRAIL\n${'─'.repeat(20)}\nProfile: ${profileLbls[profile]||profile}\nMaterial: ${material}\nTubing: ${toM(totalTube)} / ${tubeStock} x ${toM(STOCK)}${joiners?`\nJoiners: ${joiners}`:''}\nBrackets: ${Object.entries(bracketCount).map(([f,q])=>`${q}x ${wallFixLbls[f]||f}`).join(', ')||'none'}\nStanchion posts: ${Object.entries(postCount).map(([f,q])=>`${q}x ${stFixLbls[f]||f}`).join(', ')||'none'}${totalCoverPlates?`\nCover plates: ${totalCoverPlates}`:''}${cornerJoints?`\n${bendLbl}: ${cornerJoints}`:''}\nEnd caps: ${endCaps}`;
-  return {html,text,legRows};
+  const sage={profileLbl:profileLbls[profile]||profile,material,stock:STOCK,totalTube,joiners,endCaps,cornerJoints,bendItem:isDIY?'Flexi bend':'Prefab bend',
+    brackets:Object.fromEntries(Object.entries(bracketCount).map(([f,q])=>[wallFixLbls[f]||f,q])),
+    posts:Object.fromEntries(Object.entries(postCount).map(([f,q])=>[stFixLbls[f]||f,q])),
+    coverPlates:totalCoverPlates,grout,rods,epoxy,flanges};
+  return {html,text,legRows,sage};
 }
 
 function calculate(){
@@ -1440,6 +1444,25 @@ function calculate(){
     h+=sFixHtml;
     h+=`</div>`;
     if(accum){accum.rail+=sRail;accum.infill+=sInfill;accum.glassPanels+=sGlassPanels;accum.railBends+=sRailBends;accum.flexi+=sFlexi;accum.ec+=sEC;accum.infillEc+=sInfillEC;accum.joiners+=sJoiners;}
+    if(accum&&accum.sage){
+      const S=accum.sage;const sMat=sRes.material;
+      const sPostLbl=postLbls[sRes.post]||sRes.post;const sRailLbl=railLbls[sRes.rail]||sRes.rail;
+      const sPostH=sRes.fixing==='top'?1000:sRes.fixing==='side'?1150:900;
+      S.specs.push({key:sPostLbl+'|'+sMat+'|'+sRes.fixing,postLbl:sPostLbl,mat:sMat,mount:sRes.fixing,postH:sPostH,types:sTypes,total:sTotal});
+      if(sHasTopRail&&sRail>0)S.tube(sRailLbl,sMat,sRail,'top rail',sSTOCK);
+      if(sInfill>0){
+        if(sIsCableInfill)S.add('Infill','Cable 4mm 1x19','Grade 316 stainless',Math.ceil(sInfill/1000),'m');
+        else{const iSize=sRes.infill==='15.88-8'?'15.88mm round':sRes.infill==='12.7-8'?'12.7mm round':(infillLbls[sRes.infill]||sRes.infill);S.tube(iSize,sMat,sInfill,'infill',sSTOCK);}
+      }
+      if(sGlassPanels>0){S.add('Glass','Glass panel',(sRes.infill==='glass-10mm'?'10mm':'8mm')+' TSG — estimate, confirm sizes on site',sGlassPanels,'ea');S.add('Glass','D-clamp '+sGlassClampBack,sMat,sGlassClamps,'ea');}
+      if(sHasTopRail){
+        S.add('Fittings','Top rail bend',sRailLbl+', '+sMat,sRailBends,'ea');
+        S.add('Fittings','Joiner',sRailLbl+', '+sMat,sJoiners,'ea');
+        S.add('Fittings','End cap',sRailLbl+', '+sMat,sEC,'ea');
+      }
+      S.add('Fittings','Infill flexi bend',sInfillEndCapSize+' round, '+sMat,sFlexi,'ea');
+      S.add('Fittings','End cap',sInfillEndCapSize+' round, '+sMat,sInfillEC,'ea');
+    }
     let t=`\n${sName}${sid?' — '+sRes.cfg.name:''}\n${'─'.repeat(20)}\n`;
     sl.forEach(l=>{t+=`  ${l.label||(l.type==='stairs'?'Stairs':'Run')} ${toM(l.dim)}\n`;});
     t+=`  Posts: ${sTotal} (${sRaw}-${sShared} shared)\n`;
@@ -1456,7 +1479,7 @@ function calculate(){
   const alertHtml=alerts.length?`<div class="jc-alert">${alerts.join('<br>')}</div>`:'';
   const settingsHtml=unsec.length?`<div class="jc-section"><div class="jc-section-title">Job settings — unsectioned lines</div><div class="jc-row"><span>Product</span><span class="val">${activeConfig.name}</span></div><div class="jc-row"><span>Infill</span><span class="val">${infillLbls[infill]||infill}</span></div><div class="jc-row"><span>Post</span><span class="val">${postLbls[post]||post}</span></div><div class="jc-row"><span>Top rail</span><span class="val">${railLbls[rail]||rail}</span></div><div class="jc-row"><span>Material</span><span class="val">${mat}</span></div></div>`:'';
 
-  const accum={rail:0,infill:0,glassPanels:0,railBends:0,flexi:0,ec:0,infillEc:0,joiners:0};
+  const accum={rail:0,infill:0,glassPanels:0,railBends:0,flexi:0,ec:0,infillEc:0,joiners:0,sage:newSageList()};
   let html=alertHtml+settingsHtml,htmlSide=alertHtml+settingsHtml;
   const sectionTexts=[];
   sections.forEach(sec=>{
@@ -1496,6 +1519,48 @@ function calculate(){
   if(hrResult){html+=hrResult.html;htmlSide+=hrResult.html;}
   lastCalcHrLegs=hrActive.map(l=>({...l,_src:l}));
   lastCalcHrLegRows=hrResult?hrResult.legRows:[];
+
+  // ── Sage materials list: posts + fixings totalled per post spec ──
+  {
+    const S=accum.sage;
+    const mountLbls={top:'top mount',side:'side mount',flange:'flange mount',pinfix:'pin fix'};
+    // One spec across the whole job → use the job-wide type counts / total
+    // (same numbers as the job card totals and drilling sheet). Mixed specs →
+    // total each spec's own section counts.
+    const specMap=new Map();
+    const distinct=new Set(S.specs.map(s=>s.key));
+    if(distinct.size===1){const s=S.specs[0];specMap.set(s.key,{...s,types:{...types},total:totalPosts});}
+    else S.specs.forEach(s=>{if(!specMap.has(s.key))specMap.set(s.key,{...s,types:{},total:0});const g=specMap.get(s.key);g.total+=s.total;Object.entries(s.types).forEach(([t,q])=>{g.types[t]=(g.types[t]||0)+q;});});
+    const mountPosts={};
+    specMap.forEach(g=>{
+      const spec=`${g.postLbl}, ${g.mat}, ${g.postH}mm, ${mountLbls[g.mount]||g.mount}`;
+      typeOrder.forEach(t=>{if(g.types[t])S.add('Posts',typeNames[t]||'Type '+t,spec,g.types[t],'ea');});
+      if(g.mount!=='side')S.add('Posts','Cover plate — domed',g.postLbl+', '+g.mat,g.total,'ea');
+      if(g.mount!=='top'&&g.mount!=='side'&&g.mount!=='pinfix')S.add('Fixing','Flange plate — 3 hole',g.postLbl+', '+g.mat,g.total,'ea');
+      mountPosts[g.mount]=(mountPosts[g.mount]||0)+g.total;
+    });
+    Object.entries(mountPosts).forEach(([mnt,n])=>{
+      if(!n)return;
+      if(mnt==='top')S.add('Fixing','Non-shrink grout','',Math.ceil(n/6)*2,'kg');
+      else if(mnt==='side'){S.add('Fixing','Threaded rod M10 x 150mm','',n*2,'ea');S.add('Fixing','Chemical epoxy 300ml','',Math.ceil(n/5),'tubes');}
+      else if(mnt==='pinfix'){S.add('Fixing','Threaded rod M16 x 1m','',Math.ceil(n/6),'ea');S.add('Fixing','Chemical epoxy 300ml','',Math.ceil(n/10),'tubes');}
+    });
+    if(hrResult&&hrResult.sage){
+      const h=hrResult.sage;const hs=h.profileLbl+', '+h.material;
+      S.tube(h.profileLbl,h.material,h.totalTube,'handrail',h.stock);
+      S.add('Fittings','Joiner',hs,h.joiners,'ea');
+      S.add('Fittings','End cap',hs,h.endCaps,'ea');
+      S.add('Fittings',h.bendItem,hs,h.cornerJoints,'ea');
+      Object.entries(h.brackets).forEach(([lbl,q])=>S.add('Handrail','Wall bracket — '+lbl,hs,q,'ea'));
+      Object.entries(h.posts).forEach(([lbl,q])=>S.add('Handrail','Stanchion post — Type 13 plain',hs+', '+lbl,q,'ea'));
+      S.add('Handrail','Cover plate — domed',hs,h.coverPlates,'ea');
+      S.add('Fixing','Non-shrink grout','',h.grout,'kg');
+      S.add('Fixing','Threaded rod M10 x 150mm','',h.rods,'ea');
+      S.add('Fixing','Chemical epoxy 300ml','',h.epoxy,'tubes');
+      S.add('Fixing','Flange plate — 3 hole',hs,h.flanges,'ea');
+    }
+    lastSageItems=S.finish();
+  }
 
   document.getElementById('jcBody').innerHTML=html;
   document.getElementById('jcBodySide').innerHTML=htmlSide;
@@ -1613,7 +1678,53 @@ function printDrilling(){
   });
 }
 
-function copyJobCard(){if(!lastCalcText){alert('Calculate first.');return;}if(navigator.clipboard){navigator.clipboard.writeText(lastCalcText).then(()=>alert('Copied — paste into Sage or WhatsApp.')).catch(()=>prompt('Copy this:',lastCalcText));}else{prompt('Copy this:',lastCalcText);}}
+// ── Copy for Sage (v1.28) ────────────────────────────────────────────────
+// One flat, job-wide list of raw materials to load as a sales order / customer
+// quote. Sections are NOT split out — identical items are totalled together.
+// Columns: Item | Size / spec | Qty | Unit. Copied as a real table (pastes
+// into Word as a table) with a tab-separated plain-text fallback.
+let lastSageItems=[];
+const SAGE_GROUPS=['Posts','Tubing','Infill','Glass','Fittings','Handrail','Fixing'];
+function newSageList(){
+  const m=new Map();const tubes=new Map();
+  return{
+    specs:[],
+    add(group,item,spec,qty,unit){if(!qty||qty<=0)return;const k=group+'|'+item+'|'+spec+'|'+unit;if(!m.has(k))m.set(k,{group,item,spec,qty:0,unit});m.get(k).qty+=qty;},
+    tube(size,mat,mm,use,stock){if(!mm||mm<=0)return;const k=size+'|'+mat;if(!tubes.has(k))tubes.set(k,{size,mat,mm:0,uses:new Set(),stock});const t=tubes.get(k);t.mm+=mm;t.uses.add(use);},
+    finish(){
+      tubes.forEach(t=>{this.add('Tubing','Tube '+t.size,`${t.mat} — ${toM(t.stock)} lengths (${[...t.uses].join(' + ')}, ${toM(t.mm)} needed)`,Math.ceil(t.mm/t.stock),'lengths');});
+      const rows=[...m.values()];
+      return rows.sort((a,b)=>SAGE_GROUPS.indexOf(a.group)-SAGE_GROUPS.indexOf(b.group));
+    }
+  };
+}
+function sageEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function buildSageCopy(){
+  const rows=lastSageItems;const date=new Date().toLocaleDateString('en-ZA');
+  let text=`MATERIALS LIST — ${date}\nItem\tSize / spec\tQty\tUnit\n`;
+  let html=`<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt"><tr><td colspan="4" style="font-weight:bold;font-size:11pt">MATERIALS LIST — ${date}</td></tr><tr style="background:#d9d9d9;font-weight:bold"><td>Item</td><td>Size / spec</td><td>Qty</td><td>Unit</td></tr>`;
+  let g='';
+  rows.forEach(r=>{
+    if(r.group!==g){g=r.group;text+=`\n${g.toUpperCase()}\n`;html+=`<tr style="background:#f2f2f2;font-weight:bold"><td colspan="4">${sageEsc(g.toUpperCase())}</td></tr>`;}
+    const q=Number.isInteger(r.qty)?r.qty:parseFloat(r.qty.toFixed(2));
+    text+=`${r.item}\t${r.spec}\t${q}\t${r.unit}\n`;
+    html+=`<tr><td>${sageEsc(r.item)}</td><td>${sageEsc(r.spec)}</td><td style="text-align:right">${q}</td><td>${sageEsc(r.unit)}</td></tr>`;
+  });
+  html+='</table>';
+  return{text,html};
+}
+function copyJobCard(){
+  if(!lastCalcText){alert('Calculate first.');return;}
+  if(!lastSageItems.length){alert('Nothing to copy — no materials calculated.');return;}
+  const {text,html}=buildSageCopy();
+  const done=()=>alert('Materials list copied ('+lastSageItems.length+' items) — paste into Word or Sage.');
+  const plain=()=>{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>prompt('Copy this:',text));}else{prompt('Copy this:',text);}};
+  try{
+    if(navigator.clipboard&&window.ClipboardItem){
+      navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]).then(done).catch(plain);
+    }else plain();
+  }catch(e){plain();}
+}
 function printJobCard(){
   if(!lastCalcText){alert('Calculate first.');return;}
   const jcHtml=document.getElementById('jcBody').innerHTML;
@@ -1647,7 +1758,7 @@ function renderLayout(){
     const x1=tx(l.x1),y1=ty(l.y1),x2=tx(l.x2),y2=ty(l.y2);const horiz=Math.abs(l.x2-l.x1)>=Math.abs(l.y2-l.y1);const isStair=l.type==='stairs';
     const secColor=l.sectionId?getSecColor(l.sectionId):null;const runColor=secColor||(isStair?'#e67e22':'#4a90d9');
     svgParts.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${runColor}" stroke-width="${isStair?2.5:3}" ${isStair?'stroke-dasharray="10,5"':''} stroke-linecap="round" opacity="0.85"/>`);
-    if(isStair){const ax=x1+(x2-x1)*0.5,ay=y1+(y2-y1)*0.5;const ang=Math.atan2(y2-y1,x2-x1),sz=9;const arx1=ax-Math.cos(ang)*sz,ary1=ay-Math.sin(ang)*sz,arx2=ax+Math.cos(ang)*sz,ary2=ay+Math.sin(ang)*sz;svgParts.push(`<line x1="${arx1}" y1="${ary1}" x2="${arx2}" y2="${ary2}" stroke="${runColor}" stroke-width="1.5"/>`);const t1x=arx2+Math.cos(ang+2.4)*6,t1y=ary2+Math.sin(ang+2.4)*6,t2x=arx2+Math.cos(ang-2.4)*6,t2y=ary2+Math.sin(ang-2.4)*6;svgParts.push(`<polygon points="${arx2},${ary2} ${t1x},${t1y} ${t2x},${t2y}" fill="${runColor}"/>`);const dlx=horiz?ax:ax+32,dly=horiz?ay-16:ay;const dirLbl=(l.dir||'LH')+' up';svgParts.push(`<rect x="${dlx-24}" y="${dly-9}" width="48" height="13" rx="2" fill="rgba(255,255,255,0.92)"/><text x="${dlx}" y="${dly}" font-family="Courier New,monospace" font-size="9" fill="${runColor}" text-anchor="middle" font-weight="bold">${dirLbl}</text>`);}
+    if(isStair){const ax=x1+(x2-x1)*0.5,ay=y1+(y2-y1)*0.5;const ang=Math.atan2(y2-y1,x2-x1),sz=9;const arx1=ax-Math.cos(ang)*sz,ary1=ay-Math.sin(ang)*sz,arx2=ax+Math.cos(ang)*sz,ary2=ay+Math.sin(ang)*sz;svgParts.push(`<line x1="${arx1}" y1="${ary1}" x2="${arx2}" y2="${ary2}" stroke="${runColor}" stroke-width="1.5"/>`);const t1x=arx2+Math.cos(ang+2.4)*6,t1y=ary2+Math.sin(ang+2.4)*6,t2x=arx2+Math.cos(ang-2.4)*6,t2y=ary2+Math.sin(ang-2.4)*6;svgParts.push(`<polygon points="${arx2},${ary2} ${t1x},${t1y} ${t2x},${t2y}" fill="${runColor}"/>`);const dlx=horiz?ax:ax-34,dly=horiz?ay+(l.sectionId?40:22):ay+3;const dirLbl=(l.dir||'LH')+' up';svgParts.push(`<rect x="${dlx-24}" y="${dly-9}" width="48" height="13" rx="2" fill="rgba(255,255,255,0.92)"/><text x="${dlx}" y="${dly}" font-family="Courier New,monospace" font-size="9" fill="${runColor}" text-anchor="middle" font-weight="bold">${dirLbl}</text>`);}
     const mx=(x1+x2)/2,my=(y1+y2)/2;const dimLbl=(l.label?l.label+' ':'')+(l.dim||'');const dw=Math.max(72,dimLbl.length*7+8);
     if(horiz){svgParts.push(`<rect x="${mx-dw/2}" y="${my-32}" width="${dw}" height="15" rx="2" fill="rgba(255,255,255,0.92)"/><text x="${mx}" y="${my-21}" font-family="Courier New,monospace" font-size="12" fill="${runColor}" text-anchor="middle" font-weight="bold">${dimLbl}</text>`);}
     else{svgParts.push(`<rect x="${mx+12}" y="${my-9}" width="${dw}" height="15" rx="2" fill="rgba(255,255,255,0.92)"/><text x="${mx+16}" y="${my+2}" font-family="Courier New,monospace" font-size="12" fill="${runColor}" font-weight="bold">${dimLbl}</text>`);}
@@ -1674,7 +1785,25 @@ function renderLayout(){
     });
     [[x1,y1,l.startEnd],[x2,y2,l.endEnd]].forEach(([ex,ey,et])=>{if(et!=='joined')return;svgParts.push(`<circle cx="${ex}" cy="${ey}" r="5" fill="#666" stroke="#fff" stroke-width="1.5"/>`);});
   });
-  const svgStr=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CW} ${CH}" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style="display:block;max-width:100%;border-radius:4px"><rect width="${CW}" height="${CH}" fill="#f8f8f8" rx="4"/>${svgParts.join('\n')}</svg>`;
+  // v1.28 — measure what was actually drawn (lines, dots, label boxes, text)
+  // and fit the frame to it, so labels beside right-edge runs, section tags and
+  // stair direction tags are never cut off.
+  const bb={x0:Infinity,y0:Infinity,x1:-Infinity,y1:-Infinity};
+  const inc=(x,y)=>{if(!isFinite(x)||!isFinite(y))return;bb.x0=Math.min(bb.x0,x);bb.y0=Math.min(bb.y0,y);bb.x1=Math.max(bb.x1,x);bb.y1=Math.max(bb.y1,y);};
+  svgParts.join('').split('<').forEach(el=>{
+    const tag=(el.match(/^(\w+)/)||[])[1];if(!tag)return;
+    const a=n=>{const m=el.match(new RegExp('\\s'+n+'="(-?[\\d.eE+-]+)"'));return m?parseFloat(m[1]):NaN;};
+    if(tag==='rect'){inc(a('x'),a('y'));inc(a('x')+a('width'),a('y')+a('height'));}
+    else if(tag==='line'){inc(a('x1')-4,a('y1')-4);inc(a('x2')+4,a('y2')+4);inc(a('x1')+4,a('y1')+4);inc(a('x2')-4,a('y2')-4);}
+    else if(tag==='circle'){const r=a('r')+2;inc(a('cx')-r,a('cy')-r);inc(a('cx')+r,a('cy')+r);}
+    else if(tag==='polygon'){const pm=el.match(/points="([^"]+)"/);if(pm)pm[1].trim().split(/\s+/).forEach(p=>{const[px,py]=p.split(',').map(Number);inc(px,py);});}
+    else if(tag==='text'){const txt=(el.split('>')[1]||'');const fsz=a('font-size')||10;const w=txt.length*fsz*0.62;const x=a('x'),y=a('y');const mid=/text-anchor="middle"/.test(el);inc(mid?x-w/2:x,y-fsz);inc(mid?x+w/2:x+w,y+3);}
+  });
+  if(!isFinite(bb.x0)){bb.x0=0;bb.y0=0;bb.x1=CW;bb.y1=CH;}
+  // keep a sensible minimum height so a single straight run isn't a thin strip
+  const minH=(bb.x1-bb.x0)*0.28;if(bb.y1-bb.y0<minH){const c=(bb.y0+bb.y1)/2;bb.y0=c-minH/2;bb.y1=c+minH/2;}
+  const VM=16;const vx=bb.x0-VM,vy=bb.y0-VM,vw=bb.x1-bb.x0+VM*2,vh=bb.y1-bb.y0+VM*2;
+  const svgStr=`<svg class="layout-svg" xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block;max-width:100%;border-radius:4px"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="#f8f8f8" rx="4"/>${svgParts.join('\n')}</svg>`;
   const legendItems=[{col:'#4a90d9',lbl:'End post (11)'},{col:'#27ae60',lbl:'Corner post (10)'},{col:'#888888',lbl:'Through post (12)'},{col:'#e67e22',lbl:'Stair posts'},{col:'#16a085',lbl:'Handrail bracket (B)'},{col:'#8e44ad',lbl:'Handrail post (P)'}];
   const legendHtml=`<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:6px 4px 10px 4px;font-family:'Courier New',monospace;font-size:10px;color:#333">${legendItems.map(it=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${it.col};border:1.5px solid #fff;box-shadow:0 0 0 1px #ccc"></span>${it.lbl}</span>`).join('')}</div>`;
   const sectionMap=new Map();lastCalcLegs.forEach(leg=>{const sid=leg._src.sectionId||'';if(!sectionMap.has(sid))sectionMap.set(sid,[]);sectionMap.get(sid).push(leg);});
@@ -1712,7 +1841,7 @@ function printLayout(){
   renderLayout();const html=document.getElementById('layoutInner').innerHTML;
   const win=window.open('','_blank','width=1100,height=850');
   if(!win){alert('Popup blocked.');return;}
-  win.document.write(`<!DOCTYPE html><html><head><title>Layout</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;background:#fff;color:#111;padding:12mm 10mm;font-size:11px}table{border-collapse:collapse;width:100%}th,td{padding:4px 7px;border:1px solid #ccc;font-size:10px}thead{display:table-header-group}thead tr{background:#e8e8e8}tfoot{display:table-footer-group}tfoot tr{background:#fff3cd;font-weight:bold}tr,td,th{page-break-inside:avoid}.layout-table-wrap{page-break-before:always}@media print{body{padding:7mm 7mm}@page{size:A4 landscape;margin:5mm}}</style></head><body>${html}</body></html>`);
+  win.document.write(`<!DOCTYPE html><html><head><title>Layout</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;background:#fff;color:#111;padding:12mm 10mm;font-size:11px}table{border-collapse:collapse;width:100%}th,td{padding:4px 7px;border:1px solid #ccc;font-size:10px}thead{display:table-header-group}thead tr{background:#e8e8e8}tfoot{display:table-footer-group}tfoot tr{background:#fff3cd;font-weight:bold}tr,td,th{page-break-inside:avoid}.layout-table-wrap{page-break-before:always}svg.layout-svg{width:100%;height:auto;max-height:170mm}@media print{body{padding:7mm 7mm}@page{size:A4 landscape;margin:5mm}}</style></head><body>${html}</body></html>`);
   win.document.close();win.focus();setTimeout(()=>win.print(),500);
 }
 
