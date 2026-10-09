@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Balustrader — Frameless Glass v7</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1a1a1a;--bg2:#111;--bg3:#0d0d0d;--bg4:#222;--bg5:#2e2e2e;
+  --border:#2a2a2a;--border2:#444;--border3:#555;
+  --text:#e0e0e0;--text2:#ccc;--text3:#888;--text4:#666;
+  --accent:#c8a028;--accent-text:#111;
+  --danger:#c0392b;--danger-text:#e07060;
+  --canvas-bg:#1a1a1a;--row-border:#1f1f1f;--popup-shadow:rgba(0,0,0,0.8);
+}
+body.light{
+  --bg:#f0f2f5;--bg2:#ffffff;--bg3:#e8eaed;--bg4:#e0e2e5;--bg5:#d0d2d5;
+  --border:#ccc;--border2:#bbb;--border3:#999;
+  --text:#1a1a1a;--text2:#333;--text3:#666;--text4:#999;
+  --accent:#b8860b;--accent-text:#fff;
+  --danger:#c0392b;--danger-text:#c0392b;
+  --canvas-bg:#ffffff;--row-border:#e0e0e0;--popup-shadow:rgba(0,0,0,0.2);
+}
+html,body{height:100%;margin:0;overflow:hidden}
+body{font-family:'Courier New',monospace;background:var(--bg);color:var(--text);padding:6px 8px 0 8px;height:100vh;display:flex;flex-direction:column;box-sizing:border-box;transition:background 0.2s,color 0.2s}
+#pageContent{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.settings-bar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px;padding:6px 9px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;align-items:center}
+.settings-bar label{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.s-sep{width:1px;background:var(--border);margin:0 2px;height:18px}
+.toolbar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;padding:6px 9px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;align-items:center}
+.tool-btn{padding:4px 10px;border-radius:3px;border:1px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-size:11px;font-family:'Courier New',monospace;font-weight:500;white-space:nowrap;transition:background 0.12s}
+.tool-btn:hover{background:var(--bg5);border-color:var(--border3)}
+.tool-btn.active{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:bold}
+.tool-btn.danger{border-color:var(--danger);color:var(--danger-text)}
+.tool-btn.danger:hover{background:var(--danger);color:#fff}
+.tool-btn.mode-btn{font-size:13px;padding:5px 10px}
+.tool-btn.ad-btn{border-color:#7b68ee;color:#7b68ee}
+.tool-btn.ad-btn:hover{background:rgba(123,104,238,0.15)}
+.ad-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 6px;border-radius:10px;border:1px solid var(--border2);background:var(--bg4)}
+.ad-dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:#aaa}
+.jc-area{font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;padding:5px 8px;margin:4px 0 8px;border-radius:3px;background:var(--text2);color:var(--bg2)}
+.jc-design{font-size:10px;font-weight:bold;padding:3px 7px;border-radius:3px;color:#fff;margin-bottom:7px}
+.sep{width:1px;background:var(--border);margin:0 2px;height:20px}
+.instr{font-size:11px;color:var(--text3);margin-bottom:5px;padding:4px 9px;background:var(--bg2);border-radius:3px;border:1px solid var(--border);line-height:1.5}
+.main-wrap{display:flex;flex-direction:column;flex:1;min-height:0}
+.canvas-wrap{position:relative;border:1px solid var(--border);border-radius:4px;background:var(--canvas-bg);overflow:hidden;flex:1;min-height:0}
+canvas{display:block;width:100%;height:100%}
+.tab-panel{display:none;flex:1;min-height:0;overflow-y:auto;background:var(--bg2);flex-direction:column}
+.tab-panel.active{display:flex}
+.popup-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:190;display:none}
+.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:11px 13px;display:none;z-index:200;width:240px;box-shadow:0 8px 30px var(--popup-shadow);max-height:85vh;overflow-y:auto}
+.popup h4{font-size:11px;font-weight:bold;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.popup label{font-size:10px;color:var(--text3);display:block;margin-bottom:2px;margin-top:6px;text-transform:uppercase;letter-spacing:0.5px}
+.popup input,.popup select{width:100%;padding:5px 7px;border:1px solid var(--border2);border-radius:3px;font-size:12px;background:var(--bg);color:var(--text);outline:none;font-family:'Courier New',monospace}
+.popup input:focus,.popup select:focus{border-color:var(--accent)}
+.popup-btns{display:flex;gap:4px;margin-top:9px;position:sticky;bottom:-11px;background:var(--bg2);padding:8px 13px 2px;margin-left:-13px;margin-right:-13px;border-top:1px solid var(--border2);box-shadow:0 -8px 10px -6px var(--popup-shadow)}
+.btn-save{flex:1;padding:6px;border-radius:3px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-text);cursor:pointer;font-size:11px;font-weight:bold;font-family:'Courier New',monospace}
+.btn-cancel{padding:6px 8px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-del{padding:6px 8px;border-radius:3px;border:1px solid var(--danger);background:transparent;color:var(--danger-text);cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn-calc{flex:1;padding:10px;border-radius:3px;border:1px solid #27ae60;background:#1a5c33;color:#bef0d0;cursor:pointer;font-size:12px;font-family:'Courier New',monospace;font-weight:bold}
+.btn-calc:hover{background:#27ae60;color:#fff}
+.btn-secondary{padding:10px 14px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Courier New',monospace}
+.btn-secondary:hover{background:var(--bg4);color:var(--text2)}
+.btn-danger-sm{padding:10px 14px;border-radius:3px;border:1px solid var(--danger);background:transparent;color:var(--danger-text);cursor:pointer;font-size:12px;font-family:'Courier New',monospace}
+.btn-danger-sm:hover{background:var(--danger);color:#fff}
+.tab-bar{display:flex;gap:0;border-top:2px solid var(--border2);background:var(--bg2);flex-shrink:0}
+.tab-btn{flex:1;padding:9px 10px;border:none;border-right:1px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer;font-family:'Courier New',monospace;font-size:11px;font-weight:500;text-align:center;transition:background 0.12s,color 0.12s}
+.tab-btn:last-child{border-right:none}
+.tab-btn:hover{background:var(--bg3);color:var(--text)}
+.tab-btn.active{background:var(--bg3);color:var(--accent);border-top:2px solid var(--accent);margin-top:-2px}
+.jc-body{padding:10px 12px}
+.jc-section{margin-bottom:12px}
+.jc-section-title{font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.jc-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--row-border);font-size:11px;gap:8px}
+.jc-row:last-child{border-bottom:none}
+.jc-row .val{font-weight:bold;color:var(--accent);white-space:nowrap}
+.jc-row .sub{font-size:10px;color:var(--text4)}
+.jc-total{display:flex;justify-content:space-between;padding:6px 0;font-weight:bold;font-size:13px;border-top:1px solid var(--border2);margin-top:4px;color:var(--accent)}
+.jc-alert{background:rgba(192,57,43,0.15);border:1px solid var(--danger);border-radius:3px;padding:6px 8px;font-size:10px;color:var(--danger-text);margin-bottom:8px}
+.btn-copy{width:100%;padding:7px;border-radius:3px;border:1px solid #2980b9;background:#1a3a5c;color:#aad4f5;cursor:pointer;font-size:11px;font-family:'Courier New',monospace}
+.btn-copy:hover{background:#2980b9;color:#fff}
+.btn-print{width:100%;padding:7px;border-radius:3px;border:1px solid #27ae60;background:#1a5c33;color:#bef0d0;cursor:pointer;font-size:11px;font-family:'Courier New',monospace;margin-top:6px}
+.btn-print:hover{background:#27ae60;color:#fff}
+.tb-select{background:var(--bg);border:1px solid var(--border3);color:var(--text);padding:4px 8px;font-family:'Courier New',monospace;font-size:11px;border-radius:3px;cursor:pointer}
+/* Profile select hidden for side mount */
+#profileWrap{transition:opacity 0.15s}
+/* Print styles */
+@media print{
+  body{background:#fff!important;color:#000!important;padding:0!important;height:auto!important;overflow:visible!important}
+  .toolbar,.instr,.btn-row,.tab-bar,#canvasSideJC,.canvas-wrap{display:none!important}
+  #pageContent{overflow:visible!important}
+  .tab-panel{display:block!important;overflow:visible!important}
+  #panel-canvas{display:none!important}
+  #panel-print{display:block!important}
+  .print-sheet{padding:18px 24px;font-family:'Courier New',monospace;font-size:11px;color:#000}
+}
+</style>
+</head>
+<body>
+
+<div class="instr" id="instr">Balustrader — Frameless Glass v13 | Select a tool then click and drag to draw.</div>
+
+<div class="settings-bar">
+  <label>Mount:
+    <select id="mountSelect" onchange="onMountChange()" class="tb-select">
+      <option value="core">Top Mount — Core Drill</option>
+      <option value="pin">Top Mount — Pin Fix</option>
+      <option value="flange">Top Mount — Flange Plate</option>
+      <option value="sidemount">Side Mount — Threaded Rod</option>
+      <option value="channel">Aluminium Channel — Floor Fixed</option>
+      <option value="groutchannel">Concrete Channel — Grouted</option>
+    </select>
+  </label>
+  <div class="s-sep"></div>
+  <span id="profileWrap"><label>Profile:
+    <select id="profileSelect" class="tb-select">
+      <option value="round">50mm Round Spigot</option>
+      <option value="square">Square Spigot</option>
+    </select>
+  </label></span>
+  <div class="s-sep"></div>
+  <label>Material:
+    <select id="materialSelect" class="tb-select">
+      <option value="316-180">316-180</option>
+      <option value="316-mirror">316-Mirror</option>
+      <option value="304-180">304-180</option>
+      <option value="304-mirror">304-Mirror</option>
+    </select>
+  </label>
+  <span id="channelFinishWrap" style="display:none"><div class="s-sep" style="display:inline-block;vertical-align:middle"></div><label style="display:inline-flex">Channel finish:
+    <select id="channelFinishSelect" class="tb-select">
+      <option value="brushed">Brushed aluminium</option>
+      <option value="pc">Powder coated aluminium</option>
+    </select>
+  </label></span>
+</div>
+
+<div class="toolbar">
+  <button class="tool-btn active" id="tool-run" onclick="setTool('run')">Run</button>
+  <button class="tool-btn" id="tool-stairs" onclick="setTool('stairs')">Stairs</button>
+  <div class="sep"></div>
+  <button class="tool-btn" id="tool-select" onclick="setTool('select')">Select/Edit</button>
+  <button class="tool-btn" id="tool-pan" onclick="setTool('pan')">Pan</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="zoomIn()">+</button>
+  <button class="tool-btn" onclick="zoomOut()">-</button>
+  <button class="tool-btn" onclick="resetView()">Reset</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="undo()">Undo</button>
+  <button class="tool-btn danger" onclick="clearCanvas()">Clear</button>
+  <div class="sep"></div>
+  <button class="tool-btn ad-btn" onclick="newArea()" title="Add a physical place — e.g. Pool side, Balcony 1">+ Area</button>
+  <span class="ad-pill"><select id="activeAreaSelect" class="tb-select" onchange="switchActiveArea(this.value)" style="max-width:140px"></select><input id="areaNameInput" class="tb-select" type="text" placeholder="Area name — Enter" autocomplete="off" style="display:none;width:150px;cursor:text"/></span>
+  <button class="tool-btn ad-btn" onclick="renameArea()">Rename</button>
+  <div class="sep"></div>
+  <button class="tool-btn ad-btn" onclick="newDesign()" title="Save the current Mount / Profile / Material as a design">+ Design</button>
+  <span class="ad-pill"><span id="designDot" class="ad-dot"></span><select id="activeDesignSelect" class="tb-select" onchange="switchActiveDesign(this.value)" style="max-width:200px"></select><input id="designNameInput" class="tb-select" type="text" placeholder="Design name — Enter" autocomplete="off" style="display:none;width:160px;cursor:text"/></span>
+  <button class="tool-btn ad-btn" onclick="updateActiveDesign()" title="Save the current Mount / Profile / Material into the active design">Update design</button>
+  <button class="tool-btn ad-btn" onclick="renameDesign()">Rename</button>
+  <div style="margin-left:auto">
+    <button class="tool-btn" id="modeToggle" onclick="toggleMode()" style="font-size:13px;padding:3px 8px">&#127769;</button>
+  </div>
+</div>
+
+<div id="pageContent">
+<div id="mainWrap" class="main-wrap">
+
+  <div id="panel-canvas" class="tab-panel active" style="flex-direction:row;gap:0">
+    <div style="display:flex;flex-direction:column;flex:1;min-width:0;min-height:0">
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="canvas"></canvas>
+      <div class="popup-backdrop" id="popupBackdrop" onclick="onBackdropClick()"></div>
+
+      <!-- Select popup -->
+      <div class="popup" id="selectPopup">
+        <h4 id="selectTitle">Edit run</h4>
+        <label>Length (mm)</label>
+        <input type="text" id="selDim" placeholder="e.g. 3600" autocomplete="off"/>
+        <label>Label (optional)</label>
+        <input type="text" id="selLabel" placeholder="e.g. Pool side" autocomplete="off"/>
+        <label>Area</label>
+        <select id="selArea"></select>
+        <label>Design</label>
+        <select id="selDesign"></select>
+        <div id="selStairRow" style="display:none">
+          <label>Stair direction</label>
+          <select id="selDir"><option value="LH">LH — Left hand up</option><option value="RH">RH — Right hand up</option></select>
+          <label>Top connection type</label>
+          <select id="selTopType"><option value="turn">Turns 90°</option><option value="inline">Continues straight</option></select>
+        </div>
+        <label>Start end ➜</label>
+        <select id="selStartEnd">
+          <option value="wall">Wall end</option>
+          <option value="free">Free end</option>
+          <option value="connected">Connected — joins another run</option>
+        </select>
+        <label>Finish end</label>
+        <select id="selEndEnd">
+          <option value="wall">Wall end</option>
+          <option value="free">Free end</option>
+          <option value="connected">Connected — joins another run</option>
+        </select>
+        <div id="selRunFields" style="display:none">
+          <div id="selGlassRow">
+          <label>Glass thickness</label>
+          <select id="selGlass">
+            <option value="12">12mm TSG</option>
+            <option value="15">15mm TSG</option>
+          </select>
+          </div>
+          <label>Top finish</label>
+          <select id="selFinish" onchange="toggleFinishSub('sel')">
+            <option value="toprail">Top rail</option>
+            <option value="stiffeners">Stiffeners</option>
+            <option value="none">Neither — glass only</option>
+          </select>
+          <div id="selRailSub">
+            <label>Rail profile</label>
+            <select id="selRailProfile">
+              <option value="25x25">25×25mm square SS</option>
+              <option value="25round">25mm round SS</option>
+              <option value="50round">50mm round SS</option>
+              <option value="50x25">50×25mm rectangular SS</option>
+            </select>
+          </div>
+          <label>Adjustable stiffeners (this run)</label>
+          <input type="number" id="selAdjStiff" min="0" value="0" placeholder="0"/>
+        </div>
+        <button onclick="swapSelEnds()" style="margin-top:6px;width:100%;padding:5px;border-radius:3px;border:1px solid var(--border3);background:var(--bg);color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace">⇄ Swap start / finish ends</button>
+        <div class="popup-btns">
+          <button class="btn-save" onclick="saveSelect()">✔ Save</button>
+          <button class="btn-del" onclick="deleteLine()">✖ Delete</button>
+          <button class="btn-cancel" onclick="closeAll()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Run popup -->
+      <div class="popup" id="runPopup">
+        <h4>Run details</h4>
+        <label>Length (mm)</label>
+        <input type="text" id="runDim" placeholder="e.g. 3600" autocomplete="off"/>
+        <label>Label (optional)</label>
+        <input type="text" id="runLabel" placeholder="e.g. Pool side" autocomplete="off"/>
+        <label>Start end ➜</label>
+        <select id="runStartEnd">
+          <option value="wall">Wall end</option>
+          <option value="free">Free end</option>
+          <option value="connected">Connected — joins another run</option>
+        </select>
+        <label>Finish end</label>
+        <select id="runEndEnd">
+          <option value="wall">Wall end</option>
+          <option value="free">Free end</option>
+          <option value="connected">Connected — joins another run</option>
+        </select>
+        <div id="runGlassRow">
+        <label>Glass thickness</label>
+        <select id="runGlass">
+          <option value="12">12mm TSG</option>
+          <option value="15">15mm TSG</option>
+        </select>
+        </div>
+        <label>Top finish</label>
+        <select id="runFinish" onchange="toggleFinishSub('run')">
+          <option value="toprail">Top rail</option>
+          <option value="stiffeners">Stiffeners</option>
+          <option value="none">Neither — glass only</option>
+        </select>
+        <div id="runRailSub">
+          <label>Rail profile</label>
+          <select id="runRailProfile">
+            <option value="25x25">25×25mm square SS</option>
+            <option value="25round">25mm round SS</option>
+            <option value="50round">50mm round SS</option>
+            <option value="50x25">50×25mm rectangular SS</option>
+          </select>
+        </div>
+        <label>Adjustable stiffeners (this run)</label>
+        <input type="number" id="runAdjStiff" min="0" value="0" placeholder="0"/>
+        <button onclick="swapRunEnds()" style="margin-top:6px;width:100%;padding:5px;border-radius:3px;border:1px solid var(--border3);background:var(--bg);color:var(--text3);cursor:pointer;font-size:11px;font-family:'Courier New',monospace">⇄ Swap start / finish ends</button>
+        <div class="popup-btns">
+          <button class="btn-save" onclick="saveRun()">✔ Save</button>
+          <button class="btn-cancel" onclick="cancelPending()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Stair popup -->
+      <div class="popup" id="stairPopup">
+        <h4>Stair section</h4>
+        <label>Length (mm)</label>
+        <input type="text" id="stairDim" placeholder="e.g. 3100" autocomplete="off"/>
+        <label>Direction (walking up)</label>
+        <select id="stairDir"><option value="LH">LH — Left hand up</option><option value="RH">RH — Right hand up</option></select>
+        <label>Start end (bottom)</label>
+        <select id="stairStartEnd"><option value="free">Free end</option><option value="wall">Wall end</option><option value="connected">Connected — joins another run</option></select>
+        <label>Finish end (top)</label>
+        <select id="stairEndEnd"><option value="connected">Connected — joins another run</option><option value="free">Free end</option><option value="wall">Wall end</option></select>
+        <label>Top connection type</label>
+        <select id="stairTopType"><option value="turn">Turns 90°</option><option value="inline">Continues straight</option></select>
+        <div id="stairGlassRow">
+        <label>Glass thickness</label>
+        <select id="stairGlass"><option value="12">12mm TSG</option><option value="15">15mm TSG</option></select>
+        </div>
+        <label>Top finish</label>
+        <select id="stairFinish" onchange="toggleFinishSub('stair')">
+          <option value="toprail">Top rail</option>
+          <option value="stiffeners">Stiffeners</option>
+          <option value="none">Neither — glass only</option>
+        </select>
+        <div id="stairRailSub">
+          <label>Rail profile</label>
+          <select id="stairRailProfile">
+            <option value="25x25">25×25mm square SS</option>
+            <option value="25round">25mm round SS</option>
+            <option value="50round">50mm round SS</option>
+            <option value="50x25">50×25mm rectangular SS</option>
+          </select>
+        </div>
+        <div class="popup-btns">
+          <button class="btn-save" onclick="saveStair()">✔ Save</button>
+          <button class="btn-cancel" onclick="cancelPending()">Cancel</button>
+        </div>
+      </div>
+
+    </div><!-- end canvasWrap -->
+    <div class="btn-row" style="flex-shrink:0;padding:6px 0 0 0">
+      <button class="btn-secondary" onclick="undo()">↩ Undo</button>
+      <button class="btn-calc" onclick="calculate()">✔ Calculate — generate job card</button>
+      <button class="btn-danger-sm" onclick="clearCanvas()">🗑 Clear all</button>
+    </div>
+    </div>
+
+    <!-- Right: side job card -->
+    <div id="canvasSideJC" style="width:290px;flex-shrink:0;border-left:2px solid var(--border2);background:var(--bg2);display:none;flex-direction:column;min-height:0">
+      <div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg3)">
+        <span style="font-size:10px;color:var(--accent);font-weight:bold;letter-spacing:1px;text-transform:uppercase">📋 Job Card</span>
+        <div style="display:flex;gap:4px">
+          <button onclick="copyJobCard()" style="padding:3px 8px;border-radius:3px;border:1px solid #2980b9;background:#1a3a5c;color:#aad4f5;cursor:pointer;font-size:10px;font-family:'Courier New',monospace">📄</button>
+          <button onclick="closeSideJC()" style="padding:3px 8px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:12px;font-family:'Courier New',monospace">✕</button>
+        </div>
+      </div>
+      <div id="jcBodySide" style="flex:1;overflow-y:auto;padding:8px 10px;font-size:11px"></div>
+    </div>
+  </div><!-- end panel-canvas -->
+
+  <!-- Job card tab -->
+  <div id="panel-jobcard" class="tab-panel">
+    <div style="padding:8px 12px;display:flex;gap:8px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button class="btn-copy" onclick="copyJobCard()" style="flex:1">📄 Copy for Sage</button>
+    </div>
+    <div class="jc-body" id="jcBody" style="flex:1;overflow-y:auto;padding:10px 12px"></div>
+  </div>
+
+  <!-- Layout tab -->
+  <div id="panel-layout" class="tab-panel" style="flex-direction:column">
+    <div style="padding:5px 10px;display:flex;gap:7px;border-bottom:1px solid var(--border);flex-shrink:0;align-items:center;background:var(--bg2)">
+      <span style="font-size:11px;color:var(--text3);flex:1">Run layout — run Calculate first</span>
+      <button onclick="printLayout()" style="padding:4px 10px;border-radius:3px;border:1px solid #27ae60;background:#1a5c33;color:#bef0d0;cursor:pointer;font-size:11px;font-family:'Courier New',monospace">Print / PDF</button>
+    </div>
+    <div style="flex:1;overflow:auto;padding:12px 14px;background:var(--bg)">
+      <div id="layoutInner" style="background:#fff;color:#111;border-radius:4px;padding:16px 18px;font-family:'Courier New',monospace;font-size:11px;max-width:1050px;margin:0 auto;border:1px solid #ccc">
+        <div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the layout.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Material sheet tab -->
+  <div id="panel-print" class="tab-panel" style="overflow-y:auto">
+    <div style="padding:8px 12px;display:flex;gap:8px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button class="btn-print" onclick="window.print()" style="flex:1">🖨 Print Material Sheet</button>
+    </div>
+    <div class="print-sheet" id="printBody" style="padding:16px 18px;font-size:11px;line-height:1.7"></div>
+  </div>
+
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-canvas" onclick="switchTab('canvas')">✏️ Canvas</button>
+  <button class="tab-btn" id="tab-jobcard" onclick="switchTab('jobcard')">📋 Job Card</button>
+  <button class="tab-btn" id="tab-print" onclick="switchTab('print')">📄 Material Sheet</button>
+  <button class="tab-btn" id="tab-layout" onclick="switchTab('layout')" style="color:#27ae60">📐 Layout</button>
+</div>
+</div>
+
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const canvasWrap=document.getElementById('canvasWrap');
+const GRID=10,SNAP=14,PAD=6,OFF=100;
+
+let tool='run',lines=[],drawing=false;
+// ── AREAS & DESIGNS (v9) ──
+// Area   = a physical place (Pool side, Balcony 1). Name only, no settings.
+// Design = a saved spec: Mount + Profile + Material. Each line carries
+//          areaId + designId. A line with no design uses the toolbar settings.
+const DESIGN_COLORS=['#4a90d9','#27ae60','#e67e22','#9b59b6','#e74c3c','#1abc9c','#f39c12','#2980b9','#8e44ad','#16a085'];
+let areas=[],designs=[],activeAreaId=null,activeDesignId=null;
+let calcCtx=null;            // set only while a design group is being calculated
+let lastCalcGroups=[];       // for the Layout tab
+function findArea(id){return id?areas.find(a=>String(a.id)===String(id)):null;}
+function findDesign(id){return id?designs.find(d=>String(d.id)===String(id)):null;}
+function getDesignColor(id){const d=findDesign(id);return d?d.color:null;}
+function toolbarSettings(){return{mount:document.getElementById('mountSelect').value,profile:document.getElementById('profileSelect').value,material:document.getElementById('materialSelect').value,channelFinish:document.getElementById('channelFinishSelect').value};}
+const CH_FINISH={brushed:'brushed aluminium',pc:'powder coated aluminium — colour to confirm'};
+function getChannelFinish(){return calcCtx?(calcCtx.channelFinish||'brushed'):document.getElementById('channelFinishSelect').value;}
+function lineMountOf(l){const d=l&&findDesign(l.designId);return d?d.settings.mount:document.getElementById('mountSelect').value;}
+function getMaterial(){return calcCtx?calcCtx.material:document.getElementById('materialSelect').value;}
+function getProfile(){return calcCtx?calcCtx.profile:document.getElementById('profileSelect').value;}
+const MOUNT_NAMES={core:'Top Mount — Core Drill',pin:'Top Mount — Pin Fix',flange:'Top Mount — Flange Plate',sidemount:'Side Mount — Threaded Rod',channel:'Aluminium Channel — Floor Fixed',groutchannel:'Concrete Channel — Grouted'};
+function designSummary(st){return (MOUNT_NAMES[st.mount]||st.mount)+(st.mount==='channel'?' ('+(st.channelFinish==='pc'?'powder coated':'brushed')+')':'')+' · '+st.material+((st.mount==='sidemount'||st.mount==='channel'||st.mount==='groutchannel')?'':' · '+(st.profile==='round'?'Round spigot':'Square spigot'));}
+// No prompt()/alert boxes here: browsers block them when the tool runs inside
+// a frame (e.g. the launcher), which made "+ Area" silently do nothing in v9.
+// Names are typed into a small box that appears in the toolbar instead.
+function startInlineRename(kind){
+  const item=kind==='area'?findArea(activeAreaId):findDesign(activeDesignId);
+  if(!item){flashInstr(kind==='area'?'Pick an area first (or click + Area).':'Pick a design first (or click + Design).');return;}
+  const sel=document.getElementById(kind==='area'?'activeAreaSelect':'activeDesignSelect');
+  const inp=document.getElementById(kind==='area'?'areaNameInput':'designNameInput');
+  sel.style.display='none';inp.style.display='inline-block';inp.value=item.name;
+  let done=false;
+  const finish=save=>{if(done)return;done=true;
+    if(save&&inp.value.trim())item.name=inp.value.trim();
+    inp.style.display='none';sel.style.display='';inp.onkeydown=null;inp.onblur=null;
+    rebuildAdDropdowns();redraw();};
+  inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')finish(true);else if(e.key==='Escape')finish(false);};
+  inp.onblur=()=>finish(true);
+  inp.focus();inp.select();
+}
+function flashInstr(msg){const el=document.getElementById('instr');const old=el.textContent;el.textContent='⚠ '+msg;el.style.color='var(--danger-text)';setTimeout(()=>{el.textContent=old;el.style.color='';},2500);}
+function newArea(){
+  const n=areas.length+1;const id='a'+Date.now();
+  areas.push({id,name:'Area '+n});activeAreaId=id;rebuildAdDropdowns();redraw();
+  startInlineRename('area');
+}
+function renameArea(){startInlineRename('area');}
+function switchActiveArea(v){activeAreaId=v||null;rebuildAdDropdowns();}
+function newDesign(){
+  const idx=designs.length;const id='d'+Date.now();
+  designs.push({id,name:'Design '+String.fromCharCode(65+(idx%26)),color:DESIGN_COLORS[idx%DESIGN_COLORS.length],settings:toolbarSettings()});
+  activeDesignId=id;rebuildAdDropdowns();redraw();
+}
+function renameDesign(){startInlineRename('design');}
+function updateActiveDesign(){const d=findDesign(activeDesignId);if(!d){flashInstr('No active design — click + Design first, or pick one from the list.');return;}d.settings=toolbarSettings();rebuildAdDropdowns();redraw();}
+function applySettingsToToolbar(st){
+  document.getElementById('channelFinishSelect').value=st.channelFinish||'brushed';
+  document.getElementById('mountSelect').value=st.mount;onMountChange();
+  document.getElementById('profileSelect').value=st.profile;
+  const m=document.getElementById('materialSelect');if([...m.options].some(o=>o.value===st.material))m.value=st.material;
+}
+function switchActiveDesign(v){
+  activeDesignId=v||null;const d=findDesign(activeDesignId);
+  if(d)applySettingsToToolbar(d.settings);
+  rebuildAdDropdowns();redraw();
+}
+function rebuildAdDropdowns(){
+  const fill=(el,list,none,cur,lbl)=>{if(!el)return;el.innerHTML='';const o0=document.createElement('option');o0.value='';o0.textContent=none;el.appendChild(o0);list.forEach(x=>{const o=document.createElement('option');o.value=String(x.id);o.textContent=lbl(x);el.appendChild(o);});el.value=cur?String(cur):'';};
+  fill(document.getElementById('activeAreaSelect'),areas,'No area',activeAreaId,a=>a.name);
+  fill(document.getElementById('activeDesignSelect'),designs,'No design (toolbar settings)',activeDesignId,d=>d.name+' — '+designSummary(d.settings));
+  const d=findDesign(activeDesignId);document.getElementById('designDot').style.background=d?d.color:'#aaa';
+}
+let startX=0,startY=0,curX=0,curY=0;
+let selectedIdx=null,pendingIdx=null;
+let panX=0,panY=0,zoom=1;
+let isPanning=false,panSX=0,panSY=0,panOX=0,panOY=0;
+let isDraggingLine=false,dragLineStart=null,dragMoved=false,dragSnapInfo=null;
+let isLight=true;
+let lastCalcText='';
+let history=[];
+function pushHistory(){try{history.push(JSON.stringify(lines));if(history.length>60)history.shift();}catch(e){}}
+let dragEndpointIdx=null,dragEndpointWhich=null,dragHistorySaved=false;
+
+document.body.classList.add('light');
+
+function resizeCanvas(){
+  const cw=canvasWrap.clientWidth||800,ch=canvasWrap.clientHeight||500;
+  canvas.width=cw;canvas.height=ch;redraw();
+}
+window.addEventListener('resize',resizeCanvas);
+try{new ResizeObserver(()=>{if(canvas.width!==canvasWrap.clientWidth||canvas.height!==canvasWrap.clientHeight)resizeCanvas();}).observe(canvasWrap);}catch(e){}
+setTimeout(resizeCanvas,50);
+
+const S={run:{color:'#4a90d9',width:2.5,dash:[]},stairs:{color:'#e67e22',width:2.5,dash:[10,5]}};
+
+function getMount(){return calcCtx?calcCtx.mount:document.getElementById('mountSelect').value;}
+function isSideMount(){return getMount()==='sidemount';}
+function getMountName(){
+  return{core:'Top Mount — Core Drill',pin:'Top Mount — Pin Fix',flange:'Top Mount — Flange Plate',sidemount:'Side Mount — Threaded Rod',channel:'Aluminium Channel — Floor Fixed',groutchannel:'Concrete Channel — Grouted'}[getMount()];
+}
+function isChannel(){return getMount()==='channel';}
+function isGroutChannel(){return getMount()==='groutchannel';}
+
+function onMountChange(){
+  const sm=isSideMount();
+  const ch=isChannel();
+  const gc=isGroutChannel();
+  document.getElementById('profileWrap').style.opacity=(sm||ch||gc)?'0.3':'1';
+  document.getElementById('profileWrap').style.pointerEvents=(sm||ch||gc)?'none':'auto';
+  document.getElementById('channelFinishWrap').style.display=ch?'inline-flex':'none';
+
+  // v12: the Material dropdown is always the SS grade — it applies to the top rail
+  // and stiffeners on every mount. The aluminium channel itself is always brushed
+  // aluminium (no option to pick).
+
+  document.getElementById('instr').textContent=
+    'Frameless Glass v13 — '+getMountName()+'  |  Run: click and drag. Popup asks for length, end types, glass and top finish.';
+  redraw();
+}
+
+function toggleMode(){
+  isLight=document.body.classList.toggle('light');
+  document.getElementById('modeToggle').textContent=isLight?'🌙':'☀️';
+  redraw();
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='canvas')setTimeout(resizeCanvas,50);
+  if(t==='layout')renderLayout();
+}
+
+function closeSideJC(){document.getElementById('canvasSideJC').style.display='none';setTimeout(resizeCanvas,50);}
+
+function setTool(t){
+  tool=t;selectedIdx=null;drawing=false;isDraggingLine=false;dragLineStart=null;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  const b=document.getElementById('tool-'+t);if(b)b.classList.add('active');
+  closeAll();
+  const m={
+    run:'Run: click and drag. Popup asks for length, end types, glass and top finish.',
+    stairs:'Stairs: click and drag. Popup asks for length, direction, end types, glass and top finish.',
+    select:'Select: click to select, drag body to move, drag an endpoint dot to stretch/shorten, R = rotate 90, DEL = delete, double-click to edit.',
+    pan:'Pan: click and drag to move. Scroll to zoom.'
+  };
+  document.getElementById('instr').textContent='Frameless Glass v13 — '+getMountName()+'  |  '+(m[t]||t);
+  canvas.style.cursor=t==='pan'?'grab':t==='select'?'pointer':'crosshair';
+  redraw();
+}
+
+function toWorld(sx,sy){return{x:(sx-panX)/zoom,y:(sy-panY)/zoom};}
+function toScreen(wx,wy){return{x:wx*zoom+panX,y:wy*zoom+panY};}
+function dist(x1,y1,x2,y2){return Math.sqrt((x2-x1)**2+(y2-y1)**2);}
+function snapPt(wx,wy){
+  for(const l of lines){
+    if(dist(wx,wy,l.x1,l.y1)<SNAP/zoom)return{x:l.x1,y:l.y1};
+    if(dist(wx,wy,l.x2,l.y2)<SNAP/zoom)return{x:l.x2,y:l.y2};
+  }
+  return{x:Math.round(wx/GRID)*GRID,y:Math.round(wy/GRID)*GRID};
+}
+function constrain(x1,y1,x2,y2){return Math.abs(x2-x1)>=Math.abs(y2-y1)?{x:x2,y:y1}:{x:x1,y:y2};}
+function getMouse(e){const r=canvas.getBoundingClientRect();const cssX=e.clientX-r.left,cssY=e.clientY-r.top;const scaleX=canvas.width/r.width,scaleY=canvas.height/r.height;return{sx:cssX*scaleX,sy:cssY*scaleY};}
+
+function placePopup(id,sx,sy){
+  document.getElementById('popupBackdrop').style.display='block';
+  document.getElementById(id).style.display='block';
+}
+function onBackdropClick(){if(pendingIdx!==null)cancelPending();else closeAll();}
+
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const{sx,sy}=getMouse(e);const{x:wx,y:wy}=toWorld(sx,sy);
+  zoom*=e.deltaY<0?1.1:0.9;zoom=Math.max(0.2,Math.min(5,zoom));
+  panX=sx-wx*zoom;panY=sy-wy*zoom;redraw();
+},{passive:false});
+
+canvas.addEventListener('mousedown',e=>{
+  if(e.button!==0)return;const{sx,sy}=getMouse(e);
+  if(tool==='pan'){isPanning=true;panSX=e.clientX;panSY=e.clientY;panOX=panX;panOY=panY;canvas.style.cursor='grabbing';return;}
+  if(anyPopupOpen()){closeAll();return;}
+  const{x:wx,y:wy}=toWorld(sx,sy);
+  if(tool==='select'){
+    // Endpoint dot first: drag it to stretch / shorten the line
+    const epR=12/zoom;let epHit=-1,epWhich=null,epBd=epR;
+    lines.forEach((l,i)=>{
+      const d1=dist(wx,wy,l.x1,l.y1);if(d1<epBd){epBd=d1;epHit=i;epWhich='start';}
+      const d2=dist(wx,wy,l.x2,l.y2);if(d2<epBd){epBd=d2;epHit=i;epWhich='end';}
+    });
+    if(epHit>=0){selectedIdx=epHit;dragEndpointIdx=epHit;dragEndpointWhich=epWhich;dragHistorySaved=false;canvas.style.cursor='crosshair';redraw();return;}
+    let best=-1,bd=10/zoom;
+    lines.forEach((l,i)=>{const d=ptLineDist(wx,wy,l.x1,l.y1,l.x2,l.y2);if(d<bd){bd=d;best=i;}});
+    if(best>=0){
+      selectedIdx=best;isDraggingLine=true;dragMoved=false;dragHistorySaved=false;
+      const l=lines[best];dragLineStart={wx,wy,x1:l.x1,y1:l.y1,x2:l.x2,y2:l.y2};
+      canvas.style.cursor='grabbing';
+    } else {selectedIdx=null;}
+    redraw();return;
+  }
+  const s=snapPt(wx,wy);startX=s.x;startY=s.y;curX=s.x;curY=s.y;drawing=true;
+});
+
+canvas.addEventListener('mousemove',e=>{
+  const{sx,sy}=getMouse(e);
+  if(isPanning){panX=panOX+(e.clientX-panSX);panY=panOY+(e.clientY-panSY);redraw();return;}
+  if(dragEndpointIdx!==null){
+    const{x:wx,y:wy}=toWorld(sx,sy);
+    if(!dragHistorySaved){pushHistory();dragHistorySaved=true;}
+    const s2=snapPt(wx,wy);const l=lines[dragEndpointIdx];
+    if(dragEndpointWhich==='start'){l.x1=s2.x;l.y1=s2.y;}else{l.x2=s2.x;l.y2=s2.y;}
+    redraw();return;
+  }
+  if(isDraggingLine&&dragLineStart&&selectedIdx!==null){
+    const{x:wx,y:wy}=toWorld(sx,sy);
+    const ddx=wx-dragLineStart.wx,ddy=wy-dragLineStart.wy;
+    if(Math.hypot(ddx,ddy)>2/zoom){
+      if(!dragHistorySaved){pushHistory();dragHistorySaved=true;}
+      dragMoved=true;
+    }
+    if(dragMoved){
+      let nx1=dragLineStart.x1+ddx,ny1=dragLineStart.y1+ddy;
+      let nx2=dragLineStart.x2+ddx,ny2=dragLineStart.y2+ddy;
+      const snapDist=20/zoom;dragSnapInfo=null;let snapped=false;
+      for(let i=0;i<lines.length&&!snapped;i++){
+        if(i===selectedIdx)continue;
+        const ol=lines[i];
+        for(const[ew,ex,ey] of [['start',ol.x1,ol.y1],['end',ol.x2,ol.y2]]){
+          if(Math.hypot(nx1-ex,ny1-ey)<snapDist){const sdx=ex-nx1,sdy=ey-ny1;nx1+=sdx;ny1+=sdy;nx2+=sdx;ny2+=sdy;dragSnapInfo={myEnd:'start',otherIdx:i,otherEnd:ew};snapped=true;break;}
+          if(Math.hypot(nx2-ex,ny2-ey)<snapDist){const sdx=ex-nx2,sdy=ey-ny2;nx1+=sdx;ny1+=sdy;nx2+=sdx;ny2+=sdy;dragSnapInfo={myEnd:'end',otherIdx:i,otherEnd:ew};snapped=true;break;}
+        }
+      }
+      lines[selectedIdx].x1=nx1;lines[selectedIdx].y1=ny1;
+      lines[selectedIdx].x2=nx2;lines[selectedIdx].y2=ny2;
+      redraw();
+    }
+    return;
+  }
+  if(!drawing)return;
+  const{x:wx,y:wy}=toWorld(sx,sy);const s=snapPt(wx,wy);const c=constrain(startX,startY,s.x,s.y);curX=c.x;curY=c.y;redraw();
+  const p1=toScreen(startX,startY),p2=toScreen(curX,curY);
+  const col=tool==='stairs'?'#e67e22':'#4a90d9';
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2.5*zoom;
+  ctx.setLineDash(tool==='stairs'?[10*zoom,5*zoom]:[]);
+  ctx.lineCap='round';ctx.globalAlpha=0.4;
+  ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
+});
+
+canvas.addEventListener('mouseup',e=>{
+  if(e.button!==0)return;
+  if(isPanning){isPanning=false;canvas.style.cursor='grab';return;}
+  if(dragEndpointIdx!==null){
+    const idx=dragEndpointIdx;canvas.style.cursor='pointer';
+    dragEndpointIdx=null;dragEndpointWhich=null;dragHistorySaved=false;
+    selectedIdx=idx;const l=lines[idx];
+    const sc=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);
+    openSelectPopup(idx,sc.x,sc.y);
+    return;
+  }
+  if(isDraggingLine){
+    isDraggingLine=false;canvas.style.cursor='pointer';
+    if(!dragMoved&&selectedIdx!==null){
+      const l=lines[selectedIdx];
+      const sc=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);
+      openSelectPopup(selectedIdx,sc.x,sc.y);
+    } else if(dragMoved&&dragSnapInfo!==null&&selectedIdx!==null){
+      const my=lines[selectedIdx];const other=lines[dragSnapInfo.otherIdx];
+      if(dragSnapInfo.myEnd==='start')my.startEnd='connected';else my.endEnd='connected';
+      if(dragSnapInfo.otherEnd==='start')other.startEnd='connected';else other.endEnd='connected';
+    }
+    dragLineStart=null;dragMoved=false;dragSnapInfo=null;dragHistorySaved=false;redraw();return;
+  }
+  if(!drawing)return;drawing=false;if(dist(startX,startY,curX,curY)<4/zoom)return;
+  pushHistory();
+  const idx=lines.length;
+  lines.push({type:tool,x1:startX,y1:startY,x2:curX,y2:curY,
+    dim:'',label:'',dir:'LH',startEnd:'wall',endEnd:'wall',topType:'turn',
+    glass:'12',finish:'toprail',railProfile:'25x25',adjStiff:0,areaId:activeAreaId,designId:activeDesignId});
+  pendingIdx=idx;
+  const sc=toScreen((startX+curX)/2,(startY+curY)/2);
+  if(tool==='stairs')openStairPopup(idx,sc.x,sc.y);else openRunPopup(idx,sc.x,sc.y);
+});
+
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('mouseleave',()=>{
+  if(isPanning){isPanning=false;canvas.style.cursor='grab';}
+  if(isDraggingLine){isDraggingLine=false;dragLineStart=null;dragMoved=false;canvas.style.cursor='pointer';}
+  if(dragEndpointIdx!==null){dragEndpointIdx=null;dragEndpointWhich=null;canvas.style.cursor='pointer';}
+});
+canvas.addEventListener('dblclick',()=>{
+  if(tool==='select'&&selectedIdx!==null&&!anyPopupOpen()){
+    const l=lines[selectedIdx];const sc=toScreen((l.x1+l.x2)/2,(l.y1+l.y2)/2);openSelectPopup(selectedIdx,sc.x,sc.y);
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.target.matches('input,select,textarea'))return;
+  if(e.key==='Escape'){if(pendingIdx!==null)cancelPending();else closeAll();return;}
+  if(anyPopupOpen())return;
+  if((e.key==='Delete'||e.key==='Backspace')&&selectedIdx!==null){pushHistory();lines.splice(selectedIdx,1);selectedIdx=null;redraw();return;}
+  if((e.key==='r'||e.key==='R')&&selectedIdx!==null){
+    pushHistory();const l=lines[selectedIdx];const cx=(l.x1+l.x2)/2,cy=(l.y1+l.y2)/2;
+    const dx1=l.x1-cx,dy1=l.y1-cy,dx2=l.x2-cx,dy2=l.y2-cy;
+    l.x1=cx+dy1;l.y1=cy-dx1;l.x2=cx+dy2;l.y2=cy-dx2;redraw();return;
+  }
+});
+
+function ptLineDist(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,l2=dx*dx+dy*dy;if(l2===0)return dist(px,py,x1,y1);const t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/l2));return dist(px,py,x1+t*dx,y1+t*dy);}
+function anyPopupOpen(){return['selectPopup','runPopup','stairPopup'].some(id=>document.getElementById(id).style.display==='block');}
+function closeAll(){['selectPopup','runPopup','stairPopup'].forEach(id=>{document.getElementById(id).style.display='none';});document.getElementById('popupBackdrop').style.display='none';selectedIdx=null;pendingIdx=null;redraw();}
+function cancelPending(){if(pendingIdx!==null)lines.splice(pendingIdx,1);closeAll();}
+
+function toggleFinishSub(prefix){
+  const ids={run:['runFinish','runRailSub'],sel:['selFinish','selRailSub'],stair:['stairFinish','stairRailSub']};
+  const[fid,sid]=ids[prefix];
+  document.getElementById(sid).style.display=document.getElementById(fid).value==='toprail'?'block':'none';
+}
+
+// ── SELECT POPUP ──
+function openSelectPopup(idx,sx,sy){
+  const l=lines[idx];
+  (function(){const fill=(el,list,none,cur)=>{el.innerHTML='';const o0=document.createElement('option');o0.value='';o0.textContent=none;el.appendChild(o0);list.forEach(x=>{const o=document.createElement('option');o.value=String(x.id);o.textContent=x.name;el.appendChild(o);});el.value=cur?String(cur):'';};
+    fill(document.getElementById('selArea'),areas,'— No area —',l.areaId);fill(document.getElementById('selDesign'),designs,'— No design (toolbar) —',l.designId);})();const isStair=l.type==='stairs';
+  document.getElementById('selectTitle').textContent=isStair?'Edit stairs':'Edit run';
+  document.getElementById('selDim').value=l.dim.replace('mm','');
+  document.getElementById('selLabel').value=l.label||'';
+  document.getElementById('selStairRow').style.display=isStair?'block':'none';
+  if(isStair){document.getElementById('selDir').value=l.dir||'LH';document.getElementById('selTopType').value=l.topType||'turn';}
+  document.getElementById('selStartEnd').value=l.startEnd||'wall';
+  document.getElementById('selEndEnd').value=l.endEnd||'wall';
+  document.getElementById('selRunFields').style.display=isStair?'none':'block';
+  if(!isStair){
+    document.getElementById('selGlass').value=l.glass||'12';
+    document.getElementById('selFinish').value=l.finish||'toprail';
+    document.getElementById('selRailProfile').value=l.railProfile||'25x25';
+    document.getElementById('selAdjStiff').value=l.adjStiff||0;
+    // hide glass selector for channel
+    document.getElementById('selGlassRow').style.display=lineMountOf(l)==='channel'?'none':'block';
+    toggleFinishSub('sel');
+  }
+  placePopup('selectPopup',sx,sy);
+  setTimeout(()=>{const d=document.getElementById('selDim');d.focus();d.select();},30);
+}
+function saveSelect(){
+  if(selectedIdx===null)return;
+  pushHistory();
+  const v=document.getElementById('selDim').value.trim();
+  lines[selectedIdx].dim=v?v.replace('mm','')+'mm':'';
+  lines[selectedIdx].label=document.getElementById('selLabel').value.trim();
+  lines[selectedIdx].areaId=document.getElementById('selArea').value||null;
+  lines[selectedIdx].designId=document.getElementById('selDesign').value||null;
+  lines[selectedIdx].startEnd=document.getElementById('selStartEnd').value;
+  lines[selectedIdx].endEnd=document.getElementById('selEndEnd').value;
+  if(lines[selectedIdx].type==='stairs'){
+    lines[selectedIdx].dir=document.getElementById('selDir').value;
+    lines[selectedIdx].topType=document.getElementById('selTopType').value;
+  } else {
+    lines[selectedIdx].glass=document.getElementById('selGlass').value;
+    lines[selectedIdx].finish=document.getElementById('selFinish').value;
+    lines[selectedIdx].railProfile=document.getElementById('selRailProfile').value;
+    lines[selectedIdx].adjStiff=parseInt(document.getElementById('selAdjStiff').value)||0;
+  }
+  closeAll();redraw();
+}
+function deleteLine(){if(selectedIdx===null)return;pushHistory();lines.splice(selectedIdx,1);closeAll();redraw();}
+function swapSelEnds(){const s=document.getElementById('selStartEnd').value;document.getElementById('selStartEnd').value=document.getElementById('selEndEnd').value;document.getElementById('selEndEnd').value=s;if(selectedIdx!==null){const l=lines[selectedIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}}
+document.getElementById('selDim').addEventListener('keydown',e=>{if(e.key==='Enter')saveSelect();if(e.key==='Escape')closeAll();});
+
+// ── RUN POPUP ──
+function openRunPopup(idx,sx,sy){
+  document.getElementById('runDim').value='';document.getElementById('runLabel').value='';
+  document.getElementById('runStartEnd').value='wall';document.getElementById('runEndEnd').value='wall';
+  document.getElementById('runGlass').value='12';document.getElementById('runFinish').value='toprail';
+  document.getElementById('runRailProfile').value='25x25';document.getElementById('runRailSub').style.display='block';
+  document.getElementById('runAdjStiff').value=0;
+  // hide glass selector for channel — always 12mm
+  document.getElementById('runGlassRow').style.display=isChannel()?'none':'block';
+  placePopup('runPopup',sx,sy);setTimeout(()=>{document.getElementById('runDim').focus();},30);
+}
+function saveRun(){
+  const idx=pendingIdx;if(idx===null)return;
+  const v=document.getElementById('runDim').value.trim();
+  lines[idx].dim=v?v.replace('mm','')+'mm':'';
+  lines[idx].label=document.getElementById('runLabel').value.trim();
+  lines[idx].startEnd=document.getElementById('runStartEnd').value;
+  lines[idx].endEnd=document.getElementById('runEndEnd').value;
+  lines[idx].glass=document.getElementById('runGlass').value;
+  lines[idx].finish=document.getElementById('runFinish').value;
+  lines[idx].railProfile=document.getElementById('runRailProfile').value;
+  lines[idx].adjStiff=parseInt(document.getElementById('runAdjStiff').value)||0;
+  closeAll();redraw();
+}
+function swapRunEnds(){const s=document.getElementById('runStartEnd').value;document.getElementById('runStartEnd').value=document.getElementById('runEndEnd').value;document.getElementById('runEndEnd').value=s;if(pendingIdx!==null){const l=lines[pendingIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}}
+document.getElementById('runDim').addEventListener('keydown',e=>{if(e.key==='Enter')saveRun();if(e.key==='Escape')cancelPending();});
+
+// ── STAIR POPUP ──
+function openStairPopup(idx,sx,sy){
+  document.getElementById('stairDim').value='';document.getElementById('stairDir').value='LH';
+  document.getElementById('stairStartEnd').value='free';document.getElementById('stairEndEnd').value='connected';
+  document.getElementById('stairTopType').value='turn';
+  document.getElementById('stairGlass').value='12';document.getElementById('stairFinish').value='toprail';
+  document.getElementById('stairRailProfile').value='25x25';document.getElementById('stairRailSub').style.display='block';
+  // hide glass selector for channel — always 12mm
+  document.getElementById('stairGlassRow').style.display=isChannel()?'none':'block';
+  placePopup('stairPopup',sx,sy);setTimeout(()=>{document.getElementById('stairDim').focus();},30);
+}
+function saveStair(){
+  const idx=pendingIdx;if(idx===null)return;
+  const v=document.getElementById('stairDim').value.trim();
+  lines[idx].dim=v?v.replace('mm','')+'mm':'';
+  lines[idx].dir=document.getElementById('stairDir').value;
+  lines[idx].startEnd=document.getElementById('stairStartEnd').value;
+  lines[idx].endEnd=document.getElementById('stairEndEnd').value;
+  lines[idx].topType=document.getElementById('stairTopType').value;
+  lines[idx].glass=document.getElementById('stairGlass').value;
+  lines[idx].finish=document.getElementById('stairFinish').value;
+  lines[idx].railProfile=document.getElementById('stairRailProfile').value;
+  closeAll();redraw();
+}
+document.getElementById('stairDim').addEventListener('keydown',e=>{if(e.key==='Enter')saveStair();if(e.key==='Escape')cancelPending();});
+
+// ── CONTROLS ──
+function zoomIn(){zoom=Math.min(5,zoom*1.2);redraw();}
+function zoomOut(){zoom=Math.max(0.2,zoom/1.2);redraw();}
+function resetView(){zoom=1;panX=0;panY=0;redraw();}
+function undo(){
+  if(history.length>0){try{lines=JSON.parse(history.pop());}catch(e){return;}selectedIdx=null;pendingIdx=null;closeAll();redraw();return;}
+  if(lines.length>0){lines.pop();closeAll();redraw();}
+}
+function clearCanvas(){
+  areas=[];designs=[];activeAreaId=null;activeDesignId=null;lastCalcGroups=[];rebuildAdDropdowns();
+  lines=[];history=[];selectedIdx=null;pendingIdx=null;drawing=false;lastCalcText='';isDraggingLine=false;dragLineStart=null;dragEndpointIdx=null;
+  closeSideJC();['selectPopup','runPopup','stairPopup'].forEach(id=>{document.getElementById(id).style.display='none';});document.getElementById('popupBackdrop').style.display='none';
+  setTimeout(resizeCanvas,50);
+}
+
+// ── CALCULATION RULES ──
+// panels = ceil(eff / 1200)  — spigot mounts
+// channel panels = ceil(dim / 1220)  — 1200mm max panel + 20mm gap, no edge offset deduction
+// channel panel width = (dim - (panels-1)*20) / panels  — evenly distributed
+// SPIGOT mounts: spigots = panels × 2
+// SIDE MOUNT: bolts = panels × 4, rods = bolts × 1, epoxy = ceil(bolts / 10)
+// CHANNEL: kits = ceil(dim / 5800), holes = floor(dim / 150) + 1, epoxy = ceil(holes / 10)
+// wall-to-glass stiffener: WALL ends only (not free ends) — all mount types
+// glass-to-glass 180°: panels - 1 per stiffener run
+// glass-to-glass 90°: connected stiffener ends / 2
+// adjustable stiffeners: stored per run, summed at calculate
+
+function calcPanels(dimMm,startEnd,endEnd){
+  const sd=(startEnd==='connected')?0:OFF;
+  const ed=(endEnd==='connected')?0:OFF;
+  const eff=Math.max(0,dimMm-sd-ed);
+  if(eff<=0)return{panels:0,eff:0,panelW:0};
+  return{panels:Math.ceil(eff/1200),eff,panelW:0};
+}
+
+function calcChannelPanels(dimMm){
+  const panels=Math.ceil(dimMm/1220);
+  const panelW=Math.round((dimMm-(panels-1)*20)/panels);
+  return{panels,panelW,eff:dimMm};
+}
+
+function calcChannelFixing(dimMm){
+  const kits=Math.ceil(dimMm/5800);
+  const holes=Math.floor(dimMm/150)+1;
+  const epoxy=Math.ceil(holes/10);
+  return{kits,holes,epoxy};
+}
+
+// Concrete channel — grouted: 12mm TSG, no edge offset, 20mm gaps
+// panels = ceil((dim - 20) / 1220)
+// channel void per metre: (50×100 - 12×100)mm² = 3800mm² = 0.38L/m
+// grout kg: total_channel_mm / 1000 * 0.38 / 11 * 25  (11L per 25kg bag)
+function calcGroutChannelPanels(dimMm){
+  const panels=Math.ceil((dimMm-20)/1220);
+  return{panels};
+}
+function calcGroutChannelGrout(totalChannelMm){
+  const litres=totalChannelMm/1000*0.38;
+  const kgExact=litres/11*25;
+  // Round up to whole bags: full 25kg bags + remainder in kg
+  const fullBags=Math.floor(kgExact/25);
+  const remainder=kgExact-fullBags*25;
+  const remainderBag=remainder>0?Math.ceil(remainder):0;
+  return{kgExact,fullBags,remainderBag};
+}
+
+// ── DRAW ARROW ──
+function drawArrow(ctx,x1,y1,x2,y2,color){
+  const t=0.55,ax=x1+(x2-x1)*t,ay=y1+(y2-y1)*t;
+  const ang=Math.atan2(y2-y1,x2-x1),sz=10;
+  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(ax-Math.cos(ang)*sz,ay-Math.sin(ang)*sz);ctx.lineTo(ax+Math.cos(ang)*sz,ay+Math.sin(ang)*sz);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ax+Math.cos(ang)*sz,ay+Math.sin(ang)*sz);ctx.lineTo(ax+Math.cos(ang+2.4)*7,ay+Math.sin(ang+2.4)*7);ctx.lineTo(ax+Math.cos(ang-2.4)*7,ay+Math.sin(ang-2.4)*7);ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+// ── REDRAW ──
+function redraw(){
+  const cw=canvas.width,ch=canvas.height;
+  ctx.clearRect(0,0,cw,ch);
+  ctx.fillStyle=isLight?'#ffffff':'#1a1a1a';ctx.fillRect(0,0,cw,ch);
+  const g=GRID*zoom,ogx=((panX%g)+g)%g,ogy=((panY%g)+g)%g;
+  const dotMinor=isLight?'rgba(0,0,0,0.07)':'rgba(255,255,255,0.025)';
+  const dotMajor=isLight?'rgba(0,0,0,0.18)':'rgba(255,255,255,0.08)';
+  for(let x=ogx-g;x<cw+g;x+=g){for(let y=ogy-g;y<ch+g;y+=g){
+    const major=(Math.round((x-ogx)/g)%5===0&&Math.round((y-ogy)/g)%5===0);
+    ctx.fillStyle=major?dotMajor:dotMinor;
+    ctx.beginPath();ctx.arc(x,y,major?1.5:0.7,0,Math.PI*2);ctx.fill();
+  }}
+  lines.forEach((l,i)=>{
+    const s0=S[l.type]||S.run;const dcol=getDesignColor(l.designId);const s=dcol?{...s0,color:dcol}:s0;
+    const p1=toScreen(l.x1,l.y1),p2=toScreen(l.x2,l.y2);
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+    const horiz=Math.abs(l.x2-l.x1)>=Math.abs(l.y2-l.y1);
+    const sel=(i===selectedIdx);
+    if(sel){ctx.save();ctx.strokeStyle='#c8a028';ctx.lineWidth=(s.width+6)*zoom;ctx.setLineDash([]);ctx.lineCap='round';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();}
+    ctx.save();ctx.strokeStyle=sel?'#c8a028':s.color;ctx.lineWidth=s.width*zoom;
+    ctx.setLineDash(s.dash.map(d=>d*zoom));ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();ctx.restore();
+    if(zoom>0.4){
+      let ax1=l.x1,ay1=l.y1,ax2=l.x2,ay2=l.y2;
+      if(l.type==='stairs'&&p1.y<p2.y){ax1=l.x2;ay1=l.y2;ax2=l.x1;ay2=l.y1;}
+      const wp1=toScreen(ax1,ay1),wp2=toScreen(ax2,ay2);
+      drawArrow(ctx,wp1.x,wp1.y,wp2.x,wp2.y,sel?'#c8a028':s.color);
+    }
+    [[p1.x,p1.y],[p2.x,p2.y]].forEach(([ex,ey])=>{
+      ctx.save();ctx.fillStyle=sel?'#c8a028':s.color;
+      ctx.beginPath();ctx.arc(ex,ey,Math.max(3,4*Math.min(zoom,1.5)),0,Math.PI*2);ctx.fill();ctx.restore();
+    });
+    if(l.startEnd&&zoom>0.5){
+      const etShort=v=>({'wall':'W','free':'F','connected':'C'}[v]||'');
+      const etColor=v=>v==='free'?'#e74c3c':v==='wall'?'#95a5a6':'#27ae60';
+      const drawET=(sx,sy,v,above)=>{
+        const lbl=etShort(v);if(!lbl)return;
+        const ofs=above?-16:14;
+        ctx.save();ctx.font=`bold ${Math.max(8,9*Math.min(zoom,1.2))}px Courier New`;
+        const tw=ctx.measureText(lbl).width;
+        ctx.fillStyle=isLight?'rgba(240,242,245,0.92)':'rgba(20,20,20,0.85)';ctx.fillRect(sx-tw/2-3,sy+ofs-8,tw+6,13);
+        ctx.fillStyle=etColor(v);ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(lbl,sx,sy+ofs-1);ctx.restore();
+      };
+      drawET(p1.x,p1.y,l.startEnd,true);drawET(p2.x,p2.y,l.endEnd,true);
+    }
+    if(l.dim&&zoom>0.35){
+      let dlx,dly;
+      if(l.type==='stairs'){dlx=mx;dly=my-8;}else if(horiz){dlx=mx;dly=my-16;}else{dlx=mx+52;dly=my-8;}
+      ctx.save();const fs=Math.max(9,11*Math.min(zoom,1.3));ctx.font=`bold ${fs}px Courier New`;
+      const lbl=l.label?`${l.label} ${l.dim}`:l.dim;const tw=ctx.measureText(lbl).width;
+      ctx.fillStyle=isLight?'rgba(240,242,245,0.92)':'rgba(26,26,26,0.9)';ctx.fillRect(dlx-tw/2-4,dly-11,tw+8,17);
+      ctx.fillStyle=sel?'#c8a028':s.color;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,dlx,dly-2);ctx.restore();
+      if(zoom>0.45){
+        const finishTag=l.finish==='toprail'?'+rail':l.finish==='stiffeners'?'+stiff':'';
+        const adjTag=l.adjStiff>0?` +${l.adjStiff}adj`:'';
+        const lm=lineMountOf(l);const glassLbl=lm==='groutchannel'?'12mm TSG (conc. channel)':lm==='channel'?'12mm TSG (channel)':(l.glass||'12')+'mm TSG';
+        const tag=`${glassLbl}${finishTag?' '+finishTag:''}${adjTag}`;
+        ctx.save();const fs2=Math.max(8,9*Math.min(zoom,1.2));ctx.font=`${fs2}px Courier New`;
+        const tw2=ctx.measureText(tag).width;
+        ctx.fillStyle=isLight?'rgba(240,242,245,0.92)':'rgba(26,26,26,0.9)';ctx.fillRect(dlx-tw2/2-3,dly+5,tw2+6,13);
+        ctx.fillStyle='#888';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(tag,dlx,dly+11);ctx.restore();
+      }
+      if(l.type==='stairs'&&l.dir){
+        const dfs=Math.max(9,10*Math.min(zoom,1.3));
+        ctx.save();ctx.font=`bold ${dfs}px Courier New`;
+        const dirLbl=l.dir+' up';const dtw=ctx.measureText(dirLbl).width;
+        const gap=tw/2+dtw/2+10;
+        const ddx=l.dir==='RH'?dlx+gap:dlx-gap,ddy=dly-2;
+        ctx.fillStyle=isLight?'rgba(240,242,245,0.92)':'rgba(26,26,26,0.9)';ctx.fillRect(ddx-dtw/2-4,ddy-9,dtw+8,15);
+        ctx.fillStyle='#e67e22';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(dirLbl,ddx,ddy);ctx.restore();
+      }
+    }
+  });
+  // Area / Design badge under each line
+  if(zoom>0.5)lines.forEach(l=>{
+    const a=findArea(l.areaId),d=findDesign(l.designId);if(!a&&!d)return;
+    const txt=[a?a.name:null,d?d.name:null].filter(Boolean).join(' · ');
+    const p1=toScreen(l.x1,l.y1),p2=toScreen(l.x2,l.y2);const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+    const horiz=Math.abs(l.x2-l.x1)>=Math.abs(l.y2-l.y1);
+    const bx=horiz?mx:mx+52,by=horiz?my+30:my+30;const col=d?d.color:'#888';
+    ctx.save();ctx.font=`${Math.max(8,9*Math.min(zoom,1.1))}px Courier New`;const tw=ctx.measureText(txt).width;
+    ctx.fillStyle=col+'33';ctx.fillRect(bx-tw/2-3,by-7,tw+6,13);ctx.strokeStyle=col;ctx.lineWidth=0.5;ctx.strokeRect(bx-tw/2-3,by-7,tw+6,13);
+    ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,bx,by);ctx.restore();
+  });
+  if(isDraggingLine&&selectedIdx!==null){
+    const sl=lines[selectedIdx];const snapDist=20/zoom;
+    for(let i=0;i<lines.length;i++){
+      if(i===selectedIdx)continue;
+      const ol=lines[i];
+      for(const[ex,ey] of [[ol.x1,ol.y1],[ol.x2,ol.y2]]){
+        if(Math.hypot(sl.x1-ex,sl.y1-ey)<snapDist||Math.hypot(sl.x2-ex,sl.y2-ey)<snapDist){
+          const sp=toScreen(ex,ey);
+          ctx.save();ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;
+          ctx.beginPath();ctx.arc(sp.x,sp.y,10*Math.min(zoom,1.5),0,Math.PI*2);ctx.stroke();
+          ctx.fillStyle='rgba(39,174,96,0.2)';ctx.fill();ctx.restore();
+        }
+      }
+    }
+  }
+}
+
+// ── CALCULATE ──
+const RAIL_LABEL={'25x25':'25×25mm square SS','25round':'25mm round SS','50round':'50mm round SS','50x25':'50×25mm rectangular SS'};
+
+// calcBlock = the v8 calculate() body, unchanged, run for ONE design group.
+// It reads mount/profile/material through getMount()/getProfile()/getMaterial(),
+// which return the design's own settings while calcCtx is set.
+function calcBlock(active,opts){
+  opts=opts||{};
+  const mount=getMount(),mountName=getMountName();
+  const sm=isSideMount();
+  const ch=isChannel();
+  const gc=isGroutChannel();
+  const material=getMaterial();
+  const profile=getProfile();
+  const profileName=profile==='round'?'50mm Round Spigot':'Square Spigot';
+
+  const legs=active.map(l=>{
+    const dim=parseInt(l.dim);
+    if(gc){
+      const{panels}=calcGroutChannelPanels(dim);
+      return{...l,dim,panels,panelW:0,spigots:0,bolts:0,eff:dim,kits:0,holes:0,epoxy:0};
+    }
+    if(ch){
+      const{panels,panelW}=calcChannelPanels(dim);
+      const{kits,holes,epoxy}=calcChannelFixing(dim);
+      return{...l,dim,panels,panelW,spigots:0,bolts:0,eff:dim,kits,holes,epoxy};
+    }
+    const{panels,eff}=calcPanels(dim,l.startEnd,l.endEnd);
+    const spigots=sm?0:panels*2;
+    const bolts=sm?panels*4:0;
+    return{...l,dim,panels,panelW:0,spigots,bolts,eff,kits:0,holes:0,epoxy:0};
+  });
+
+  const totalPanels=legs.reduce((s,l)=>s+l.panels,0);
+  const totalSpigots=legs.reduce((s,l)=>s+l.spigots,0);
+  const totalBolts=legs.reduce((s,l)=>s+l.bolts,0);
+  const totalRods=totalBolts;
+  const rodStock=Math.ceil(totalRods/6);
+  const epoxyCartridges=sm?Math.ceil(totalBolts/10):0;
+
+  // channel totals
+  const totalKits=ch?legs.reduce((s,l)=>s+l.kits,0):0;
+  const totalHoles=ch?legs.reduce((s,l)=>s+l.holes,0):0;
+  const totalChannelEpoxy=ch?legs.reduce((s,l)=>s+l.epoxy,0):0;
+  const channelEndCaps=ch?legs.reduce((s,l)=>s+(l.startEnd==='free'?1:0)+(l.endEnd==='free'?1:0),0):0;
+
+  // grout channel totals
+  const totalChannelMm=gc?legs.reduce((s,l)=>s+l.dim,0):0;
+  const{kgExact:gcKgExact,fullBags:gcFullBags,remainderBag:gcRemainderBag}=gc?calcGroutChannelGrout(totalChannelMm):{kgExact:0,fullBags:0,remainderBag:0};
+  const gcGroutDesc=gc?(gcFullBags>0?`${gcFullBags} × 25kg bag${gcFullBags>1?'s':''}${gcRemainderBag>0?` + 1 × ${gcRemainderBag}kg bag`:''}`:gcRemainderBag>0?`1 × ${gcRemainderBag}kg bag`:'< 1kg'):'';
+
+  // ── TOP RAIL ──
+  const railLegs=legs.filter(l=>l.finish==='toprail');
+  const totalRail=railLegs.reduce((s,l)=>s+l.dim,0);
+  const railStock=totalRail>0?Math.ceil(totalRail/5800):0;
+  const connectedRailEnds=railLegs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0);
+  const railJoiners=Math.round(connectedRailEnds/2);
+  const endCaps=railLegs.reduce((s,l)=>s+(l.startEnd!=='connected'?1:0)+(l.endEnd!=='connected'?1:0),0);
+
+  // ── STIFFENERS ──
+  const stiffLegs=legs.filter(l=>l.finish==='stiffeners');
+  // wall-to-glass: WALL ends only — applies to all mount types
+  const totalW2G=stiffLegs.reduce((s,l)=>s+(l.startEnd==='wall'?1:0)+(l.endEnd==='wall'?1:0),0);
+  // glass-to-glass 180°: panels - 1 per stiffener run
+  const totalG180=stiffLegs.reduce((s,l)=>s+Math.max(0,l.panels-1),0);
+  // glass-to-glass 90°: connected stiffener ends / 2
+  const connectedStiffEnds=stiffLegs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0);
+  const totalG90=Math.round(connectedStiffEnds/2);
+  // adjustable: sum per run
+  const totalAdj=legs.reduce((s,l)=>s+(l.adjStiff||0),0);
+  const totalStiff=totalW2G+totalG180+totalG90+totalAdj;
+
+  // ── SPIGOT FIXING ──
+  let groutKg=0,pinRods=0,pinStock=0,pinEpoxy=0,flangePlates=0;
+  if(!sm){
+    if(mount==='core')groutKg=Math.ceil(totalSpigots/6)*2;
+    else if(mount==='pin'){pinRods=totalSpigots;pinStock=Math.ceil(totalSpigots/6);pinEpoxy=Math.ceil(totalSpigots/10);}
+    else flangePlates=totalSpigots;
+  }
+
+  // ── JOB CARD HTML ──
+  let html='';
+  html+=`<div class="jc-section"><div class="jc-section-title">Runs & Stairs</div>`;
+  legs.forEach(l=>{
+    const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');
+    const dirTag=l.type==='stairs'?` — ${l.dir} up`:'';
+    const ft=l.finish==='toprail'?` + ${RAIL_LABEL[l.railProfile]||'top rail'}`:l.finish==='stiffeners'?' + stiffeners':'';
+    const adjTag=l.adjStiff>0?` +${l.adjStiff} adj stiff`:'';
+    const countTag=gc
+      ?`${l.panels} panels`
+      :ch
+      ?`${l.panels} panels @ ${l.panelW}mm`
+      :sm?`${l.panels} panels / ${l.bolts} bolts`:`${l.panels} panels / ${l.spigots} spigots`;
+    html+=`<div class="jc-row"><span>${lbl} ${l.dim}mm${dirTag}<br><span class="sub">${gc?'12mm TSG (grouted channel)':l.glass+'mm TSG'}${ft}${adjTag}</span></span><span class="val">${countTag}</span></div>`;
+  });
+  const totalTag=gc?`${totalPanels} panels`:ch?`${totalPanels} panels`:sm?`${totalPanels} panels / ${totalBolts} bolts`:`${totalPanels} panels / ${totalSpigots} spigots`;
+  html+=`<div class="jc-total"><span>Total</span><span>${totalTag}</span></div></div>`;
+
+  if(gc){
+    // ── GROUT CHANNEL FIXING ──
+    html+=`<div class="jc-section"><div class="jc-section-title">Concrete channel — grouted fixing</div>`;
+    html+=`<div class="jc-row"><span>Channel dimensions</span><span class="val">100mm deep × 50mm wide</span></div>`;
+    html+=`<div class="jc-row"><span>Glass thickness</span><span class="val">12mm TSG</span></div>`;
+    html+=`<div class="jc-row"><span>Total channel length</span><span class="val">${totalChannelMm}mm</span></div>`;
+    html+=`<div class="jc-row"><span>Grout required</span><span class="val">${gcGroutDesc}</span></div>`;
+    html+=`<div class="jc-row"><span class="sub">Multi Grout CEM 60 — non-shrink, fast set. 25kg bag yields 11L.</span></div>`;
+    const gcWaterMl=Math.round((gcKgExact)*180);
+    html+=`<div class="jc-row"><span>Mixing water required</span><span class="val">${gcWaterMl}ml</span></div>`;
+    html+=`<div class="jc-row"><span class="sub">Mix ratio: 180ml water per 1kg grout. Do not mix more than can be used in 15 min. Do not re-temper.</span></div>`;
+    html+=`<div class="jc-row"><span class="sub">U-channel liner — optional item, not included in grout volume</span></div>`;
+    html+=`</div>`;
+  } else if(ch){
+    // ── CHANNEL FIXING ──
+    html+=`<div class="jc-section"><div class="jc-section-title">Aluminium channel & fixing — ${CH_FINISH[getChannelFinish()]}</div>`;
+    legs.forEach(l=>{
+      const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');
+      html+=`<div class="jc-row"><span>${lbl} — ${l.dim}mm</span><span class="val">${l.kits} kit${l.kits>1?'s':''} / ${l.holes} holes</span></div>`;
+    });
+    html+=`<div class="jc-total"><span>Total kits (5.8m, bolts incl.)</span><span>${totalKits}</span></div>`;
+    html+=`<div class="jc-row"><span>Total fixing holes</span><span class="val">${totalHoles}</span></div>`;
+    html+=`<div class="jc-row"><span>Epoxy 300ml (1 per 10 holes)</span><span class="val">${totalChannelEpoxy} tube${totalChannelEpoxy>1?'s':''}</span></div>`;
+    html+=`<div class="jc-row"><span>Channel end caps (open ends)</span><span class="val">${channelEndCaps}</span></div>`;
+    html+=`</div>`;
+  } else if(sm){
+    html+=`<div class="jc-section"><div class="jc-section-title">Side mount bolts & fixing</div>`;
+    html+=`<div class="jc-row"><span>Side mount bolts (4 per panel)</span><span class="val">${totalBolts}</span></div>`;
+    html+=`<div class="jc-row"><span>M10 threaded rod 150mm (1 per bolt)</span><span class="val">${totalRods}</span></div>`;
+    html+=`<div class="jc-row"><span>Rod stock — 1m lengths (6 per length)</span><span class="val">${rodStock} × 1m</span></div>`;
+    html+=`<div class="jc-row"><span>Chemical anchor epoxy (1 per 10 bolts)</span><span class="val">${epoxyCartridges} × 300ml</span></div>`;
+    html+=`</div>`;
+  } else {
+    html+=`<div class="jc-section"><div class="jc-section-title">Spigots & cover plates</div>`;
+    html+=`<div class="jc-row"><span>${profileName}</span><span class="val">${totalSpigots}</span></div>`;
+    html+=`<div class="jc-row"><span>Domed cover plates (1 per spigot)</span><span class="val">${totalSpigots}</span></div>`;
+    html+=`<div class="jc-row"><span class="sub">Cover plates may be removed for pin fix on client request</span></div>`;
+    html+=`</div>`;
+    html+=`<div class="jc-section"><div class="jc-section-title">Fixing — ${mountName}</div>`;
+    if(mount==='core'){
+      html+=`<div class="jc-row"><span>Method</span><span class="val">Core drill + non-shrink grout</span></div>`;
+      html+=`<div class="jc-row"><span>Non-shrink grout</span><span class="val">${groutKg}kg</span></div>`;
+      html+=`<div class="jc-row"><span>Rubber gussets (supplied with spigot)</span><span class="val">${totalSpigots}</span></div>`;
+    } else if(mount==='pin'){
+      html+=`<div class="jc-row"><span>Method</span><span class="val">16mm threaded rod + chemical anchor epoxy</span></div>`;
+      html+=`<div class="jc-row"><span>16mm rod × 150mm (1 per spigot)</span><span class="val">${pinRods}</span></div>`;
+      html+=`<div class="jc-row"><span>Rod stock — 1m lengths (6 per length)</span><span class="val">${pinStock} × 1m</span></div>`;
+      html+=`<div class="jc-row"><span>Chemical anchor epoxy (1 per 10 holes)</span><span class="val">${pinEpoxy} × 300ml</span></div>`;
+      html+=`<div class="jc-row"><span>Rubber gussets (supplied with spigot)</span><span class="val">${totalSpigots}</span></div>`;
+    } else {
+      html+=`<div class="jc-row"><span>Method</span><span class="val">Flange mount — substrate fixing by client</span></div>`;
+      html+=`<div class="jc-row"><span>Flange plates (matched to spigot OD)</span><span class="val">${flangePlates}</span></div>`;
+      html+=`<div class="jc-row"><span>Rubber gussets (supplied with spigot)</span><span class="val">${totalSpigots}</span></div>`;
+    }
+    html+=`</div>`;
+  }
+
+  if(railLegs.length>0){
+    html+=`<div class="jc-section"><div class="jc-section-title">Top rail</div>`;
+    railLegs.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');html+=`<div class="jc-row"><span>${lbl} — ${RAIL_LABEL[l.railProfile]||l.railProfile}</span><span class="val">${l.dim}mm</span></div>`;});
+    html+=`<div class="jc-total"><span>Total</span><span>${totalRail}mm</span></div>`;
+    html+=`<div class="jc-row"><span>Stock lengths × 5800mm</span><span class="val">${railStock}</span></div>`;
+    if(railJoiners>0)html+=`<div class="jc-row"><span>Rail joiners</span><span class="val">${railJoiners}</span></div>`;
+    if(endCaps>0)html+=`<div class="jc-row"><span>End caps (open rail ends)</span><span class="val">${endCaps}</span></div>`;
+    html+=`</div>`;
+  }
+
+  if(stiffLegs.length>0||totalAdj>0){
+    html+=`<div class="jc-section"><div class="jc-section-title">Stiffeners</div>`;
+    if(totalW2G>0)html+=`<div class="jc-row"><span>Wall-to-glass (wall ends)</span><span class="val">${totalW2G}</span></div>`;
+    if(totalG180>0)html+=`<div class="jc-row"><span>Glass-to-glass 180° (inline)</span><span class="val">${totalG180}</span></div>`;
+    if(totalG90>0)html+=`<div class="jc-row"><span>Glass-to-glass 90° (corner)</span><span class="val">${totalG90}</span></div>`;
+    if(totalAdj>0)html+=`<div class="jc-row"><span>Adjustable stiffeners</span><span class="val">${totalAdj}</span></div>`;
+    html+=`<div class="jc-total"><span>Total stiffeners</span><span>${totalStiff}</span></div>`;
+    html+=`</div>`;
+  }
+
+  // ── MATERIAL SHEET ──
+  const d=new Date();
+  const dateStr=`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+  let ps='';
+  if(opts.noSheetHeader){
+  ps+=`<div style="font-size:11px;margin-bottom:8px"><b>Mount:</b> ${mountName} &nbsp; <b>Material:</b> ${material}${(!sm&&!ch&&!gc)?' &nbsp; <b>Profile:</b> '+profileName:''}</div>`;
+  } else {
+  ps+=`<div style="border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:14px">`;
+  ps+=`<div style="font-size:15px;font-weight:bold;letter-spacing:1px;margin-bottom:6px">BALUSTRADER — MATERIAL SHEET</div>`;
+  ps+=`<div style="display:flex;gap:40px;font-size:11px">`;
+  ps+=`<span><b>Date:</b> ${dateStr}</span>`;
+  ps+=`<span><b>Mount:</b> ${mountName}</span>`;
+  ps+=`<span><b>Material:</b> ${material}</span>`;
+  if(!sm&&!ch&&!gc)ps+=`<span><b>Profile:</b> ${profileName}</span>`;
+  ps+=`</div></div>`;
+  }
+
+  ps+=`<table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:11px">`;
+  ps+=`<thead><tr style="background:#f0f0f0;border-bottom:1px solid #000">`;
+  ps+=`<th style="text-align:left;padding:4px 6px">Run / Stair</th>`;
+  ps+=`<th style="text-align:right;padding:4px 6px">Length</th>`;
+  ps+=`<th style="text-align:right;padding:4px 6px">Glass</th>`;
+  ps+=`<th style="text-align:right;padding:4px 6px">Panels</th>`;
+  ps+=`<th style="text-align:right;padding:4px 6px">${ch?'Panel W':sm||gc?'Panels':'Spigots'}</th>`;
+  if(ch)ps+=`<th style="text-align:right;padding:4px 6px">Kits</th>`;
+  ps+=`<th style="text-align:left;padding:4px 6px">Top finish</th>`;
+  ps+=`</tr></thead><tbody>`;
+  legs.forEach((l,i)=>{
+    const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');
+    const bg=i%2===0?'#fff':'#f8f8f8';
+    const finishLbl=l.finish==='toprail'?RAIL_LABEL[l.railProfile]||'Top rail':l.finish==='stiffeners'?'Stiffeners':'Glass only';
+    ps+=`<tr style="background:${bg};border-bottom:1px solid #ddd">`;
+    ps+=`<td style="padding:4px 6px">${lbl}${l.type==='stairs'?' ('+l.dir+' up)':''}</td>`;
+    ps+=`<td style="text-align:right;padding:4px 6px">${l.dim}mm</td>`;
+    ps+=`<td style="text-align:right;padding:4px 6px">${l.glass}mm TSG</td>`;
+    ps+=`<td style="text-align:right;padding:4px 6px;font-weight:bold">${l.panels}</td>`;
+    ps+=`<td style="text-align:right;padding:4px 6px;font-weight:bold">${ch?l.panelW+'mm':sm||gc?'—':l.spigots}</td>`;
+    if(ch)ps+=`<td style="text-align:right;padding:4px 6px;font-weight:bold">${l.kits}</td>`;
+    ps+=`<td style="padding:4px 6px">${finishLbl}</td>`;
+    ps+=`</tr>`;
+  });
+  ps+=`<tr style="background:#f0f0f0;font-weight:bold;border-top:1px solid #000">`;
+  ps+=`<td style="padding:4px 6px">TOTAL</td><td></td><td></td>`;
+  ps+=`<td style="text-align:right;padding:4px 6px">${totalPanels}</td>`;
+  ps+=`<td style="text-align:right;padding:4px 6px">${ch?'—':sm||gc?'—':totalSpigots}</td>`;
+  if(ch)ps+=`<td style="text-align:right;padding:4px 6px">${totalKits}</td>`;
+  ps+=`<td></td></tr></tbody></table>`;
+
+  ps+=`<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px">`;
+
+  if(gc){
+    ps+=`<div style="flex:1;min-width:180px;border:1px solid #ccc;padding:8px 10px;border-radius:3px">`;
+    ps+=`<div style="font-weight:bold;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid #ddd;padding-bottom:3px">Concrete Channel & Grout</div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Total channel length</span><b>${totalChannelMm}mm</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Non-shrink grout (Multi Grout CEM 60)</span><b>${gcGroutDesc}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Mixing water</span><b>${Math.round(gcKgExact*180)}ml</b></div>`;
+    ps+=`<div style="font-size:10px;color:#666;margin-top:4px">180ml water per 1kg grout. Max 15min pot life. Do not re-temper.</div>`;
+    ps+=`<div style="font-size:10px;color:#666;margin-top:4px">Channel 100×50mm / 12mm glass / 0.38L grout per metre</div>`;
+    ps+=`<div style="font-size:10px;color:#666">U-channel liner — optional, order separately if required</div>`;
+    ps+=`</div>`;
+  } else if(ch){
+    ps+=`<div style="flex:1;min-width:180px;border:1px solid #ccc;padding:8px 10px;border-radius:3px">`;
+    ps+=`<div style="font-weight:bold;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid #ddd;padding-bottom:3px">Channel & Fixing — ${CH_FINISH[getChannelFinish()]}</div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Channel kits (5.8m, bolts incl.)</span><b>${totalKits}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Total fixing holes</span><b>${totalHoles}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Epoxy 300ml (1/10 holes)</span><b>${totalChannelEpoxy}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Channel end caps (open ends)</span><b>${channelEndCaps}</b></div>`;
+    ps+=`</div>`;
+  } else if(sm){
+    ps+=`<div style="flex:1;min-width:180px;border:1px solid #ccc;padding:8px 10px;border-radius:3px">`;
+    ps+=`<div style="font-weight:bold;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid #ddd;padding-bottom:3px">Fixing</div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Side mount bolts (4/panel)</span><b>${totalBolts}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>M10 rod 150mm (1/bolt)</span><b>${totalRods}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Rod stock 1m lengths</span><b>${rodStock}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Epoxy 300ml (1/10 bolts)</span><b>${epoxyCartridges}</b></div>`;
+    ps+=`</div>`;
+  } else {
+    ps+=`<div style="flex:1;min-width:180px;border:1px solid #ccc;padding:8px 10px;border-radius:3px">`;
+    ps+=`<div style="font-weight:bold;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid #ddd;padding-bottom:3px">Spigots & Fixing</div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>${profileName}</span><b>${totalSpigots}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Domed cover plates</span><b>${totalSpigots}</b></div>`;
+    if(mount==='core')ps+=`<div style="display:flex;justify-content:space-between"><span>Non-shrink grout</span><b>${groutKg}kg</b></div>`;
+    if(mount==='pin'){ps+=`<div style="display:flex;justify-content:space-between"><span>16mm rod 150mm</span><b>${pinRods}</b></div>`;ps+=`<div style="display:flex;justify-content:space-between"><span>Rod stock 1m</span><b>${pinStock}</b></div>`;ps+=`<div style="display:flex;justify-content:space-between"><span>Epoxy 300ml (1/10 holes)</span><b>${pinEpoxy}</b></div>`;}
+    if(mount==='flange')ps+=`<div style="display:flex;justify-content:space-between"><span>Flange plates</span><b>${flangePlates}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Rubber gussets</span><b>${totalSpigots}</b></div>`;
+    ps+=`</div>`;
+  }
+
+  if(totalRail>0){
+    ps+=`<div style="flex:1;min-width:180px;border:1px solid #ccc;padding:8px 10px;border-radius:3px">`;
+    ps+=`<div style="font-weight:bold;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid #ddd;padding-bottom:3px">Top Rail</div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Total length</span><b>${totalRail}mm</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between"><span>Stock × 5800mm</span><b>${railStock}</b></div>`;
+    if(railJoiners>0)ps+=`<div style="display:flex;justify-content:space-between"><span>Rail joiners</span><b>${railJoiners}</b></div>`;
+    if(endCaps>0)ps+=`<div style="display:flex;justify-content:space-between"><span>End caps</span><b>${endCaps}</b></div>`;
+    ps+=`</div>`;
+  }
+
+  if(totalStiff>0){
+    ps+=`<div style="flex:1;min-width:180px;border:1px solid #ccc;padding:8px 10px;border-radius:3px">`;
+    ps+=`<div style="font-weight:bold;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid #ddd;padding-bottom:3px">Stiffeners</div>`;
+    if(totalW2G>0)ps+=`<div style="display:flex;justify-content:space-between"><span>Wall-to-glass</span><b>${totalW2G}</b></div>`;
+    if(totalG180>0)ps+=`<div style="display:flex;justify-content:space-between"><span>Glass-to-glass 180°</span><b>${totalG180}</b></div>`;
+    if(totalG90>0)ps+=`<div style="display:flex;justify-content:space-between"><span>Glass-to-glass 90°</span><b>${totalG90}</b></div>`;
+    if(totalAdj>0)ps+=`<div style="display:flex;justify-content:space-between"><span>Adjustable</span><b>${totalAdj}</b></div>`;
+    ps+=`<div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px solid #ddd;margin-top:4px;padding-top:4px"><span>Total</span><b>${totalStiff}</b></div>`;
+    ps+=`</div>`;
+  }
+
+  ps+=`</div>`;
+  ps+=`<div style="border:1px solid #ccc;padding:8px 10px;border-radius:3px;font-size:11px">`;
+  ps+=`<div style="font-weight:bold;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid #ddd;padding-bottom:3px">Glass Supplier — Panel Quantities</div>`;
+  legs.forEach(l=>{
+    const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');
+    ps+=`<div style="display:flex;justify-content:space-between;padding:2px 0"><span>${lbl} ${l.dim}mm — ${l.glass}mm TSG</span><b>${l.panels} panels</b></div>`;
+  });
+  ps+=`<div style="display:flex;justify-content:space-between;font-weight:bold;border-top:1px solid #ddd;margin-top:4px;padding-top:4px"><span>Total panels</span><b>${totalPanels}</b></div>`;
+  ps+=`<div style="margin-top:6px;font-size:10px;color:#666">Note: Panel sizes to be templated on site. Quantities only at this stage.</div>`;
+  ps+=`</div>`;
+
+  // Sage text
+  const stiffTxt=(stiffLegs.length>0||totalAdj>0)
+    ?`\nSTIFFENERS:\n  Wall-to-glass: ${totalW2G}\n  Glass-to-glass 180°: ${totalG180}\n  Glass-to-glass 90°: ${totalG90}`+(totalAdj>0?`\n  Adjustable: ${totalAdj}`:'')+`\n  Total: ${totalStiff}`:'';
+  const railTxt=totalRail>0?`\nTOP RAIL: ${totalRail}mm / ${railStock} × 5800mm`+(railJoiners>0?`\n  Rail joiners: ${railJoiners}`:'')+`\n  End caps: ${endCaps}`:'';
+  const fixTxt=gc
+    ?`  Method: Concrete Channel — Grouted\n  Channel: 100mm deep × 50mm wide\n  Total channel: ${totalChannelMm}mm\n  Non-shrink grout (Multi Grout CEM 60): ${gcGroutDesc}\n  Mixing water: ${Math.round(gcKgExact*180)}ml (180ml per kg)\n  U-channel liner: optional — order separately if required`
+    :ch
+    ?`  Method: Aluminium Channel — Floor Fixed\n  Channel finish: ${CH_FINISH[getChannelFinish()]}\n  Kits (5.8m, bolts incl.): ${totalKits}\n  Fixing holes: ${totalHoles}\n  Epoxy 300ml: ${totalChannelEpoxy}\n  Channel end caps: ${channelEndCaps}`
+    :sm?`  Method: Side Mount — threaded rod + epoxy\n  Bolts (4/panel): ${totalBolts}\n  M10 rod 150mm: ${totalRods}\n  Rod stock 1m: ${rodStock}\n  Epoxy 300ml: ${epoxyCartridges}`
+    :mount==='core'?`  Method: Core drill + non-shrink grout\n  Grout: ${groutKg}kg\n  Rubber gussets: ${totalSpigots}`
+    :mount==='pin'?`  Method: 16mm threaded rod + epoxy\n  Rods (150mm): ${pinRods}\n  Rod stock (1m): ${pinStock}\n  Epoxy 300ml: ${pinEpoxy}\n  Rubber gussets: ${totalSpigots}`
+    :`  Method: Flange mount\n  Flange plates: ${flangePlates}\n  Rubber gussets: ${totalSpigots}`;
+
+  const text=
+    `JOB CARD — FRAMELESS GLASS ${gc?'CONCRETE CHANNEL':ch?'CHANNEL':sm?'SIDE MOUNT':'SPIGOTS'}\n${'─'.repeat(38)}\n`+
+    `MOUNT: ${mountName}\nMATERIAL: ${material}\n${(!sm&&!ch&&!gc)?'PROFILE: '+profileName+'\n':''}\n`+
+    `TOTAL PANELS: ${totalPanels}${ch||gc?'':sm?'  |  TOTAL BOLTS: '+totalBolts:'  |  TOTAL SPIGOTS: '+totalSpigots}\n\nRUNS & STAIRS:\n`+
+    legs.map(l=>`  ${l.label||(l.type==='stairs'?'Stairs':'Run')} ${l.dim}mm${l.type==='stairs'?' '+l.dir+' up':''} — ${l.panels} panels (${gc?'12mm TSG grouted channel':l.glass+'mm TSG'})${l.adjStiff>0?' +'+l.adjStiff+' adj stiff':''}`).join('\n')+
+    `\n\nFIXING:\n${fixTxt}`+railTxt+stiffTxt;
+  return{html,ps,text,legs,mount,mountName,material,profile,profileName,channelFinish:getChannelFinish(),
+    t:{totalPanels,totalSpigots,totalBolts,totalRods,totalKits,totalHoles,totalChannelEpoxy,channelEndCaps,totalChannelMm,
+       totalW2G,totalG180,totalAdj,endCaps}};
+}
+
+// ── CALCULATE (v9): group lines Area → Design, run calcBlock per design ──
+function calculate(){
+  const active=lines.filter(l=>l.dim);
+  if(active.length===0){alert('Draw at least one run or stair with a dimension first.');return;}
+  // Drop tags pointing at deleted areas/designs
+  active.forEach(l=>{if(l.areaId&&!findArea(l.areaId))l.areaId=null;if(l.designId&&!findDesign(l.designId))l.designId=null;});
+  const tagged=active.some(l=>l.areaId||l.designId);
+  const areaKeys=[...areas.map(a=>a.id),null],designKeys=[...designs.map(d=>d.id),null];
+  const groups=[];
+  areaKeys.forEach(ak=>designKeys.forEach(dk=>{
+    const sl=active.filter(l=>String(l.areaId||'')===String(ak||'')&&String(l.designId||'')===String(dk||''));
+    if(!sl.length)return;
+    const d=findDesign(dk);
+    calcCtx=d?Object.assign({},d.settings):null;
+    let r;try{r=calcBlock(sl,{noSheetHeader:tagged});}finally{calcCtx=null;}
+    groups.push({areaId:ak,designId:dk,r});
+  }));
+  lastCalcGroups=groups;
+
+  if(!tagged){
+    // Nothing assigned to an area or design — exactly the v8 output.
+    const r=groups[0].r;
+    showJobCard(r.html);document.getElementById('printBody').innerHTML=r.ps;lastCalcText=r.text;
+    lastSageItems=buildGlassSage(groups);
+    return;
+  }
+
+  // ── Job totals (whole job, all areas/designs) ──
+  const allLegs=groups.flatMap(g=>g.r.legs.map(l=>Object.assign({},l,{_mount:g.r.mount,_mat:g.r.material})));
+  const sum=k=>groups.reduce((s,g)=>s+(g.r.t[k]||0),0);
+  const spigotsBy={core:0,pin:0,flange:0};
+  groups.forEach(g=>{if(spigotsBy[g.r.mount]!==undefined)spigotsBy[g.r.mount]+=g.r.t.totalSpigots;});
+  const T={panels:sum('totalPanels'),spigots:sum('totalSpigots'),bolts:sum('totalBolts'),rods:sum('totalRods'),
+    kits:sum('totalKits'),holes:sum('totalHoles'),chEpoxy:sum('totalChannelEpoxy'),chEndCaps:sum('channelEndCaps'),chMm:sum('totalChannelMm'),
+    w2g:sum('totalW2G'),g180:sum('totalG180'),adj:sum('totalAdj'),endCaps:sum('endCaps')};
+  // Corner/inline joins are counted across the WHOLE job so a join between two designs is counted once.
+  const railLegs=allLegs.filter(l=>l.finish==='toprail');
+  const railJoiners=Math.round(railLegs.reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)/2);
+  const g90=Math.round(allLegs.filter(l=>l.finish==='stiffeners').reduce((s,l)=>s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0),0)/2);
+  const railBy={},capsBy={};railLegs.forEach(l=>{const k=(RAIL_LABEL[l.railProfile]||l.railProfile)+', '+l._mat;railBy[k]=(railBy[k]||0)+l.dim;capsBy[k]=(capsBy[k]||0)+(l.startEnd!=='connected'?1:0)+(l.endEnd!=='connected'?1:0);});
+  const spigBy={};groups.forEach(g=>{if(g.r.t.totalSpigots>0){const k=g.r.profileName+', '+g.r.material;spigBy[k]=(spigBy[k]||0)+g.r.t.totalSpigots;}});
+  const glassBy={};allLegs.forEach(l=>{const k=l._mount==='groutchannel'||l._mount==='channel'?'12':(l.glass||'12');glassBy[k]=(glassBy[k]||0)+l.panels;});
+  const groutKg=spigotsBy.core>0?Math.ceil(spigotsBy.core/6)*2:0;
+  const pinStock=spigotsBy.pin>0?Math.ceil(spigotsBy.pin/6):0;
+  const pinEpoxy=spigotsBy.pin>0?Math.ceil(spigotsBy.pin/10):0;
+  const rodStock=T.rods>0?Math.ceil(T.rods/6):0;
+  const smEpoxy=T.bolts>0?Math.ceil(T.bolts/10):0;
+  const gcG=T.chMm>0?calcGroutChannelGrout(T.chMm):null;
+  const gcDesc=gcG?(gcG.fullBags>0?`${gcG.fullBags} × 25kg bag${gcG.fullBags>1?'s':''}${gcG.remainderBag>0?` + 1 × ${gcG.remainderBag}kg bag`:''}`:gcG.remainderBag>0?`1 × ${gcG.remainderBag}kg bag`:'< 1kg'):'';
+  const stiffTotal=T.w2g+T.g180+g90+T.adj;
+  const tot=[];
+  tot.push(['Glass panels',T.panels]);
+  Object.keys(glassBy).sort().forEach(k=>tot.push([`  ${k}mm TSG panels`,glassBy[k]]));
+  Object.keys(spigBy).forEach(k=>{tot.push([`Spigots ${k}`,spigBy[k]]);tot.push([`Domed cover plates ${k}`,spigBy[k]]);});
+  if(T.spigots>0)tot.push(['Rubber gussets',T.spigots]);
+  if(groutKg>0)tot.push(['Non-shrink grout (core drill)',groutKg+'kg']);
+  if(spigotsBy.pin>0){tot.push(['16mm rod × 150mm (pin fix)',spigotsBy.pin]);tot.push(['16mm rod stock 1m',pinStock]);tot.push(['Epoxy 300ml (pin fix)',pinEpoxy]);}
+  if(spigotsBy.flange>0)tot.push(['Flange plates',spigotsBy.flange]);
+  if(T.bolts>0){tot.push(['Side mount bolts',T.bolts]);tot.push(['M10 rod 150mm',T.rods]);tot.push(['M10 rod stock 1m',rodStock]);tot.push(['Epoxy 300ml (side mount)',smEpoxy]);}
+  if(T.kits>0){
+    const kitBy={},capBy={};groups.forEach(g=>{if(g.r.mount!=='channel')return;const f=CH_FINISH[g.r.channelFinish||'brushed'];kitBy[f]=(kitBy[f]||0)+g.r.t.totalKits;capBy[f]=(capBy[f]||0)+g.r.t.channelEndCaps;});
+    Object.keys(kitBy).forEach(f=>tot.push([`Alu channel kits 5.8m, ${f}`,kitBy[f]]));
+    tot.push(['Channel fixing holes',T.holes]);tot.push(['Epoxy 300ml (channel)',T.chEpoxy]);
+    Object.keys(capBy).forEach(f=>{if(capBy[f]>0)tot.push([`Channel end caps, ${f}`,capBy[f]]);});}
+  if(gcG){tot.push(['Concrete channel length',T.chMm+'mm']);tot.push(['Multi Grout CEM 60',gcDesc]);}
+  Object.keys(railBy).forEach(k=>{const mm=railBy[k];tot.push([`Top rail ${k}`,`${mm}mm / ${Math.ceil(mm/5800)} × 5800mm`]);});
+  if(railJoiners>0)tot.push(['Rail joiners',railJoiners]);
+  Object.keys(capsBy).forEach(k=>{if(capsBy[k]>0)tot.push([`Rail end caps ${k}`,capsBy[k]]);});
+  if(stiffTotal>0){if(T.w2g)tot.push(['Stiffeners wall-to-glass',T.w2g]);if(T.g180)tot.push(['Stiffeners glass-to-glass 180°',T.g180]);if(g90)tot.push(['Stiffeners glass-to-glass 90°',g90]);if(T.adj)tot.push(['Stiffeners adjustable',T.adj]);tot.push(['Stiffeners total',stiffTotal]);}
+
+  // ── Job card: Area banner → Design block(s) → Job totals ──
+  let html='';
+  areaKeys.forEach(ak=>{
+    const ag=groups.filter(g=>String(g.areaId||'')===String(ak||''));if(!ag.length)return;
+    const a=findArea(ak);
+    html+=`<div class="jc-area">${a?a.name:'No area'}</div>`;
+    ag.forEach(g=>{
+      const d=findDesign(g.designId);
+      html+=`<div class="jc-design" style="background:${d?d.color:'#888'}">${d?d.name:'No design'} — ${designSummary({mount:g.r.mount,profile:g.r.profile,material:g.r.material,channelFinish:g.r.channelFinish})}</div>`;
+      html+=g.r.html;
+    });
+  });
+  html+=`<div class="jc-section"><div class="jc-section-title">Job totals — all areas</div>`;
+  tot.forEach(([k,v])=>{html+=`<div class="jc-row"><span>${k}</span><span class="val">${v}</span></div>`;});
+  html+=`</div>`;
+  showJobCard(html);
+
+  // ── Material sheet ──
+  const d0=new Date();const dateStr=`${d0.getDate().toString().padStart(2,'0')}/${(d0.getMonth()+1).toString().padStart(2,'0')}/${d0.getFullYear()}`;
+  let ps=`<div style="border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:14px"><div style="font-size:15px;font-weight:bold;letter-spacing:1px;margin-bottom:6px">BALUSTRADER — MATERIAL SHEET</div><div style="font-size:11px"><b>Date:</b> ${dateStr} &nbsp; <b>Frameless glass</b> — ${areas.length} area(s), ${designs.length} design(s)</div></div>`;
+  ps+=`<div style="border:2px solid #000;padding:8px 10px;border-radius:3px;margin-bottom:16px"><div style="font-weight:bold;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;border-bottom:1px solid #000;padding-bottom:3px">Job totals — order these</div>`;
+  tot.forEach(([k,v])=>{ps+=`<div style="display:flex;justify-content:space-between;padding:1px 0"><span>${k}</span><b>${v}</b></div>`;});
+  ps+=`</div>`;
+  areaKeys.forEach(ak=>{
+    const ag=groups.filter(g=>String(g.areaId||'')===String(ak||''));if(!ag.length)return;
+    const a=findArea(ak);
+    ps+=`<div style="page-break-inside:avoid;font-size:13px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;background:#333;color:#fff;padding:4px 8px;margin:14px 0 8px">${a?a.name:'No area'}</div>`;
+    ag.forEach(g=>{const d=findDesign(g.designId);
+      ps+=`<div style="font-size:11px;font-weight:bold;color:#fff;background:${d?d.color:'#888'};padding:3px 8px;margin:6px 0">${d?d.name:'No design'}</div>`+g.r.ps;});
+  });
+  document.getElementById('printBody').innerHTML=ps;
+
+  // ── Copy-for-Sage text: job totals first, then each area/design ──
+  let txt=`JOB CARD — FRAMELESS GLASS\n${'═'.repeat(38)}\nJOB TOTALS — ALL AREAS\n`+tot.map(([k,v])=>`  ${k.trim()}: ${v}`).join('\n')+'\n';
+  groups.forEach(g=>{const a=findArea(g.areaId),d=findDesign(g.designId);
+    txt+=`\n\n${'═'.repeat(38)}\nAREA: ${a?a.name:'No area'}  |  DESIGN: ${d?d.name:'No design'}\n`+g.r.text;});
+  lastCalcText=txt;
+  lastSageItems=buildGlassSage(groups);
+}
+
+function showJobCard(html){
+  document.getElementById('jcBody').innerHTML=html;
+  document.getElementById('jcBodySide').innerHTML=html;
+  document.getElementById('canvasSideJC').style.display='flex';
+  setTimeout(resizeCanvas,50);
+}
+
+// ── LAYOUT TAB ──
+function layoutPanelCuts(l,mount){
+  // Indicative panel joints along a run (fraction 0..1). Templated on site.
+  const dim=l.dim;if(!dim||!l.panels)return[];
+  let a=0,b=dim;
+  if(mount!=='channel'&&mount!=='groutchannel'){a=l.startEnd==='connected'?0:OFF;b=dim-(l.endEnd==='connected'?0:OFF);}
+  const cuts=[];for(let i=0;i<=l.panels;i++)cuts.push((a+(b-a)*i/l.panels)/dim);
+  return cuts;
+}
+function renderLayout(){
+  const inner=document.getElementById('layoutInner');
+  if(!lastCalcGroups.length){inner.innerHTML='<div style="color:#999;text-align:center;padding:30px 0">Run Calculate first, then return here to see the layout.</div>';return;}
+  const esc=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const all=lastCalcGroups.flatMap(g=>g.r.legs.map(l=>({l,g})));
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  all.forEach(({l})=>{minX=Math.min(minX,l.x1,l.x2);minY=Math.min(minY,l.y1,l.y2);maxX=Math.max(maxX,l.x1,l.x2);maxY=Math.max(maxY,l.y1,l.y2);});
+  const LW=870,LH=380,sc=Math.min(LW/((maxX-minX)||1),LH/((maxY-minY)||1),3);
+  const tx=x=>(x-minX)*sc,ty=y=>(y-minY)*sc;
+  const parts=[];
+  all.forEach(({l,g})=>{
+    const d=findDesign(g.designId),a=findArea(g.areaId);
+    const col=d?d.color:(l.type==='stairs'?'#e67e22':'#4a90d9');
+    const x1=tx(l.x1),y1=ty(l.y1),x2=tx(l.x2),y2=ty(l.y2);const horiz=Math.abs(l.x2-l.x1)>=Math.abs(l.y2-l.y1);
+    parts.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="4" ${l.type==='stairs'?'stroke-dasharray="10,5"':''} stroke-linecap="round"/>`);
+    // panel joints
+    const nx=horiz?0:1,ny=horiz?1:0;
+    layoutPanelCuts(l,g.r.mount).forEach(t=>{const px=x1+(x2-x1)*t,py=y1+(y2-y1)*t;parts.push(`<line x1="${px-nx*8}" y1="${py-ny*8}" x2="${px+nx*8}" y2="${py+ny*8}" stroke="#333" stroke-width="1.5"/>`);});
+    // end type letters
+    const et=v=>({wall:'W',free:'F',connected:'C'}[v]||'');
+    [[x1,y1,l.startEnd],[x2,y2,l.endEnd]].forEach(([ex,ey,v])=>{const s2=et(v);if(!s2)return;parts.push(`<text x="${horiz?ex:ex-14}" y="${horiz?ey-12:ey+4}" font-family="Courier New,monospace" font-size="9" font-weight="bold" fill="${v==='free'?'#e74c3c':v==='wall'?'#777':'#27ae60'}" text-anchor="middle">${s2}</text>`);});
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    const lbl=esc((l.label?l.label+' ':'')+l.dim+'mm · '+l.panels+' pnl'+(l.type==='stairs'?' · '+l.dir+' up':''));
+    const tag=esc([a?a.name:null,d?d.name:null].filter(Boolean).join(' · '));
+    const lx=horiz?mx:mx+14,anchor=horiz?'middle':'start';
+    parts.push(`<text x="${lx}" y="${horiz?my-16:my-2}" font-family="Courier New,monospace" font-size="11" font-weight="bold" fill="${col}" text-anchor="${anchor}">${lbl}</text>`);
+    if(tag)parts.push(`<text x="${lx}" y="${horiz?my+22:my+12}" font-family="Courier New,monospace" font-size="9" fill="${col}" text-anchor="${anchor}">${tag}</text>`);
+  });
+  const PADX=150,PADY=50;
+  const vw=Math.max(LW,(maxX-minX)*sc)+PADX*2,vh=(maxY-minY)*sc+PADY*2;
+  const svg=`<svg class="layout-svg" xmlns="http://www.w3.org/2000/svg" viewBox="${-PADX} ${-PADY} ${vw} ${Math.max(vh,160)}" width="100%" style="display:block;background:#f8f8f8;border-radius:4px">${parts.join('')}</svg>`;
+  const legend=`<div style="font-size:10px;color:#555;padding:6px 2px 10px">Tick marks = indicative panel joints (sizes templated on site). W = wall end · F = free end · C = connected. Colour = design.</div>`;
+  // table grouped Area → Design
+  let rows='',gP=0,gF=0,gL=0;
+  const areaKeys=[...areas.map(a=>a.id),null];
+  areaKeys.forEach(ak=>{
+    const ag=lastCalcGroups.filter(g=>String(g.areaId||'')===String(ak||''));if(!ag.length)return;
+    const a=findArea(ak);let aP=0,aF=0,aL=0;
+    if(areas.length||designs.length)rows+=`<tr><td colspan="7" style="padding:5px 10px;background:#333;color:#fff;font-weight:bold;letter-spacing:1px">${esc((a?a.name:'No area').toUpperCase())}</td></tr>`;
+    ag.forEach(g=>{
+      const d=findDesign(g.designId);const col=d?d.color:'#888';const sm=g.r.mount==='sidemount',chn=g.r.mount==='channel'||g.r.mount==='groutchannel';
+      if(d||designs.length)rows+=`<tr><td colspan="7" style="padding:4px 10px;background:${col};color:#fff;font-weight:bold">${esc(d?d.name:'No design')} — ${esc(designSummary({mount:g.r.mount,profile:g.r.profile,material:g.r.material}))}</td></tr>`;
+      let dP=0,dF=0,dL=0;
+      g.r.legs.forEach(l=>{
+        const fix=chn?'—':sm?l.bolts+' bolts':l.spigots+' spigots';const fixN=chn?0:sm?l.bolts:l.spigots;
+        const fin=l.finish==='toprail'?(RAIL_LABEL[l.railProfile]||'Top rail'):l.finish==='stiffeners'?'Stiffeners':'Glass only';
+        const glass=chn?'12mm TSG':(l.glass||'12')+'mm TSG';
+        rows+=`<tr><td style="border-left:3px solid ${col};font-weight:bold">${esc(l.label||(l.type==='stairs'?'Stairs':'Run'))}</td><td style="text-align:center">${l.type==='stairs'?'Stairs '+l.dir:'Run'}</td><td style="text-align:right">${l.dim}mm</td><td>${glass}</td><td style="text-align:center">${l.panels}${l.panelW?' @ '+l.panelW+'mm':''}</td><td style="text-align:center">${fix}</td><td>${fin}</td></tr>`;
+        dP+=l.panels;dF+=fixN;dL+=l.dim;
+      });
+      rows+=`<tr style="background:#f4f4f4;font-weight:bold"><td colspan="2" style="color:${col}">${esc(d?d.name:'Design')} total</td><td style="text-align:right">${dL}mm</td><td></td><td style="text-align:center">${dP}</td><td style="text-align:center">${dF||'—'}</td><td></td></tr>`;
+      aP+=dP;aF+=dF;aL+=dL;
+    });
+    if(areas.length)rows+=`<tr style="background:#e8e8e8;font-weight:bold"><td colspan="2">${esc(a?a.name:'No area')} total</td><td style="text-align:right">${aL}mm</td><td></td><td style="text-align:center">${aP}</td><td style="text-align:center">${aF||'—'}</td><td></td></tr>`;
+    gP+=aP;gF+=aF;gL+=aL;
+  });
+  const table=`<table style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:11px;margin-top:2px" class="lt"><thead><tr style="background:#e8e8e8"><th style="text-align:left">Run</th><th>Type</th><th>Length</th><th style="text-align:left">Glass</th><th>Panels</th><th>Spigots / bolts</th><th style="text-align:left">Top finish</th></tr></thead><tbody>${rows}</tbody><tfoot><tr style="background:#fff3cd;font-weight:bold"><td colspan="2">GRAND TOTAL</td><td style="text-align:right">${gL}mm</td><td></td><td style="text-align:center;color:#b8860b">${gP}</td><td style="text-align:center;color:#b8860b">${gF||'—'}</td><td></td></tr></tfoot></table>`;
+  const d0=new Date();
+  const header=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333"><div><div style="font-size:15px;font-weight:bold;letter-spacing:1px">BALUSTRADER — RUN LAYOUT</div><div style="font-size:11px;color:#555;margin-top:3px">Frameless Glass</div></div><div style="font-size:11px;color:#444"><b>Date:</b> ${d0.toLocaleDateString('en-ZA')}</div></div>`;
+  inner.innerHTML=`<style>.lt th,.lt td{padding:4px 7px;border:1px solid #ddd}</style>`+header+svg+legend+'<div class="layout-table-wrap">'+table+'</div>';
+}
+function printLayout(){
+  if(!lastCalcGroups.length){alert('Calculate first.');return;}
+  renderLayout();const html=document.getElementById('layoutInner').innerHTML;
+  const win=window.open('','_blank','width=1100,height=850');if(!win){alert('Popup blocked.');return;}
+  win.document.write(`<!DOCTYPE html><html><head><title>Layout</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;background:#fff;color:#111;padding:10mm;font-size:11px}table{border-collapse:collapse;width:100%}th,td{padding:4px 7px;border:1px solid #ccc;font-size:10px}thead{display:table-header-group}tr{page-break-inside:avoid}svg.layout-svg{width:100%;height:auto;max-height:170mm}@media print{@page{size:A4 landscape;margin:6mm}}</style></head><body>${html}</body></html>`);
+  win.document.close();win.focus();setTimeout(()=>win.print(),500);
+}
+
+// ── Copy for Sage (v11) — same format as the balustrade master template ──
+// One flat, job-wide list of raw materials (areas/designs NOT split out —
+// identical items are totalled). Columns: Item | Size / spec | Qty | Unit.
+// Copied as a real table (pastes into Word as a table) with a tab-separated
+// plain-text fallback. Quantities use the same formulas as the job card.
+let lastSageItems=[];
+const SAGE_GROUPS=['Glass','Spigots','Tubing','Fittings','Stiffeners','Channel','Fixing'];
+function toM(mm){const m=mm/1000;return(Number.isInteger(m)?m.toFixed(1):parseFloat(m.toFixed(3)).toString())+'m';}
+function newSageList(){
+  const m=new Map();const tubes=new Map();
+  return{
+    add(group,item,spec,qty,unit){if(!qty||qty<=0)return;const k=group+'|'+item+'|'+spec+'|'+unit;if(!m.has(k))m.set(k,{group,item,spec,qty:0,unit});m.get(k).qty+=qty;},
+    tube(size,mat,mm,use,stock){if(!mm||mm<=0)return;const k=size+'|'+mat;if(!tubes.has(k))tubes.set(k,{size,mat,mm:0,uses:new Set(),stock});const t=tubes.get(k);t.mm+=mm;t.uses.add(use);},
+    finish(){
+      tubes.forEach(t=>{this.add('Tubing','Tube '+t.size,`${t.mat} — ${toM(t.stock)} lengths (${[...t.uses].join(' + ')}, ${toM(t.mm)} needed)`,Math.ceil(t.mm/t.stock),'lengths');});
+      return[...m.values()].sort((a,b)=>SAGE_GROUPS.indexOf(a.group)-SAGE_GROUPS.indexOf(b.group));
+    }
+  };
+}
+function buildGlassSage(groups){
+  const S=newSageList();
+  const spigBy={core:0,pin:0,flange:0};let bolts=0,chEpoxy=0,chMm=0;
+  const railJoin={};let g90ends=0;
+  groups.forEach(g=>{
+    const r=g.r,mat=r.material,mnt=r.mount,isCh=mnt==='channel'||mnt==='groutchannel';
+    const pLbl=r.profile==='round'?'50mm round':'square';
+    r.legs.forEach(l=>{
+      const thk=isCh?'12':(l.glass||'12');
+      S.add('Glass','Glass panel',thk+'mm TSG — sizes templated on site',l.panels,'ea');
+      if(l.finish==='toprail'){
+        const rl=RAIL_LABEL[l.railProfile]||l.railProfile;
+        S.tube(rl,mat,l.dim,'top rail',5800);
+        S.add('Fittings','Rail end cap',rl+', '+mat,(l.startEnd!=='connected'?1:0)+(l.endEnd!=='connected'?1:0),'ea');
+        const jk=rl+', '+mat;railJoin[jk]=(railJoin[jk]||0)+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0);
+      }
+      if(l.finish==='stiffeners'){
+        S.add('Stiffeners','Stiffener — wall-to-glass',mat,(l.startEnd==='wall'?1:0)+(l.endEnd==='wall'?1:0),'ea');
+        S.add('Stiffeners','Stiffener — glass-to-glass 180°',mat,Math.max(0,l.panels-1),'ea');
+        g90ends+=(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0);
+      }
+      S.add('Stiffeners','Stiffener — adjustable',mat,l.adjStiff||0,'ea');
+      if(mnt==='channel'){chEpoxy+=l.epoxy;S.add('Channel','Aluminium channel kit 5.8m (bolts incl.)',CH_FINISH[r.channelFinish||'brushed'],l.kits,'ea');S.add('Channel','Channel end cap',CH_FINISH[r.channelFinish||'brushed'],(l.startEnd==='free'?1:0)+(l.endEnd==='free'?1:0),'ea');}
+      if(mnt==='groutchannel')chMm+=l.dim;
+    });
+    if(spigBy[mnt]!==undefined&&r.t.totalSpigots>0){
+      const n=r.t.totalSpigots;spigBy[mnt]+=n;
+      S.add('Spigots','Spigot',pLbl+', '+mat,n,'ea');
+      S.add('Spigots','Cover plate — domed',pLbl+', '+mat,n,'ea');
+      S.add('Spigots','Rubber gusset','supplied with spigot',n,'ea');
+      if(mnt==='flange')S.add('Fixing','Flange plate',pLbl+', '+mat,n,'ea');
+    }
+    if(mnt==='sidemount'){bolts+=r.t.totalBolts;S.add('Fixing','Side mount bolt',mat,r.t.totalBolts,'ea');}
+  });
+  Object.keys(railJoin).forEach(k=>S.add('Fittings','Rail joiner',k,Math.round(railJoin[k]/2),'ea'));
+  S.add('Stiffeners','Stiffener — glass-to-glass 90°','',Math.round(g90ends/2),'ea');
+  if(spigBy.core>0)S.add('Fixing','Non-shrink grout','core drill',Math.ceil(spigBy.core/6)*2,'kg');
+  if(spigBy.pin>0){S.add('Fixing','Threaded rod M16 × 1m','pin fix — 150mm per spigot',Math.ceil(spigBy.pin/6),'ea');S.add('Fixing','Chemical epoxy 300ml','pin fix',Math.ceil(spigBy.pin/10),'tubes');}
+  if(bolts>0){S.add('Fixing','Threaded rod M10 × 1m','side mount — 150mm per bolt',Math.ceil(bolts/6),'ea');S.add('Fixing','Chemical epoxy 300ml','side mount',Math.ceil(bolts/10),'tubes');}
+  if(chEpoxy>0)S.add('Fixing','Chemical epoxy 300ml','aluminium channel',chEpoxy,'tubes');
+  if(chMm>0){const gg=calcGroutChannelGrout(chMm);
+    S.add('Fixing','Multi Grout CEM 60 — 25kg bag','concrete channel '+toM(chMm),gg.fullBags,'bags');
+    S.add('Fixing','Multi Grout CEM 60','concrete channel — part bag',gg.remainderBag,'kg');}
+  return S.finish();
+}
+function sageEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function buildSageCopy(){
+  const rows=lastSageItems;const date=new Date().toLocaleDateString('en-ZA');
+  let text=`MATERIALS LIST — ${date}\nItem\tSize / spec\tQty\tUnit\n`;
+  let html=`<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt"><tr><td colspan="4" style="font-weight:bold;font-size:11pt">MATERIALS LIST — ${date}</td></tr><tr style="background:#d9d9d9;font-weight:bold"><td>Item</td><td>Size / spec</td><td>Qty</td><td>Unit</td></tr>`;
+  let g='';
+  rows.forEach(r=>{
+    if(r.group!==g){g=r.group;text+=`\n${g.toUpperCase()}\n`;html+=`<tr style="background:#f2f2f2;font-weight:bold"><td colspan="4">${sageEsc(g.toUpperCase())}</td></tr>`;}
+    const q=Number.isInteger(r.qty)?r.qty:parseFloat(r.qty.toFixed(2));
+    text+=`${r.item}\t${r.spec}\t${q}\t${r.unit}\n`;
+    html+=`<tr><td>${sageEsc(r.item)}</td><td>${sageEsc(r.spec)}</td><td style="text-align:right">${q}</td><td>${sageEsc(r.unit)}</td></tr>`;
+  });
+  html+='</table>';
+  return{text,html};
+}
+function copyJobCard(){
+  if(!lastCalcText){alert('Calculate first.');return;}
+  if(!lastSageItems.length){alert('Nothing to copy — no materials calculated.');return;}
+  const {text,html}=buildSageCopy();
+  const done=()=>alert('Materials list copied ('+lastSageItems.length+' items) — paste into Word or Sage.');
+  const plain=()=>{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>prompt('Copy this:',text));}else{prompt('Copy this:',text);}};
+  try{
+    if(navigator.clipboard&&window.ClipboardItem){
+      navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]).then(done).catch(plain);
+    }else plain();
+  }catch(e){plain();}
+}
+
+// v7: launcher passes ?mount=core|pin|flange|sidemount|channel|groutchannel
+(function(){try{const m=new URLSearchParams(window.location.search).get('mount');const sel=document.getElementById('mountSelect');if(m&&sel&&[...sel.options].some(o=>o.value===m))sel.value=m;}catch(e){}})();
+onMountChange();
+rebuildAdDropdowns();
+setTool('run');
+redraw();
+</script>
+</body>
+</html>

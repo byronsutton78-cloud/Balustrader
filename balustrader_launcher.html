@@ -130,7 +130,10 @@ main{position:relative;z-index:10;flex:1;padding:24px 24px 40px;max-width:1280px
 .group-desc{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-left:auto}
 
 /* ── MOUNT CARDS ROW ── */
-.mount-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;min-width:0}
+.mount-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;min-width:0}
+.mount-row.three{grid-template-columns:repeat(3,1fr)}
+.mount-row.one{grid-template-columns:minmax(0,1fr) 3fr}
+@media(max-width:1100px){.mount-row,.mount-row.three{grid-template-columns:repeat(2,1fr)}}
 .mount-row .card{min-width:0}
 
 /* ── CARD ── */
@@ -229,6 +232,7 @@ footer{
 .product-group:nth-child(2){animation-delay:0.12s}
 .product-group:nth-child(3){animation-delay:0.19s}
 .product-group:nth-child(4){animation-delay:0.26s}
+.product-group:nth-child(n+5){animation-delay:0.32s}
 
 @media(max-width:768px){
   header{padding:18px 20px;flex-direction:column;align-items:flex-start;gap:10px}
@@ -345,6 +349,22 @@ footer{
         </div>
       </div>
 
+
+      <div class="card active-card" onclick="launch('8line','pinfix')" style="--card-accent:#c8a028">
+        <div class="card-top">
+          <span class="mount-badge">Pin Fix</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">M16 Rod + Grommet</div>
+        <div class="card-details">
+          Post height: <span>set in tool</span><br>
+          M16 threaded rod · epoxy · grommet<br>
+          8 lines · 15.88mm or 12.7mm
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -404,6 +424,22 @@ footer{
         </div>
       </div>
 
+
+      <div class="card active-card" onclick="launch('cable','pinfix')" style="--card-accent:#3a7bd5">
+        <div class="card-top">
+          <span class="mount-badge">Pin Fix</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">M16 Rod + Grommet</div>
+        <div class="card-details">
+          Post height: <span>set in tool</span><br>
+          M16 threaded rod · epoxy · grommet<br>
+          Swage fittings · 4mm 1×19 Grade 316
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -463,6 +499,22 @@ footer{
         </div>
       </div>
 
+
+      <div class="card active-card" onclick="launch('glass','pinfix')" style="--card-accent:#8e44ad">
+        <div class="card-top">
+          <span class="mount-badge">Pin Fix</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
+        </div>
+        <div class="card-mount-name">M16 Rod + Grommet</div>
+        <div class="card-details">
+          Post height: <span>set in tool</span><br>
+          M16 threaded rod · epoxy · grommet<br>
+          D-clamps · max panel 1200mm
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -522,6 +574,231 @@ footer{
         </div>
       </div>
 
+
+      <div class="card active-card" onclick="launch('vertical','pinfix')" style="--card-accent:#27ae60">
+        <div class="card-top">
+          <span class="mount-badge">Pin Fix</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">M16 Rod + Grommet</div>
+        <div class="card-details">
+          Post height: <span>set in tool</span><br>
+          M16 threaded rod · epoxy · grommet<br>
+          2-hole stanchion · 25.1mm sub-rails
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DIY BALUSTRADE ── -->
+  <div class="product-group">
+    <div class="group-header">
+      <div class="group-icon">🔧</div>
+      <div class="group-title">DIY Balustrade</div>
+      <div class="group-desc">Kit supply · client installs · no shared corner posts</div>
+    </div>
+    <div class="mount-row">
+
+      <div class="card active-card" onclick="launch('diy','top')" style="--card-accent:#d35400">
+        <div class="card-top">
+          <span class="mount-badge">Top Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Core Drill</div>
+        <div class="card-details">
+          Post height: <span>1000mm</span><br>
+          Horizontal, cable, vertical or glass kit<br>
+          Infill fixing options shown in tool
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('diy','side')" style="--card-accent:#d35400">
+        <div class="card-top">
+          <span class="mount-badge">Side Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">SDS + Epoxy</div>
+        <div class="card-details">
+          Post height: <span>1150mm</span><br>
+          Horizontal, cable, vertical or glass kit<br>
+          M10 threaded rod × 2 per post
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('diy','flange')" style="--card-accent:#d35400">
+        <div class="card-top">
+          <span class="mount-badge">Flange Mount</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Flange Plate</div>
+        <div class="card-details">
+          Post height: <span>900mm</span><br>
+          Horizontal, cable, vertical or glass kit<br>
+          On 4mm flange · surface fixed
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launch('diy','pinfix')" style="--card-accent:#d35400">
+        <div class="card-top">
+          <span class="mount-badge">Pin Fix</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">M16 Rod + Grommet</div>
+        <div class="card-details">
+          Post height: <span>set in tool</span><br>
+          Horizontal, cable, vertical or glass kit<br>
+          M16 threaded rod · epoxy · grommet
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FRAMELESS GLASS (separate tool) ── -->
+  <div class="product-group">
+    <div class="group-header">
+      <div class="group-icon">◻</div>
+      <div class="group-title">Frameless Glass</div>
+      <div class="group-desc">Opens the frameless glass tool · 12mm / 15mm TSG</div>
+    </div>
+    <div class="mount-row three">
+
+      <div class="card active-card" onclick="launchGlass('core')" style="--card-accent:#16a085">
+        <div class="card-top">
+          <span class="mount-badge">Spigot</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
+        </div>
+        <div class="card-mount-name">Core Drill</div>
+        <div class="card-details">
+          50mm round or square spigot<br>
+          Core drilled · non-shrink grout<br>
+          Top rail · stiffeners · glass only
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launchGlass('pin')" style="--card-accent:#16a085">
+        <div class="card-top">
+          <span class="mount-badge">Spigot</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
+        </div>
+        <div class="card-mount-name">Pin Fix</div>
+        <div class="card-details">
+          50mm round or square spigot<br>
+          16mm threaded rod + epoxy<br>
+          Top rail · stiffeners · glass only
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launchGlass('flange')" style="--card-accent:#16a085">
+        <div class="card-top">
+          <span class="mount-badge">Spigot</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
+        </div>
+        <div class="card-mount-name">Flange Plate</div>
+        <div class="card-details">
+          50mm round or square spigot<br>
+          Surface fixed on flange plate<br>
+          Top rail · stiffeners · glass only
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launchGlass('sidemount')" style="--card-accent:#16a085">
+        <div class="card-top">
+          <span class="mount-badge">Side Mount</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
+        </div>
+        <div class="card-mount-name">Threaded Rod</div>
+        <div class="card-details">
+          Glass bolted to slab edge<br>
+          4 bolts per panel · M10 rod + epoxy<br>
+          Top rail · stiffeners · glass only
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launchGlass('channel')" style="--card-accent:#16a085">
+        <div class="card-top">
+          <span class="mount-badge">Channel</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
+        </div>
+        <div class="card-mount-name">Aluminium Channel</div>
+        <div class="card-details">
+          Floor-fixed aluminium channel<br>
+          5.8m kits · bolts included<br>
+          Brushed or powder coated
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+
+      <div class="card active-card" onclick="launchGlass('groutchannel')" style="--card-accent:#16a085">
+        <div class="card-top">
+          <span class="mount-badge">Channel</span>
+          <span class="status-badge skeleton">⏳ In Testing</span>
+        </div>
+        <div class="card-mount-name">Concrete Channel</div>
+        <div class="card-details">
+          100mm deep × 50mm wide channel<br>
+          Glass grouted in · 12mm TSG<br>
+          Non-shrink grout
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HANDRAIL ONLY ── -->
+  <div class="product-group">
+    <div class="group-header">
+      <div class="group-icon">╭</div>
+      <div class="group-title">Handrail Only</div>
+      <div class="group-desc">Wall brackets and stanchion posts · no balustrade</div>
+    </div>
+    <div class="mount-row one">
+
+      <div class="card active-card" onclick="launch('handrail-only','top')" style="--card-accent:#16a085">
+        <div class="card-top">
+          <span class="mount-badge">Handrail</span>
+          <span class="status-badge ready">✔ Ready</span>
+        </div>
+        <div class="card-mount-name">Wall / Stanchion</div>
+        <div class="card-details">
+          Draw handrail runs only<br>
+          Brackets, stanchions, bends, end caps<br>
+          38.1mm / 50.8mm round · rect · square
+        </div>
+        <div class="card-footer">
+          <span class="card-action">Open tool <span class="arrow">→</span></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -544,7 +821,7 @@ footer{
 </main>
 
 <footer>
-  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v9</div>
+  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v10</div>
   <div class="footer-right">Built for <span>Balustrader</span> · Cape Town · South Africa</div>
 </footer>
 
@@ -568,6 +845,14 @@ function launch(product, mount) {
   const jobno  = document.getElementById('jobCardNo').value||'';
   const params = new URLSearchParams({product, mount, client, quote, jobno});
   window.open('balustrader_master_template.html?' + params.toString(), '_blank');
+}
+
+function launchGlass(mount) {
+  const client = document.getElementById('jobClient').value||'';
+  const quote  = document.getElementById('jobQuote').value||'';
+  const jobno  = document.getElementById('jobCardNo').value||'';
+  const params = new URLSearchParams({mount, client, quote, jobno});
+  window.open('balustrader_glass.html?' + params.toString(), '_blank');
 }
 </script>
 

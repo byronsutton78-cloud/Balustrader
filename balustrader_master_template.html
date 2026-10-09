@@ -113,7 +113,7 @@ const HR_STANCHION_FIX_OPTIONS = [
 
 const PRODUCT = {
   name:    '8-Line Horizontal — Top Mount',
-  version: 'v1.29',
+  version: 'v1.30',
   showInfillSelect:      true,
   showInfillFixing:      true,
   showFixingSelect:      true,
@@ -1391,7 +1391,7 @@ function calculate(){
     const sHasTopRail=sRes.infill!=='glass-10mm';
     const sIsDIY=sRes.cfg.showInfillFixing;
     const sIsPD=(sRes.infill==='15.88-8'||sRes.infill==='12.7-8')&&sRes.infillFix==='through';
-    const sShowEC=!sIsCableInfill&&!sIsGlassInfill;
+    const sShowEC=sHasTopRail; // v1.30: every product with a top rail gets end caps at wall/free ends (cable + 8mm glass included)
     const sInfillEndCapSize=sRes.infill==='12.7-8'?'12.7mm':'15.88mm';
     const sGlassClampBack=sRes.post.startsWith('sq')?'flat-back':'round-back';
     const sRaw=sl.reduce((s,l)=>s+l.rawPosts,0);
