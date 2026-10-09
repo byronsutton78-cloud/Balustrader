@@ -113,7 +113,7 @@ const HR_STANCHION_FIX_OPTIONS = [
 
 const PRODUCT = {
   name:    '8-Line Horizontal — Top Mount',
-  version: 'v1.28',
+  version: 'v1.29',
   showInfillSelect:      true,
   showInfillFixing:      true,
   showFixingSelect:      true,
@@ -1416,6 +1416,10 @@ function calculate(){
     const sEC=sShowEC?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?1:0)+(l.endEnd==='wall'||l.endEnd==='free'?1:0),0):0;
     const sInfillEC=(sIsDIY&&!sIsCableInfill&&!sIsGlassInfill&&sLc>0)?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?sLc:0)+(l.endEnd==='wall'||l.endEnd==='free'?sLc:0)+(l.startEnd==='outside-capped'?sLc:0)+(l.endEnd==='outside-capped'?sLc:0),0):0;
     const sJoiners=sl.filter(l=>l.dim>sSTOCK).length;
+    // v1.29 cable: swage on every termination end, 1 per hole (x9). Continuous
+    // corners don't terminate — cable passes through a bend tube per line.
+    const sCableEnds=sIsCableInfill?sl.reduce((s,l)=>s+(l.startEnd!=='outside-continuous'?1:0)+(l.endEnd!=='outside-continuous'?1:0),0):0;
+    const sSwages=sCableEnds*sLc;const sCableBends=sIsCableInfill?sContCorners*sLc:0;
     const sTypes=getPostTypes(sl,stairJunctionMap,cornerResolution);
     let h=`<div class="jc-section"><div class="jc-section-title sec-hdr" style="background:${sColor}aa;border-color:${sColor}">${sName}${sid?' — '+sRes.cfg.name:''}</div>`;
     if(sid){
@@ -1430,7 +1434,7 @@ function calculate(){
     if(mode==='full'){const hasTypes=typeOrder.some(t=>sTypes[t]);if(hasTypes){h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Post types</div>`;typeOrder.forEach(t=>{if(!sTypes[t])return;h+=`<div class="jc-row"><span style="font-size:10px">${typeNames[t]||'Type '+t}</span><span class="val">${sTypes[t]}</span></div>`;});if(sShowCoverPlates)h+=`<div class="jc-row"><span>Cover plates (domed)</span><span class="val">${sTotal}</span></div>`;}}
     else{const typeParts=typeOrder.filter(t=>sTypes[t]).map(t=>`${t} x${sTypes[t]}`);if(typeParts.length){h+=`<div class="jc-row" style="font-size:10px"><span style="color:var(--text4)">Types:</span><span class="val" style="font-size:10px;white-space:normal;text-align:right">${typeParts.join('  ')}</span></div>`;}if(sShowCoverPlates)h+=`<div class="jc-row" style="font-size:10px"><span>Cover plates</span><span class="val">${sTotal}</span></div>`;}
     h+=`<div class="jc-row"><span>Top rail</span><span class="val">${toM(sRail)} / ${sRailSt}x${toM(sSTOCK)}</span></div>`;
-    if(sInfill>0){if(sIsCableInfill)h+=`<div class="jc-row"><span>Cable x${sLc} lines</span><span class="val">${toM(sInfill)}</span></div>`;else h+=`<div class="jc-row"><span>Infill x${sLc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}x${toM(sSTOCK)}</span></div>`;}
+    if(sInfill>0){if(sIsCableInfill){h+=`<div class="jc-row"><span>Cable x${sLc} lines</span><span class="val">${toM(sInfill)}</span></div>`;if(sSwages>0)h+=`<div class="jc-row"><span>Cable swages (${sCableEnds} ends x${sLc})</span><span class="val">${sSwages}</span></div>`;if(sCableBends>0)h+=`<div class="jc-row"><span>Cable bend tubes (corners)</span><span class="val">${sCableBends}</span></div>`;}else h+=`<div class="jc-row"><span>Infill x${sLc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}x${toM(sSTOCK)}</span></div>`;}
     if(sGlassPanels>0)h+=`<div class="jc-row"><span>Glass panels (est.)</span><span class="val">${sGlassPanels}</span></div><div class="jc-row"><span>D-clamps (${sGlassClampBack})</span><span class="val">${sGlassClamps}</span></div>`;
     if(sRailBends>0)h+=`<div class="jc-row"><span>Top rail bends</span><span class="val">${sRailBends}</span></div>`;
     if(sFlexi>0)h+=`<div class="jc-row"><span>Infill flexi bends</span><span class="val">${sFlexi}</span></div>`;
@@ -1439,7 +1443,7 @@ function calculate(){
     let sFixHtml='',sFixText='';
     if(sRes.fixing==='top'){const grout=Math.ceil(sTotal/6)*2;sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Core drill + grout</span></div><div class="jc-row"><span>Non-shrink grout</span><span class="val">${grout}kg</span></div>`;sFixText=`Fixing: Core drill + grout, ${grout}kg`;}
     else if(sRes.fixing==='side'){const rods=sTotal*2,epoxy=Math.ceil(sTotal/5);sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Side mount — M10 rod</span></div><div class="jc-row"><span>M10 rods x2</span><span class="val">${rods}</span></div><div class="jc-row"><span>Epoxy 300ml</span><span class="val">${epoxy}</span></div>`;sFixText=`Fixing: Side mount, ${rods} rods, ${epoxy}x300ml epoxy`;}
-    else if(sRes.fixing==='pinfix'){const rods=Math.ceil(sTotal/6),epoxy=Math.ceil(sTotal/10);sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Pin fix — M16 rod</span></div><div class="jc-row"><span>Rod stock</span><span class="val">${rods}x1m</span></div><div class="jc-row"><span>Epoxy 300ml</span><span class="val">${epoxy}</span></div>`;sFixText=`Fixing: Pin fix, ${rods}x1m rod, ${epoxy}x300ml epoxy`;}
+    else if(sRes.fixing==='pinfix'){const rods=Math.ceil(sTotal/6),epoxy=Math.ceil(sTotal/10);sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Pin fix — M16 rod</span></div><div class="jc-row"><span>Rod stock</span><span class="val">${rods}x1m</span></div><div class="jc-row"><span>Epoxy 300ml</span><span class="val">${epoxy}</span></div><div class="jc-row"><span>Grommets</span><span class="val">${sTotal}</span></div>`;sFixText=`Fixing: Pin fix, ${rods}x1m rod, ${epoxy}x300ml epoxy, ${sTotal} grommets`;}
     else{sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Flange plate</span></div><div class="jc-row"><span>Flange plates</span><span class="val">${sTotal}</span></div>`;sFixText=`Fixing: Flange plate x${sTotal}`;}
     h+=sFixHtml;
     h+=`</div>`;
@@ -1450,8 +1454,9 @@ function calculate(){
       const sPostH=sRes.fixing==='top'?1000:sRes.fixing==='side'?1150:900;
       S.specs.push({key:sPostLbl+'|'+sMat+'|'+sRes.fixing,postLbl:sPostLbl,mat:sMat,mount:sRes.fixing,postH:sPostH,types:sTypes,total:sTotal});
       if(sHasTopRail&&sRail>0)S.tube(sRailLbl,sMat,sRail,'top rail',sSTOCK);
+      if(!sHasTopRail)S.add('Tubing','Tube '+sRailLbl,sMat+' — top rail not required (10mm glass)',0,'lengths',true);
       if(sInfill>0){
-        if(sIsCableInfill)S.add('Infill','Cable 4mm 1x19','Grade 316 stainless',Math.ceil(sInfill/1000),'m');
+        if(sIsCableInfill){S.add('Infill','Cable 4mm 1x19','Grade 316 stainless',Math.ceil(sInfill/1000),'m');S.add('Infill','Cable swage fitting','4mm, Grade 316',sSwages,'ea');S.add('Infill','Cable bend tube (continuous corner)','4mm cable, Grade 316',sCableBends,'ea');}
         else{const iSize=sRes.infill==='15.88-8'?'15.88mm round':sRes.infill==='12.7-8'?'12.7mm round':(infillLbls[sRes.infill]||sRes.infill);S.tube(iSize,sMat,sInfill,'infill',sSTOCK);}
       }
       if(sGlassPanels>0){S.add('Glass','Glass panel',(sRes.infill==='glass-10mm'?'10mm':'8mm')+' TSG — estimate, confirm sizes on site',sGlassPanels,'ea');S.add('Glass','D-clamp '+sGlassClampBack,sMat,sGlassClamps,'ea');}
@@ -1543,7 +1548,7 @@ function calculate(){
       if(!n)return;
       if(mnt==='top')S.add('Fixing','Non-shrink grout','',Math.ceil(n/6)*2,'kg');
       else if(mnt==='side'){S.add('Fixing','Threaded rod M10 x 150mm','',n*2,'ea');S.add('Fixing','Chemical epoxy 300ml','',Math.ceil(n/5),'tubes');}
-      else if(mnt==='pinfix'){S.add('Fixing','Threaded rod M16 x 1m','',Math.ceil(n/6),'ea');S.add('Fixing','Chemical epoxy 300ml','',Math.ceil(n/10),'tubes');}
+      else if(mnt==='pinfix'){S.add('Fixing','Threaded rod M16 x 1m','',Math.ceil(n/6),'ea');S.add('Fixing','Chemical epoxy 300ml','',Math.ceil(n/10),'tubes');S.add('Fixing','Grommet — pin fix','M16',n,'ea');}
     });
     if(hrResult&&hrResult.sage){
       const h=hrResult.sage;const hs=h.profileLbl+', '+h.material;
@@ -1689,7 +1694,7 @@ function newSageList(){
   const m=new Map();const tubes=new Map();
   return{
     specs:[],
-    add(group,item,spec,qty,unit){if(!qty||qty<=0)return;const k=group+'|'+item+'|'+spec+'|'+unit;if(!m.has(k))m.set(k,{group,item,spec,qty:0,unit});m.get(k).qty+=qty;},
+    add(group,item,spec,qty,unit,keepZero){if((!qty||qty<=0)&&!keepZero)return;const k=group+'|'+item+'|'+spec+'|'+unit;if(!m.has(k))m.set(k,{group,item,spec,qty:0,unit});m.get(k).qty+=qty;},
     tube(size,mat,mm,use,stock){if(!mm||mm<=0)return;const k=size+'|'+mat;if(!tubes.has(k))tubes.set(k,{size,mat,mm:0,uses:new Set(),stock});const t=tubes.get(k);t.mm+=mm;t.uses.add(use);},
     finish(){
       tubes.forEach(t=>{this.add('Tubing','Tube '+t.size,`${t.mat} — ${toM(t.stock)} lengths (${[...t.uses].join(' + ')}, ${toM(t.mm)} needed)`,Math.ceil(t.mm/t.stock),'lengths');});
