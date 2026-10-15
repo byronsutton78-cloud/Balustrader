@@ -256,6 +256,17 @@ footer{
 .loc-btn:hover,.job-clear:hover{border-color:var(--gold);color:var(--gold)}
 .loc-btn.on{background:var(--gold);border-color:var(--gold);color:#fff}
 .job-note{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);flex:1;min-width:220px;line-height:1.5}
+.oj-box{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:16px 20px;margin-bottom:28px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;transition:border-color 0.15s,background 0.15s}
+.oj-box.drag{border-color:var(--gold);background:var(--gold-glow)}
+.oj-pick{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:9px 16px;border-radius:2px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;white-space:nowrap}
+.oj-pick:hover{background:var(--gold-glow)}
+.oj-hint{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.6;flex:1;min-width:220px}
+.oj-card{display:none;flex-basis:100%;border-top:1px solid var(--border);padding-top:12px;gap:16px;align-items:center;flex-wrap:wrap}
+.oj-card.show{display:flex}
+.oj-info{flex:1;min-width:240px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.8}
+.oj-info b{color:var(--text);font-weight:500}
+.oj-jobno{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1.5px;color:var(--text);line-height:1.1}
+.oj-err{display:none;flex-basis:100%;font-family:'DM Mono',monospace;font-size:10px;color:#c0392b}
 .sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:500;padding:16px}
 .sp-overlay.open{display:flex}
 .sp-panel{background:var(--surface);border:1px solid var(--gold-dim);border-top:3px solid var(--sp-accent,var(--gold));border-radius:2px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;padding:20px 22px;box-shadow:0 16px 48px rgba(0,0,0,0.35)}
@@ -320,6 +331,19 @@ footer{
       </div>
       <div class="job-note">Details are kept on this computer until you press Clear. They print on the job card, layout and Copy for Sage; the drilling sheet gets the customer name only.</div>
       <button type="button" class="job-clear" onclick="clearJobDetails()">Clear details</button>
+    </div>
+  </div>
+
+  <div class="section-label">Open a saved job — make changes to an existing job</div>
+  <div class="oj-box" id="ojBox">
+    <button type="button" class="oj-pick" onclick="pickJobFile()">&#128194; Choose job file</button>
+    <input type="file" id="ojInput" accept=".balustrader,.json" style="display:none" onchange="onOjInput(this)"/>
+    <div class="oj-hint">Pick a <b>.balustrader</b> file saved from the drawing tool, or drag it onto this box. It opens in the right tool (main drawing tool or frameless glass) with the whole drawing back. Saving after changes makes the next revision.</div>
+    <div class="oj-err" id="ojErr"></div>
+    <div class="oj-card" id="ojCard">
+      <div class="oj-info" id="ojInfo"></div>
+      <button type="button" class="sp-go" onclick="openPickedJob()">Open job &rarr;</button>
+      <button type="button" class="sp-cancel" onclick="clearPickedJob()">Cancel</button>
     </div>
   </div>
 
@@ -867,7 +891,7 @@ footer{
 </div>
 
 <footer>
-  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v11</div>
+  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v12</div>
   <div class="footer-right">Built for <span>Balustrader</span> · Cape Town · South Africa</div>
 </footer>
 
@@ -1012,7 +1036,68 @@ function launchGlass(mount) {
   window.open('balustrader_glass.html?' + params.toString(), '_blank');
 }
 
+// ── Open a saved job (launcher v12) ─────────────────────────────────────
+// Reads the .balustrader file, shows which job it is, and on "Open job"
+// hands the file to the right tool through localStorage (same as launches).
+// Opening needs a click, because browsers block pop-up tabs that open
+// after a file has been read.
+let pickedJob=null;
+function ojEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function ojError(msg){const e=document.getElementById('ojErr');e.textContent=msg;e.style.display=msg?'block':'none';}
+async function pickJobFile(){
+  ojError('');
+  if(window.showOpenFilePicker&&window.self===window.top){
+    try{
+      const [h]=await window.showOpenFilePicker({id:'balustrader-jobs',startIn:'documents',types:[{description:'Balustrader job',accept:{'application/json':['.balustrader','.json']}}]});
+      const f=await h.getFile();readJobFile(await f.text(),f.name);return;
+    }catch(e){if(e&&e.name==='AbortError')return;}
+  }
+  const inp=document.getElementById('ojInput');inp.value='';inp.click();
+}
+function onOjInput(inp){const f=inp.files&&inp.files[0];if(f)readFileObj(f);}
+function readFileObj(f){const r=new FileReader();r.onload=()=>readJobFile(String(r.result),f.name);r.onerror=()=>ojError('Could not read "'+f.name+'".');r.readAsText(f);}
+function readJobFile(text,name){
+  clearPickedJob();
+  let d;
+  try{d=JSON.parse(text);}catch(e){ojError('"'+name+'" is not a Balustrader job file.');return;}
+  const tool=d&&d.app==='balustrader_master'?'master':d&&d.app==='balustrader_glass'?'glass':null;
+  if(!tool||!Array.isArray(d.lines)){ojError('"'+name+'" is not a Balustrader job file.');return;}
+  ojError('');
+  pickedJob={text,name,tool};
+  const ji=d.jobInfo||{};
+  const when=d.savedAt?new Date(d.savedAt).toLocaleString('en-ZA',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  const prod=tool==='glass'?'Frameless Glass tool':'Main drawing tool';
+  const runs=d.lines.filter(l=>l.dim).length;
+  document.getElementById('ojInfo').innerHTML=
+    `<div class="oj-jobno">${ojEsc(d.jobNo||'No job number')}${d.rev?' · rev'+ojEsc(d.rev):''}</div>`+
+    `<b>${ojEsc(ji.customer||'No customer name')}</b>${d.suburb?' · '+ojEsc(d.suburb):''}<br>`+
+    `${prod} · ${runs} line${runs===1?'':'s'} with dimensions${when?' · saved '+ojEsc(when):''}`;
+  document.getElementById('ojCard').classList.add('show');
+}
+function clearPickedJob(){pickedJob=null;const c=document.getElementById('ojCard');if(c)c.classList.remove('show');}
+function openPickedJob(){
+  if(!pickedJob)return;
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  if(!lsSet('balustrader_openjob_'+id,JSON.stringify({text:pickedJob.text,name:pickedJob.name,at:Date.now()}))){ojError('This browser would not hold the job file — open the tool and use its Open job button instead.');return;}
+  pruneOpenJobs();
+  const page=pickedJob.tool==='glass'?'balustrader_glass.html':'balustrader_master_template.html';
+  window.open(page+'?openjob='+encodeURIComponent(id),'_blank');
+  clearPickedJob();
+}
+function pruneOpenJobs(){
+  // Hand-off slots are removed when the tool opens them; clear any left
+  // behind (tab blocked or closed) after a day.
+  try{const cutoff=Date.now()-864e5;Object.keys(localStorage).filter(k=>k.startsWith('balustrader_openjob_')).forEach(k=>{try{const d=JSON.parse(localStorage.getItem(k));if(!d||!d.at||d.at<cutoff)localStorage.removeItem(k);}catch(e){localStorage.removeItem(k);}});}catch(e){}
+}
+function initJobDrop(){
+  const box=document.getElementById('ojBox');if(!box)return;
+  ['dragenter','dragover'].forEach(ev=>box.addEventListener(ev,e=>{e.preventDefault();box.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>box.addEventListener(ev,e=>{e.preventDefault();box.classList.remove('drag');}));
+  box.addEventListener('drop',e=>{const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f){ojError('');readFileObj(f);}});
+}
+
 document.addEventListener('DOMContentLoaded',loadDraft);
+document.addEventListener('DOMContentLoaded',initJobDrop);
 
 </script>
 

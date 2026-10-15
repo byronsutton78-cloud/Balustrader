@@ -2151,6 +2151,21 @@ function applyJobState(d){
   setTimeout(resizeCanvas,60);
 }
 
+// ── Job opened from the launcher (?openjob=<id>) ──
+// The launcher puts the file text in localStorage and opens this page.
+// The slot is removed and the URL cleaned straight away, so a refresh
+// doesn't reload the old file over unsaved edits (autosave covers those).
+function loadHandoffJob(){
+  let id=null;
+  try{id=new URLSearchParams(window.location.search).get('openjob');}catch(e){}
+  if(!id)return;
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem('balustrader_openjob_'+id)||'null');localStorage.removeItem('balustrader_openjob_'+id);}catch(e){}
+  try{const u=new URL(window.location.href);u.searchParams.delete('openjob');window.history.replaceState(null,'',u.pathname+(u.search?u.search:''));}catch(e){}
+  if(d&&d.text)loadJobText(d.text,d.name||'job file');
+  else flashInstr('The job file from the launcher was not found — use Open job to pick it again.');
+}
+
 // ── Autosave safety net (this computer only) ──
 // Keeps the latest drawing of each open tab so a refresh or closed tab
 // doesn't lose work. The .balustrader file is still the real save.
@@ -2178,8 +2193,9 @@ function initAutosave(){
   getTabId();
   // Offer to restore only when this tab opened empty and there is unsaved work.
   if(!lines.length){
-    const list=readAutosaves().filter(x=>x.unsaved&&x.state&&x.lineCount);
-    const mine=list.find(x=>x.tab===tabId);
+    const all=readAutosaves().filter(x=>x.state&&x.lineCount);
+    const mine=all.find(x=>x.tab===tabId);          // this tab before a refresh — saved or not
+    const list=all.filter(x=>x.unsaved);
     const pick=mine||list[0];
     if(pick)showRestoreBanner(pick,!!mine);
   }
@@ -2190,18 +2206,18 @@ function showRestoreBanner(item,isRefresh){
   const bar=document.getElementById('restoreBar');if(!bar)return;
   const when=new Date(item.at).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   const who=item.customer?jiEsc(item.customer):'no customer name';
-  const jn=item.jobFile?' · '+jiEsc(item.jobFile.jobNo+' rev'+item.jobFile.rev+' + changes'):'';
-  bar.innerHTML=`<span>⚠ Unsaved drawing found${isRefresh?' from before this page reloaded':''}: <b>${who}</b>${jn} · ${item.lineCount} lines · ${when}</span>`+
+  const jn=item.jobFile?' · '+jiEsc(item.jobFile.jobNo+' rev'+item.jobFile.rev+(item.unsaved?' + changes':'')):'';
+  bar.innerHTML=`<span>⚠ ${item.unsaved?'Unsaved drawing':'Drawing'} found${isRefresh?' from before this page reloaded':''}: <b>${who}</b>${jn} · ${item.lineCount} lines · ${when}</span>`+
     `<button class="tool-btn" id="rbRestore">Restore it</button><button class="tool-btn" id="rbDiscard">Discard</button>`;
   bar.style.display='flex';
   document.getElementById('rbRestore').onclick=()=>{
     const d=Object.assign({},item.state,{view:item.view});
     applyJobState(d);
     jobFile=item.jobFile||null;
-    lastFileSig=null;  // still unsaved until Save job
+    lastFileSig=item.unsaved?null:drawingSig();  // unchanged since last save stays 'saved'
     renderJobInfoBar();bar.style.display='none';
     if(lines.some(l=>l.dim)){try{calculate();}catch(e){}switchTab('canvas');}
-    flashOk('Drawing restored — click Save job to keep it.');
+    flashOk(item.unsaved?'Drawing restored — click Save job to keep it.':'Drawing restored.');
   };
   document.getElementById('rbDiscard').onclick=()=>{
     writeAutosaves(readAutosaves().filter(x=>!(x.tab===item.tab&&x.at===item.at)));
@@ -2221,7 +2237,7 @@ window.addEventListener('DOMContentLoaded',function(){
   resizeCanvas();
   switchProduct(startProduct);
   if(urlMount){const fixSel=document.getElementById('fixingSelect');const mountMap={top:'top',side:'side',flange:'flange',pinfix:'pinfix'};if(fixSel&&mountMap[urlMount]){fixSel.value=mountMap[urlMount];onSettingsChange();}}
-  loadLaunch();renderJobInfoBar();applyLaunchSpecs();rebuildAreaDropdowns();initAutosave();
+  loadLaunch();renderJobInfoBar();applyLaunchSpecs();rebuildAreaDropdowns();loadHandoffJob();initAutosave();
 });
 </script>
 </body>
