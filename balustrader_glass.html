@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Balustrader — Frameless Glass v7</title>
+<title>Balustrader — Frameless Glass v14</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -100,7 +100,25 @@ canvas{display:block;width:100%;height:100%}
 </head>
 <body>
 
-<div class="instr" id="instr">Balustrader — Frameless Glass v13 | Select a tool then click and drag to draw.</div>
+<div class="instr" id="instr">Balustrader — Frameless Glass v14 | Select a tool then click and drag to draw.</div>
+<div id="jobInfoBar" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;padding:4px 10px;margin-bottom:4px;border:1px solid var(--border);border-radius:3px;background:var(--bg2)"></div>
+<div id="restoreBar" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;padding:5px 10px;margin-bottom:4px;border:1px solid #e6a817;border-radius:3px;background:rgba(230,168,23,0.12);color:var(--text)"></div>
+<div id="jobSaveOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:900;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeJobSaveDialog()">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-top:3px solid #27ae60;border-radius:4px;padding:16px 18px;width:100%;max-width:400px;box-shadow:0 12px 40px rgba(0,0,0,0.35);font-size:11px;color:var(--text)">
+    <div style="font-weight:bold;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#27ae60;margin-bottom:10px">Save job</div>
+    <label style="display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Customer / company name</label>
+    <input id="jsCustomer" class="tb-select" type="text" autocomplete="off" style="width:100%;margin-bottom:8px;cursor:text" placeholder="e.g. Smith Properties"/>
+    <label style="display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Suburb / town</label>
+    <input id="jsSuburb" class="tb-select" type="text" autocomplete="off" style="width:100%;margin-bottom:8px;cursor:text" placeholder="e.g. Somerset West"/>
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Job number</div>
+    <div id="jsJobNo" style="font-weight:bold;font-size:12px;margin:2px 0 8px"></div>
+    <div id="jsNote" style="font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:12px"></div>
+    <div style="display:flex;gap:6px;justify-content:flex-end">
+      <button class="tool-btn" onclick="closeJobSaveDialog()">Cancel</button>
+      <button class="tool-btn" onclick="confirmJobSave()" style="background:#27ae60;border-color:#27ae60;color:#fff;font-weight:bold">&#128190; Save</button>
+    </div>
+  </div>
+</div>
 
 <div class="settings-bar">
   <label>Mount:
@@ -150,6 +168,10 @@ canvas{display:block;width:100%;height:100%}
   <div class="sep"></div>
   <button class="tool-btn" onclick="undo()">Undo</button>
   <button class="tool-btn danger" onclick="clearCanvas()">Clear</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="openJobSaveDialog()" title="Save this job to a file — reopen it later to make changes (each save is the next revision)" style="border-color:#27ae60;color:#27ae60">&#128190; Save job</button>
+  <button class="tool-btn" onclick="openJobFilePicker()" title="Open a saved frameless glass .balustrader job file">&#128194; Open job</button>
+  <input type="file" id="jobFileInput" accept=".balustrader,.json" style="display:none" onchange="onJobFileChosen(this)"/>
   <div class="sep"></div>
   <button class="tool-btn ad-btn" onclick="newArea()" title="Add a physical place — e.g. Pool side, Balcony 1">+ Area</button>
   <span class="ad-pill"><select id="activeAreaSelect" class="tb-select" onchange="switchActiveArea(this.value)" style="max-width:140px"></select><input id="areaNameInput" class="tb-select" type="text" placeholder="Area name — Enter" autocomplete="off" style="display:none;width:150px;cursor:text"/></span>
@@ -504,7 +526,7 @@ function onMountChange(){
   // aluminium (no option to pick).
 
   document.getElementById('instr').textContent=
-    'Frameless Glass v13 — '+getMountName()+'  |  Run: click and drag. Popup asks for length, end types, glass and top finish.';
+    'Frameless Glass v14 — '+getMountName()+'  |  Run: click and drag. Popup asks for length, end types, glass and top finish.';
   redraw();
 }
 
@@ -536,7 +558,7 @@ function setTool(t){
     select:'Select: click to select, drag body to move, drag an endpoint dot to stretch/shorten, R = rotate 90, DEL = delete, double-click to edit.',
     pan:'Pan: click and drag to move. Scroll to zoom.'
   };
-  document.getElementById('instr').textContent='Frameless Glass v13 — '+getMountName()+'  |  '+(m[t]||t);
+  document.getElementById('instr').textContent='Frameless Glass v14 — '+getMountName()+'  |  '+(m[t]||t);
   canvas.style.cursor=t==='pan'?'grab':t==='select'?'pointer':'crosshair';
   redraw();
 }
@@ -1419,8 +1441,8 @@ function calculate(){
 }
 
 function showJobCard(html){
-  document.getElementById('jcBody').innerHTML=html;
-  document.getElementById('jcBodySide').innerHTML=html;
+  document.getElementById('jcBody').innerHTML=jobInfoHtml()+html;
+  document.getElementById('jcBodySide').innerHTML=jobInfoHtml()+html;
   document.getElementById('canvasSideJC').style.display='flex';
   setTimeout(resizeCanvas,50);
 }
@@ -1492,7 +1514,7 @@ function renderLayout(){
   });
   const table=`<table style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:11px;margin-top:2px" class="lt"><thead><tr style="background:#e8e8e8"><th style="text-align:left">Run</th><th>Type</th><th>Length</th><th style="text-align:left">Glass</th><th>Panels</th><th>Spigots / bolts</th><th style="text-align:left">Top finish</th></tr></thead><tbody>${rows}</tbody><tfoot><tr style="background:#fff3cd;font-weight:bold"><td colspan="2">GRAND TOTAL</td><td style="text-align:right">${gL}mm</td><td></td><td style="text-align:center;color:#b8860b">${gP}</td><td style="text-align:center;color:#b8860b">${gF||'—'}</td><td></td></tr></tfoot></table>`;
   const d0=new Date();
-  const header=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333"><div><div style="font-size:15px;font-weight:bold;letter-spacing:1px">BALUSTRADER — RUN LAYOUT</div><div style="font-size:11px;color:#555;margin-top:3px">Frameless Glass</div></div><div style="font-size:11px;color:#444"><b>Date:</b> ${d0.toLocaleDateString('en-ZA')}</div></div>`;
+  const header=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333"><div><div style="font-size:15px;font-weight:bold;letter-spacing:1px">BALUSTRADER — RUN LAYOUT</div><div style="font-size:11px;color:#555;margin-top:3px">Frameless Glass</div></div><div style="font-size:11px;color:#444;text-align:right;line-height:1.7">${jobInfoRows().map(([k,v])=>`<b>${k}:</b> ${jiEsc(v)}<br>`).join('')}<b>Date:</b> ${d0.toLocaleDateString('en-ZA')}</div></div>`;
   inner.innerHTML=`<style>.lt th,.lt td{padding:4px 7px;border:1px solid #ddd}</style>`+header+svg+legend+'<div class="layout-table-wrap">'+table+'</div>';
 }
 function printLayout(){
@@ -1570,8 +1592,9 @@ function buildGlassSage(groups){
 function sageEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function buildSageCopy(){
   const rows=lastSageItems;const date=new Date().toLocaleDateString('en-ZA');
-  let text=`MATERIALS LIST — ${date}\nItem\tSize / spec\tQty\tUnit\n`;
-  let html=`<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt"><tr><td colspan="4" style="font-weight:bold;font-size:11pt">MATERIALS LIST — ${date}</td></tr><tr style="background:#d9d9d9;font-weight:bold"><td>Item</td><td>Size / spec</td><td>Qty</td><td>Unit</td></tr>`;
+  const ji=jobInfoRows();
+  let text=`MATERIALS LIST — ${date}\n`+ji.map(([k,v])=>`${k.toUpperCase()}:\t${v}`).join('\n')+(ji.length?'\n\n':'')+`Item\tSize / spec\tQty\tUnit\n`;
+  let html=`<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt"><tr><td colspan="4" style="font-weight:bold;font-size:11pt">MATERIALS LIST — ${date}</td></tr>${ji.map(([k,v])=>`<tr><td style="font-weight:bold">${sageEsc(k)}</td><td colspan="3">${sageEsc(v)}</td></tr>`).join('')}<tr style="background:#d9d9d9;font-weight:bold"><td>Item</td><td>Size / spec</td><td>Qty</td><td>Unit</td></tr>`;
   let g='';
   rows.forEach(r=>{
     if(r.group!==g){g=r.group;text+=`\n${g.toUpperCase()}\n`;html+=`<tr style="background:#f2f2f2;font-weight:bold"><td colspan="4">${sageEsc(g.toUpperCase())}</td></tr>`;}
@@ -1597,10 +1620,263 @@ function copyJobCard(){
 
 // v7: launcher passes ?mount=core|pin|flange|sidemount|channel|groutchannel
 (function(){try{const m=new URLSearchParams(window.location.search).get('mount');const sel=document.getElementById('mountSelect');if(m&&sel&&[...sel.options].some(o=>o.value===m))sel.value=m;}catch(e){}})();
+
+// ── Save / Open job (frameless glass v14) ───────────────────────────────────────────────
+// A job is saved as a small .balustrader file (JSON) holding the whole
+// drawing: lines, Areas, Designs, toolbar settings and customer details.
+// Opening it puts the canvas back exactly as it was. Nothing in the
+// calculation is touched — the file only stores the inputs.
+// Job number BAL-YYMMDD-HHMM is created on the first save and never
+// changes; every later save is the next revision (rev1, rev2 ...).
+const TEMPLATE_VERSION='glass v14';
+const JOB_APP='balustrader_glass';
+const JOB_FILE_FORMAT=1;
+const JOB_CONTROL_IDS=['mountSelect','profileSelect','materialSelect','channelFinishSelect'];
+let jobFile=null;          // {jobNo, rev, suburb, savedAt, revisions:[{rev,savedAt}]}
+let lastFileSig=null;      // signature of the drawing at last save/open
+let jobFileHandle=null;    // folder memory for Chrome/Edge save picker
+
+function jfPad(n){return String(n).padStart(2,'0');}
+function makeJobNo(d){d=d||new Date();return'BAL-'+String(d.getFullYear()).slice(2)+jfPad(d.getMonth()+1)+jfPad(d.getDate())+'-'+jfPad(d.getHours())+jfPad(d.getMinutes());}
+function jfSlug(s){return String(s||'').normalize('NFKD').replace(/[^\w\s-]/g,'').trim().replace(/[\s_]+/g,'-').replace(/-+/g,'-').slice(0,40);}
+function suburbFromAddress(a){const parts=String(a||'').split(',').map(s=>s.trim()).filter(Boolean);return parts.length>1?parts[parts.length-1].replace(/\b\d{4}\b/,'').trim():'';}
+function jobLabel(){return jobFile?jobFile.jobNo+' rev'+jobFile.rev:'';}
+
+function readControls(){
+  const o={};
+  JOB_CONTROL_IDS.forEach(id=>{const el=document.getElementById(id);if(el)o[id]=el.value;});
+  return o;
+}
+function writeControls(c){
+  if(!c)return;
+  JOB_CONTROL_IDS.forEach(id=>{
+    const el=document.getElementById(id);const v=c[id];
+    if(!el||v==null)return;
+    if(el.tagName==='SELECT'){if([...el.options].some(o=>o.value===v))el.value=v;}
+    else el.value=v;
+  });
+}
+// The drawing itself — what decides whether there are unsaved changes.
+function drawingState(){
+  return{controls:readControls(),lines,designs,areas,activeDesignId,activeAreaId,jobInfo};
+}
+function drawingSig(){try{return JSON.stringify(drawingState());}catch(e){return'';}}
+function hasUnsaved(){return lines.length>0&&drawingSig()!==lastFileSig;}
+
+function buildJobPayload(){
+  return Object.assign({app:JOB_APP,format:JOB_FILE_FORMAT,templateVersion:TEMPLATE_VERSION,
+    jobNo:jobFile.jobNo,rev:jobFile.rev,suburb:jobFile.suburb||'',savedAt:jobFile.savedAt,revisions:jobFile.revisions||[],
+    view:{panX,panY,zoom}},JSON.parse(JSON.stringify(drawingState())));
+}
+function jobFileName(){
+  const cust=jfSlug(jobInfo&&jobInfo.customer)||'Customer';
+  const sub=jfSlug(jobFile.suburb);
+  return jobFile.jobNo+'_'+cust+(sub?'_'+sub:'')+'_rev'+jobFile.rev+'.balustrader';
+}
+
+// ── Save dialog ──
+function openJobSaveDialog(){
+  if(!lines.length){flashInstr('Nothing to save yet — draw the job first.');return;}
+  const ov=document.getElementById('jobSaveOverlay');
+  const cust=(jobInfo&&jobInfo.customer)||'';
+  const sub=jobFile?(jobFile.suburb||''):suburbFromAddress(jobInfo&&jobInfo.address);
+  document.getElementById('jsCustomer').value=cust;
+  document.getElementById('jsSuburb').value=sub;
+  const nextRev=jobFile?jobFile.rev+1:1;
+  document.getElementById('jsJobNo').textContent=(jobFile?jobFile.jobNo:makeJobNo()+'  (new)')+'  ·  rev'+nextRev;
+  const note=document.getElementById('jsNote');
+  if(jobFile&&!hasUnsaved())note.textContent='No changes since rev'+jobFile.rev+'. Saving again makes rev'+nextRev+' as a copy.';
+  else if(jobFile)note.textContent='Saves as rev'+nextRev+'. rev'+jobFile.rev+' stays as it was, so you can compare.';
+  else note.textContent='First save — the job number is created now and stays with this job.';
+  ov.style.display='flex';
+  setTimeout(()=>{const f=document.getElementById(cust?'jsSuburb':'jsCustomer');f.focus();f.select();},30);
+}
+document.addEventListener('keydown',e=>{const ov=document.getElementById('jobSaveOverlay');if(!ov||ov.style.display!=='flex')return;e.stopPropagation();if(e.key==='Enter')confirmJobSave();else if(e.key==='Escape')closeJobSaveDialog();},true);
+function closeJobSaveDialog(){document.getElementById('jobSaveOverlay').style.display='none';}
+async function confirmJobSave(){
+  const cust=document.getElementById('jsCustomer').value.trim();
+  const sub=document.getElementById('jsSuburb').value.trim();
+  if(!cust){alert('Please enter the customer / company name.');return;}
+  if(!jobInfo)jobInfo={};
+  jobInfo.customer=cust;
+  const now=new Date();
+  const prev=jobFile;
+  jobFile={jobNo:prev?prev.jobNo:makeJobNo(now),rev:prev?prev.rev+1:1,suburb:sub,savedAt:now.toISOString(),revisions:(prev&&prev.revisions||[]).slice()};
+  jobFile.revisions.push({rev:jobFile.rev,savedAt:jobFile.savedAt});
+  const name=jobFileName();
+  const text=JSON.stringify(buildJobPayload(),null,1);
+  const ok=await writeJobFile(name,text);
+  if(!ok){jobFile=prev;return;}   // cancelled — nothing changes
+  lastFileSig=drawingSig();
+  closeJobSaveDialog();
+  renderJobInfoBar();
+  if(lastCalcText){try{calculate();}catch(e){}}   // job no onto job card / drilling sheet
+  autosaveNow(true);
+  flashOk('Saved '+name);
+}
+async function writeJobFile(name,text){
+  // Chrome / Edge: proper Save As box that remembers the jobs folder.
+  if(window.showSaveFilePicker&&window.self===window.top){
+    try{
+      const h=await window.showSaveFilePicker({id:'balustrader-jobs',suggestedName:name,startIn:jobFileHandle||'documents',
+        types:[{description:'Balustrader job',accept:{'application/json':['.balustrader']}}]});
+      const w=await h.createWritable();await w.write(text);await w.close();jobFileHandle=h;return true;
+    }catch(e){if(e&&e.name==='AbortError')return false;/* fall through to download */}
+  }
+  try{
+    const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+    return true;
+  }catch(e){alert('Could not save the file: '+e.message);return false;}
+}
+function flashOk(msg){const el=document.getElementById('instr');if(!el)return;const old=el.textContent;el.textContent='✔ '+msg;el.style.color='#27ae60';setTimeout(()=>{el.textContent=old;el.style.color='';},3500);}
+
+// ── Open ──
+async function openJobFilePicker(){
+  if(hasUnsaved()&&!confirm('The current drawing has unsaved changes. Open another job and replace it?'))return;
+  if(window.showOpenFilePicker&&window.self===window.top){
+    try{
+      const [h]=await window.showOpenFilePicker({id:'balustrader-jobs',startIn:jobFileHandle||'documents',
+        types:[{description:'Balustrader job',accept:{'application/json':['.balustrader','.json']}}]});
+      const f=await h.getFile();jobFileHandle=h;loadJobText(await f.text(),f.name);return;
+    }catch(e){if(e&&e.name==='AbortError')return;}
+  }
+  const inp=document.getElementById('jobFileInput');inp.value='';inp.click();
+}
+function onJobFileChosen(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>loadJobText(String(r.result),f.name);r.readAsText(f);
+}
+function loadJobText(text,name){
+  let d;
+  try{d=JSON.parse(text);}catch(e){alert('"'+name+'" is not a Balustrader job file.');return;}
+  if(d&&d.app==='balustrader_master'){alert('"'+name+'" is a main drawing tool job (8-line, cable, vertical, glass & SS, handrail). Open it in the master template, not the frameless glass tool.');return;}
+  if(!d||d.app!==JOB_APP||!Array.isArray(d.lines)){alert('"'+name+'" is not a Balustrader frameless glass job file.');return;}
+  if(d.format>JOB_FILE_FORMAT)alert('This job was saved by a newer version of the tool. It will open, but check it carefully.');
+  applyJobState(d);
+  jobFile=d.jobNo?{jobNo:d.jobNo,rev:d.rev||1,suburb:d.suburb||'',savedAt:d.savedAt,revisions:d.revisions||[]}:null;
+  lastFileSig=drawingSig();
+  renderJobInfoBar();
+  if(lines.some(l=>l.dim)){try{calculate();}catch(e){}switchTab('canvas');}
+  flashOk('Opened '+(jobLabel()||name)+' — edit and Save job to make the next revision.');
+}
+function applyJobState(d){
+  // Reset everything the same way Clear does, then rebuild from the file.
+  clearCanvas();
+  jobInfo=d.jobInfo&&typeof d.jobInfo==='object'?d.jobInfo:null;
+  const c=d.controls||{};
+  applySettingsToToolbar({mount:c.mountSelect||'core',profile:c.profileSelect||'round',material:c.materialSelect||'316-180',channelFinish:c.channelFinishSelect||'brushed'});
+  designs=Array.isArray(d.designs)?d.designs:[];
+  areas=Array.isArray(d.areas)?d.areas:[];
+  lines=d.lines;
+  activeDesignId=d.activeDesignId&&designs.some(x=>String(x.id)===String(d.activeDesignId))?d.activeDesignId:null;
+  activeAreaId=d.activeAreaId&&areas.some(a=>String(a.id)===String(d.activeAreaId))?d.activeAreaId:null;
+  history=[];selectedIdx=null;pendingIdx=null;
+  rebuildAdDropdowns();
+  if(d.view){panX=+d.view.panX||0;panY=+d.view.panY||0;zoom=+d.view.zoom||1;}
+  setTimeout(resizeCanvas,60);
+}
+
+// ── Autosave safety net (this computer only) ──
+// Keeps the latest drawing of each open tab so a refresh or closed tab
+// doesn't lose work. The .balustrader file is still the real save.
+const AUTOSAVE_KEY='balustrader_glass_autosave_v1';
+let tabId=null,lastAutoSig=null;
+function getTabId(){
+  try{tabId=sessionStorage.getItem('balustrader_tab');if(!tabId){tabId=Date.now().toString(36)+Math.random().toString(36).slice(2,6);sessionStorage.setItem('balustrader_tab',tabId);}}
+  catch(e){tabId='t'+Date.now();}
+  return tabId;
+}
+function readAutosaves(){try{const a=JSON.parse(localStorage.getItem(AUTOSAVE_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}}
+function writeAutosaves(a){try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify(a));}catch(e){}}
+function autosaveNow(force){
+  if(!lines.length)return;
+  const sig=drawingSig();
+  if(!force&&sig===lastAutoSig)return;
+  lastAutoSig=sig;
+  const cutoff=Date.now()-14*864e5;
+  const list=readAutosaves().filter(x=>x.tab!==tabId&&x.at>cutoff);
+  const st=JSON.parse(JSON.stringify(drawingState()));
+  list.unshift({tab:tabId,at:Date.now(),unsaved:sig!==lastFileSig,jobFile,customer:(jobInfo&&jobInfo.customer)||'',lineCount:lines.length,state:st,view:{panX,panY,zoom}});
+  writeAutosaves(list.slice(0,6));
+}
+function initAutosave(){
+  getTabId();
+  // Offer to restore only when this tab opened empty and there is unsaved work.
+  if(!lines.length){
+    const list=readAutosaves().filter(x=>x.unsaved&&x.state&&x.lineCount);
+    const mine=list.find(x=>x.tab===tabId);
+    const pick=mine||list[0];
+    if(pick)showRestoreBanner(pick,!!mine);
+  }
+  setInterval(()=>autosaveNow(false),4000);
+  window.addEventListener('beforeunload',e=>{autosaveNow(true);if(hasUnsaved()){e.preventDefault();e.returnValue='';}});
+}
+function showRestoreBanner(item,isRefresh){
+  const bar=document.getElementById('restoreBar');if(!bar)return;
+  const when=new Date(item.at).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const who=item.customer?jiEsc(item.customer):'no customer name';
+  const jn=item.jobFile?' · '+jiEsc(item.jobFile.jobNo+' rev'+item.jobFile.rev+' + changes'):'';
+  bar.innerHTML=`<span>⚠ Unsaved drawing found${isRefresh?' from before this page reloaded':''}: <b>${who}</b>${jn} · ${item.lineCount} lines · ${when}</span>`+
+    `<button class="tool-btn" id="rbRestore">Restore it</button><button class="tool-btn" id="rbDiscard">Discard</button>`;
+  bar.style.display='flex';
+  document.getElementById('rbRestore').onclick=()=>{
+    const d=Object.assign({},item.state,{view:item.view});
+    applyJobState(d);
+    jobFile=item.jobFile||null;
+    lastFileSig=null;  // still unsaved until Save job
+    renderJobInfoBar();bar.style.display='none';
+    if(lines.some(l=>l.dim)){try{calculate();}catch(e){}switchTab('canvas');}
+    flashOk('Drawing restored — click Save job to keep it.');
+  };
+  document.getElementById('rbDiscard').onclick=()=>{
+    writeAutosaves(readAutosaves().filter(x=>!(x.tab===item.tab&&x.at===item.at)));
+    bar.style.display='none';
+  };
+}
+
+// ── Customer details (glass) ──
+// The launcher sends ?client=<name>. If the launcher's job details on this
+// computer belong to the same customer, pick up the rest (site address etc).
+let jobInfo=null;
+function loadGlassJobInfo(){
+  try{
+    const client=(new URLSearchParams(window.location.search).get('client')||'').trim();
+    let info=client?{customer:client}:null;
+    const dr=JSON.parse(localStorage.getItem('balustrader_launcher_draft_v1')||'null');
+    const f=dr&&dr.fields||{};
+    if(client&&f.jobCustomer&&f.jobCustomer.trim()===client){
+      info={customer:client,contact:f.jobContact||'',phone:f.jobPhone||'',email:f.jobEmail||'',address:f.jobAddress||'',location:dr.location||''};
+    }
+    jobInfo=info;
+  }catch(e){}
+}
+function jiEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function jobInfoRows(){
+  const jn=jobLabel();
+  if(!jobInfo)return jn?[['Job no',jn]]:[];
+  const loc=jobInfo.location==='coastal'?'Coastal (316)':jobInfo.location==='inland'?'Inland (304)':'';
+  return[['Job no',jn],['Customer',jobInfo.customer],['Contact',jobInfo.contact],['Tel',jobInfo.phone],['Email',jobInfo.email],['Site',jobInfo.address],['Location',loc]].filter(r=>r[1]);
+}
+function jobInfoHtml(){
+  const rows=jobInfoRows();if(!rows.length)return'';
+  return`<div class="jc-section"><div class="jc-section-title">Customer</div>${rows.map(([k,v])=>`<div class="jc-row"><span>${k}</span><span class="val" style="white-space:normal;text-align:right;word-break:break-word">${jiEsc(v)}</span></div>`).join('')}</div>`;
+}
+function renderJobInfoBar(){
+  const bar=document.getElementById('jobInfoBar');if(!bar)return;
+  const rows=jobInfoRows();
+  if(!rows.length){bar.style.display='none';return;}
+  bar.innerHTML=rows.map(([k,v])=>`<span><span style="opacity:0.65">${k}:</span> <b>${jiEsc(v)}</b></span>`).join('<span style="opacity:0.4">·</span>');
+  bar.style.display='flex';
+}
+
 onMountChange();
 rebuildAdDropdowns();
 setTool('run');
+loadGlassJobInfo();renderJobInfoBar();
 redraw();
+initAutosave();
 </script>
 </body>
 </html>

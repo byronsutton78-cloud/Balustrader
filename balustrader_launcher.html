@@ -240,6 +240,36 @@ footer{
   .mount-row{grid-template-columns:1fr}
   footer{padding:12px 20px;flex-direction:column;gap:4px;text-align:center}
 }
+
+/* ── Job details + spec panel (launcher v11) ── */
+.job-box{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:16px 20px;margin-bottom:28px}
+.job-grid{display:grid;grid-template-columns:2fr 1.4fr 1.6fr 1.2fr;gap:10px 12px}
+.jf{display:flex;flex-direction:column;gap:5px;min-width:0}
+.jf-full{grid-column:1/-1}
+.jf label,.sp-field label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)}
+.jf input,.sp-field select{background:var(--bg2);border:1px solid var(--border-lit);color:var(--text);padding:7px 10px;font-family:'DM Mono',monospace;font-size:11px;border-radius:2px;outline:none;width:100%}
+.jf input:focus,.sp-field select:focus{border-color:var(--gold)}
+.job-foot{display:flex;align-items:center;gap:16px;margin-top:14px;flex-wrap:wrap}
+.loc-wrap{display:flex;align-items:center;gap:6px}
+.loc-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-right:4px}
+.loc-btn,.job-clear{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;padding:6px 12px;border-radius:2px;border:1px solid var(--border-lit);background:var(--bg2);color:var(--text-dim);cursor:pointer}
+.loc-btn:hover,.job-clear:hover{border-color:var(--gold);color:var(--gold)}
+.loc-btn.on{background:var(--gold);border-color:var(--gold);color:#fff}
+.job-note{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);flex:1;min-width:220px;line-height:1.5}
+.sp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:500;padding:16px}
+.sp-overlay.open{display:flex}
+.sp-panel{background:var(--surface);border:1px solid var(--gold-dim);border-top:3px solid var(--sp-accent,var(--gold));border-radius:2px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;padding:20px 22px;box-shadow:0 16px 48px rgba(0,0,0,0.35)}
+.sp-kicker{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.sp-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--text);margin:2px 0 4px}
+.sp-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);margin-bottom:14px;line-height:1.5}
+.sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.sp-field{display:flex;flex-direction:column;gap:5px}
+.sp-field.full{grid-column:1/-1}
+.sp-fixed{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);padding:7px 10px;border:1px dashed var(--border-lit);border-radius:2px;background:var(--bg3)}
+.sp-btns{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+.sp-go{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:9px 18px;border-radius:2px;border:1px solid var(--gold);background:var(--gold);color:#fff;cursor:pointer}
+.sp-cancel{font-family:'DM Mono',monospace;font-size:11px;padding:9px 14px;border-radius:2px;border:1px solid var(--border-lit);background:transparent;color:var(--text-dim);cursor:pointer}
+@media (max-width:760px){.job-grid,.sp-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -274,20 +304,23 @@ footer{
 
 <main>
   <div class="section-label">Job details — fill in before opening tool</div>
-  <div style="display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:16px 20px;align-items:flex-end">
-    <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px">
-      <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">Client Name</label>
-      <input id="jobClient" placeholder="e.g. John Smith" style="background:var(--bg2);border:1px solid var(--border-lit);color:var(--text);padding:7px 10px;font-family:'DM Mono',monospace;font-size:11px;border-radius:2px;outline:none"/>
+  <div class="job-box">
+    <div class="job-grid">
+      <div class="jf jf-wide"><label for="jobCustomer">Customer / company name</label><input id="jobCustomer" placeholder="e.g. Smith Properties" autocomplete="off"/></div>
+      <div class="jf"><label for="jobContact">Contact person</label><input id="jobContact" placeholder="e.g. John Smith" autocomplete="off"/></div>
+      <div class="jf"><label for="jobEmail">Email</label><input id="jobEmail" type="email" placeholder="e.g. john@smith.co.za" autocomplete="off"/></div>
+      <div class="jf"><label for="jobPhone">Contact number</label><input id="jobPhone" type="tel" placeholder="e.g. 082 123 4567" autocomplete="off"/></div>
+      <div class="jf jf-full"><label for="jobAddress">Site address</label><input id="jobAddress" placeholder="e.g. 12 Main Road, Somerset West" autocomplete="off"/></div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:5px;flex:0.6;min-width:100px">
-      <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">Quote No</label>
-      <input id="jobQuote" placeholder="e.g. Q-0042" style="background:var(--bg2);border:1px solid var(--border-lit);color:var(--text);padding:7px 10px;font-family:'DM Mono',monospace;font-size:11px;border-radius:2px;outline:none"/>
+    <div class="job-foot">
+      <div class="loc-wrap">
+        <span class="loc-lbl">Site location</span>
+        <button type="button" class="loc-btn" id="locCoastal" onclick="setLocation('coastal')">Coastal · 316</button>
+        <button type="button" class="loc-btn" id="locInland" onclick="setLocation('inland')">Inland · 304</button>
+      </div>
+      <div class="job-note">Details are kept on this computer until you press Clear. They print on the job card, layout and Copy for Sage; the drilling sheet gets the customer name only.</div>
+      <button type="button" class="job-clear" onclick="clearJobDetails()">Clear details</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:5px;flex:0.6;min-width:100px">
-      <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">Job Card No</label>
-      <input id="jobCardNo" placeholder="e.g. JC-0042" style="background:var(--bg2);border:1px solid var(--border-lit);color:var(--text);padding:7px 10px;font-family:'DM Mono',monospace;font-size:11px;border-radius:2px;outline:none"/>
-    </div>
-    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);padding-bottom:4px">These fields auto-fill the drilling sheet header.</div>
   </div>
 
   <div class="section-label">Select a product and mount type to open the drawing tool</div>
@@ -820,8 +853,21 @@ footer{
 
 </main>
 
+<div class="sp-overlay" id="specOverlay" onclick="if(event.target===this)closeSpecs()">
+  <div class="sp-panel" id="specPanel" role="dialog" aria-modal="true" aria-labelledby="spTitle">
+    <div class="sp-kicker">Job specs — pre-fill the drawing tool</div>
+    <div class="sp-title" id="spTitle">—</div>
+    <div class="sp-sub" id="spSub"></div>
+    <div class="sp-grid" id="spGrid"></div>
+    <div class="sp-btns">
+      <button type="button" class="sp-cancel" onclick="closeSpecs()">Cancel</button>
+      <button type="button" class="sp-go" onclick="openToolWithSpecs()">Open tool →</button>
+    </div>
+  </div>
+</div>
+
 <footer>
-  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v10</div>
+  <div class="footer-left">Balustrader · Internal Tool · Phase 1 · v11</div>
   <div class="footer-right">Built for <span>Balustrader</span> · Cape Town · South Africa</div>
 </footer>
 
@@ -839,21 +885,135 @@ function toggleMode(){
   document.getElementById('modeToggle').textContent = isLight ? '🌙' : '☀️';
 }
 
-function launch(product, mount) {
-  const client = document.getElementById('jobClient').value||'';
-  const quote  = document.getElementById('jobQuote').value||'';
-  const jobno  = document.getElementById('jobCardNo').value||'';
-  const params = new URLSearchParams({product, mount, client, quote, jobno});
-  window.open('balustrader_master_template.html?' + params.toString(), '_blank');
+// ── Job details + job specs (launcher v11) ──────────────────────────────
+// Option values below MUST match the value strings in
+// balustrader_master_template.html (PRODUCT / PRODUCTS / HR_PROFILE_OPTIONS).
+// If an option is added or renamed there, mirror it here.
+const DRAFT_KEY='balustrader_launcher_draft_v1';
+const JOB_FIELDS=['jobCustomer','jobContact','jobEmail','jobPhone','jobAddress'];
+const L_POST=[{value:'round38',label:'Round 38.1mm'},{value:'round50',label:'Round 50.8mm'},{value:'sq40',label:'Square 40x40'},{value:'sq50',label:'Square 50x50'},{value:'rect50x25',label:'Rectangle 50x25mm'}];
+const L_RAIL=[{value:'50.8',label:'50.8mm round'},{value:'38.1',label:'38.1mm round'},{value:'50x50',label:'50x50mm square'},{value:'40x40',label:'40x40mm square'},{value:'50x25',label:'50x25mm rect'}];
+const L_MAT=[{value:'304-180',label:'304 Brushed'},{value:'304-mirror',label:'304 Mirror'},{value:'316-180',label:'316 Brushed'},{value:'316-mirror',label:'316 Mirror'},{value:'mild',label:'Mild Steel'},{value:'pc',label:'Powder Coat'},{value:'aluminium',label:'Aluminium'}];
+const L_HR=[{value:'round38',label:'38.1mm round'},{value:'round50',label:'50.8mm round'},{value:'rect50x25',label:'50x25mm rect'},{value:'sq40',label:'40x40mm square'}];
+const L_INFILL_FIX=[{value:'through',label:'Through post (pre-drilled)'},{value:'side',label:'Side fix (pipe holders)'}];
+const L_PRODUCTS={
+  '8line':{name:'8 Line Horizontal',infill:[{value:'15.88-8',label:'15.88mm — 8 lines'},{value:'12.7-8',label:'12.7mm — 8 lines'}]},
+  'cable':{name:'9 Line Cable',infill:[{value:'cable-9',label:'4mm cable — 9 lines'}]},
+  'glass':{name:'Glass & Stainless Steel',infill:[{value:'glass-8mm',label:'Glass 8mm TSG — top rail recommended'},{value:'glass-10mm',label:'Glass 10mm TSG — top rail optional'}]},
+  'vertical':{name:'Vertical Balustrade',infill:[{value:'v-25.1-15.88',label:'Subrail 25.1mm top+btm / verticals 15.88mm'},{value:'v-25.1-12.7',label:'Subrail 25.1mm top+btm / verticals 12.7mm'},{value:'v-25x25-15x15',label:'Subrail 25x25 top+btm / verticals 15x15mm'},{value:'v-custom',label:'Vertical — custom infill'}]},
+  'diy':{name:'DIY Balustrade',infillFix:true,infill:[{value:'15.88-8',label:'Horizontal — 15.88mm x 8 lines'},{value:'12.7-8',label:'Horizontal — 12.7mm x 8 lines'},{value:'cable-9',label:'Horizontal — 4mm cable x 9 lines'},{value:'v-25.1-15.88',label:'Vertical — Subrail 25.1mm / uprights 15.88mm'},{value:'v-25.1-12.7',label:'Vertical — Subrail 25.1mm / uprights 12.7mm'},{value:'v-25x25-15x15',label:'Vertical — Subrail 25x25 / uprights 15x15mm'},{value:'v-custom',label:'Vertical — custom infill'},{value:'glass-8mm',label:'Glass kit — 8mm TSG (top rail recommended)'},{value:'glass-10mm',label:'Glass kit — 10mm TSG (top rail optional)'}]},
+  'handrail-only':{name:'Handrail Only',handrailOnly:true}
+};
+const L_MOUNTS={top:'Top Mount — Core Drill · grout',side:'Side Mount — M10 rod + epoxy',flange:'Flange — 3 hole flange plate',pinfix:'Pin Fix — M16 rod + grommet'};
+
+let draft={fields:{},location:'',specs:{}};
+let pending=null;
+
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
+function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+function saveDraft(){lsSet(DRAFT_KEY,JSON.stringify(draft));}
+function loadDraft(){
+  try{const d=JSON.parse(lsGet(DRAFT_KEY)||'null');if(d&&typeof d==='object')draft={fields:d.fields||{},location:d.location||'',specs:d.specs||{}};}catch(e){}
+  JOB_FIELDS.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.value=draft.fields[id]||'';el.addEventListener('input',()=>{draft.fields[id]=el.value;saveDraft();});});
+  paintLocation();
+}
+function setLocation(loc){
+  draft.location=draft.location===loc?'':loc;
+  saveDraft();paintLocation();
+}
+function paintLocation(){
+  document.getElementById('locCoastal').classList.toggle('on',draft.location==='coastal');
+  document.getElementById('locInland').classList.toggle('on',draft.location==='inland');
+}
+function locationMaterial(){return draft.location==='coastal'?'316-180':'304-180';}
+function clearJobDetails(){
+  if(!confirm('Clear the customer details and location for a new job?'))return;
+  draft.fields={};draft.location='';saveDraft();
+  JOB_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  paintLocation();
+}
+function jobInfo(){
+  const v=id=>(document.getElementById(id).value||'').trim();
+  return{customer:v('jobCustomer'),contact:v('jobContact'),email:v('jobEmail'),phone:v('jobPhone'),address:v('jobAddress'),location:draft.location};
+}
+
+function optHtml(opts,sel){return opts.map(o=>`<option value="${o.value}"${o.value===sel?' selected':''}>${o.label}</option>`).join('');}
+function pick(opts,want,fallback){return opts.some(o=>o.value===want)?want:(fallback||opts[0].value);}
+
+function launch(product,mount){
+  const p=L_PRODUCTS[product];if(!p)return;
+  pending={product,mount};
+  // Remembered choices for this product, else defaults. Material follows the
+  // Coastal/Inland toggle unless it was picked by hand for this product.
+  const mem=draft.specs[product]||{};
+  const locMat=locationMaterial();
+  const mat=(mem.materialManual&&mem.material)?mem.material:locMat;
+  const hrMat=(mem.hrMaterialManual&&mem.hrMaterial)?mem.hrMaterial:locMat;
+  document.getElementById('spTitle').textContent=p.name+(p.handrailOnly?'':' · '+(L_MOUNTS[mount]||mount).split(' — ')[0]);
+  document.getElementById('spSub').textContent=draft.location?('Material preset from '+(draft.location==='coastal'?'Coastal (316)':'Inland (304)')+' — change below if needed.'):'Tip: choose Coastal or Inland above to preset the material grade.';
+  let h='';
+  if(!p.handrailOnly){
+    h+=`<div class="sp-field full"><label>Fixing</label><div class="sp-fixed">${L_MOUNTS[mount]||mount}</div></div>`;
+    h+=`<div class="sp-field full"><label for="spInfill">Infill</label><select id="spInfill" onchange="paintInfillFix()">${optHtml(p.infill,pick(p.infill,mem.infill))}</select></div>`;
+    if(p.infillFix)h+=`<div class="sp-field full" id="spInfillFixWrap"><label for="spInfillFix">Infill fixing</label><select id="spInfillFix">${optHtml(L_INFILL_FIX,pick(L_INFILL_FIX,mem.infillFix))}</select></div>`;
+    h+=`<div class="sp-field"><label for="spPost">Post</label><select id="spPost">${optHtml(L_POST,pick(L_POST,mem.post))}</select></div>`;
+    h+=`<div class="sp-field"><label for="spRail">Top rail</label><select id="spRail">${optHtml(L_RAIL,pick(L_RAIL,mem.rail))}</select></div>`;
+    h+=`<div class="sp-field full"><label for="spMaterial">Material</label><select id="spMaterial" onchange="this.dataset.manual='1'">${optHtml(L_MAT,pick(L_MAT,mat,'304-180'))}</select></div>`;
+  }
+  h+=`<div class="sp-field"><label for="spHr">Handrail</label><select id="spHr">${optHtml(L_HR,pick(L_HR,mem.hrProfile))}</select></div>`;
+  h+=`<div class="sp-field"><label for="spHrMat">HR finish</label><select id="spHrMat" onchange="this.dataset.manual='1'">${optHtml(L_MAT,pick(L_MAT,hrMat,'304-180'))}</select></div>`;
+  document.getElementById('spGrid').innerHTML=h;
+  paintInfillFix();
+  document.getElementById('specOverlay').classList.add('open');
+  setTimeout(()=>{const f=document.querySelector('#spGrid select');if(f)f.focus();},30);
+}
+function paintInfillFix(){
+  const w=document.getElementById('spInfillFixWrap');if(!w)return;
+  const inf=document.getElementById('spInfill').value;
+  w.style.display=(inf==='15.88-8'||inf==='12.7-8')?'':'none';
+}
+function closeSpecs(){document.getElementById('specOverlay').classList.remove('open');pending=null;}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&pending)closeSpecs();});
+
+function openToolWithSpecs(){
+  if(!pending)return;
+  const {product,mount}=pending;
+  const g=id=>{const el=document.getElementById(id);return el?el.value:undefined;};
+  const manual=id=>{const el=document.getElementById(id);return !!(el&&el.dataset.manual);};
+  const prev=draft.specs[product]||{};
+  const specs={infill:g('spInfill'),infillFix:g('spInfillFix'),post:g('spPost'),rail:g('spRail'),material:g('spMaterial'),hrProfile:g('spHr'),hrMaterial:g('spHrMat')};
+  draft.specs[product]=Object.assign({},specs,{
+    materialManual:manual('spMaterial')||(prev.materialManual&&prev.material===specs.material),
+    hrMaterialManual:manual('spHrMat')||(prev.hrMaterialManual&&prev.hrMaterial===specs.hrMaterial)
+  });
+  saveDraft();
+  // Hand-off: one storage slot per launch so two tabs never mix jobs.
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  lsSet('balustrader_launch_'+id,JSON.stringify({job:jobInfo(),specs,product,mount,at:Date.now()}));
+  pruneLaunches();
+  const params=new URLSearchParams({product,mount,job:id,client:jobInfo().customer});
+  closeSpecs();
+  window.open('balustrader_master_template.html?'+params.toString(),'_blank');
+}
+function pruneLaunches(){
+  // Remove hand-off slots older than 30 days.
+  try{
+    const cutoff=Date.now()-30*864e5;
+    Object.keys(localStorage).filter(k=>k.startsWith('balustrader_launch_')).forEach(k=>{
+      try{const d=JSON.parse(localStorage.getItem(k));if(!d||!d.at||d.at<cutoff)localStorage.removeItem(k);}catch(e){localStorage.removeItem(k);}
+    });
+  }catch(e){}
 }
 
 function launchGlass(mount) {
-  const client = document.getElementById('jobClient').value||'';
-  const quote  = document.getElementById('jobQuote').value||'';
-  const jobno  = document.getElementById('jobCardNo').value||'';
-  const params = new URLSearchParams({mount, client, quote, jobno});
+  // Frameless glass tool keeps its own settings — opens directly.
+  const params = new URLSearchParams({mount, client: jobInfo().customer});
   window.open('balustrader_glass.html?' + params.toString(), '_blank');
 }
+
+document.addEventListener('DOMContentLoaded',loadDraft);
+
 </script>
 
 </body>

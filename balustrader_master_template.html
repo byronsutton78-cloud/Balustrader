@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Balustrader — Master Template v1</title>
+<title>Balustrader — Master Template v1.33</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -113,7 +113,7 @@ const HR_STANCHION_FIX_OPTIONS = [
 
 const PRODUCT = {
   name:    '8-Line Horizontal — Top Mount',
-  version: 'v1.30',
+  version: 'v1.32',
   showInfillSelect:      true,
   showInfillFixing:      true,
   showFixingSelect:      true,
@@ -283,6 +283,24 @@ const PRODUCTS = [
 
 <div class="instr" id="instr">Loading...</div>
 <div id="settingsChangedWarn" style="display:none;background:rgba(200,160,40,0.15);border:1px solid var(--accent);border-radius:3px;padding:4px 10px;margin-bottom:4px;font-size:11px;color:var(--accent)">Settings changed — recalculate to update job card</div>
+<div id="jobInfoBar" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;padding:4px 10px;margin-bottom:4px;border:1px solid var(--border);border-radius:3px;background:var(--bg2)"></div>
+<div id="restoreBar" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;padding:5px 10px;margin-bottom:4px;border:1px solid #e6a817;border-radius:3px;background:rgba(230,168,23,0.12);color:var(--text)"></div>
+<div id="jobSaveOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:900;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeJobSaveDialog()">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-top:3px solid #27ae60;border-radius:4px;padding:16px 18px;width:100%;max-width:400px;box-shadow:0 12px 40px rgba(0,0,0,0.35);font-size:11px;color:var(--text)">
+    <div style="font-weight:bold;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#27ae60;margin-bottom:10px">Save job</div>
+    <label style="display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Customer / company name</label>
+    <input id="jsCustomer" class="tb-select" type="text" autocomplete="off" style="width:100%;margin-bottom:8px;cursor:text" placeholder="e.g. Smith Properties"/>
+    <label style="display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Suburb / town</label>
+    <input id="jsSuburb" class="tb-select" type="text" autocomplete="off" style="width:100%;margin-bottom:8px;cursor:text" placeholder="e.g. Somerset West"/>
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px">Job number</div>
+    <div id="jsJobNo" style="font-weight:bold;font-size:12px;margin:2px 0 8px"></div>
+    <div id="jsNote" style="font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:12px"></div>
+    <div style="display:flex;gap:6px;justify-content:flex-end">
+      <button class="tool-btn" onclick="closeJobSaveDialog()">Cancel</button>
+      <button class="tool-btn" onclick="confirmJobSave()" style="background:#27ae60;border-color:#27ae60;color:#fff;font-weight:bold">&#128190; Save</button>
+    </div>
+  </div>
+</div>
 <div class="settings-bar" id="settingsBar"></div>
 
 <div id="customVertPanel" style="display:none;background:var(--bg2);border:1px solid var(--accent);border-radius:4px;padding:8px 12px;margin-bottom:5px;font-size:11px;gap:10px;flex-wrap:wrap;align-items:flex-end">
@@ -339,13 +357,28 @@ const PRODUCTS = [
   <div class="sep"></div>
   <button class="tool-btn" onclick="undo()">Undo</button>
   <button class="tool-btn danger" onclick="clearCanvas()">Clear</button>
+  <div class="sep"></div>
+  <button class="tool-btn" onclick="openJobSaveDialog()" title="Save this job to a file — reopen it later to make changes (each save is the next revision)" style="border-color:#27ae60;color:#27ae60">&#128190; Save job</button>
+  <button class="tool-btn" onclick="openJobFilePicker()" title="Open a saved .balustrader job file">&#128194; Open job</button>
+  <input type="file" id="jobFileInput" accept=".balustrader,.json" style="display:none" onchange="onJobFileChosen(this)"/>
   <div class="sep" id="secSep"></div>
-  <button class="tool-btn sec-btn" id="secBtn" onclick="newSection()">+ Section</button>
+  <span style="display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap">
+  <button class="tool-btn sec-btn" id="areaBtn" onclick="newArea()" title="Add a physical place — e.g. Balcony 1, Stairwell, Pool side">+ Area</button>
+  <label style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;white-space:nowrap" id="areaIndicator">
+    <select id="activeAreaSelect" class="tb-select" onchange="switchActiveArea(this.value)" style="max-width:140px"></select>
+    <input id="areaNameInput" class="tb-select" type="text" placeholder="Area name — Enter" autocomplete="off" style="display:none;width:150px;cursor:text"/>
+  </label>
+  <button class="tool-btn sec-btn" id="areaRenameBtn" onclick="startInlineRename('area')">Rename</button></span>
+  <div class="sep" id="designSep"></div>
+  <span id="designGroup" style="display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap">
+  <button class="tool-btn sec-btn" id="secBtn" onclick="newSection()" title="Save the current Product / Infill / Fixing / Post / Rail / Material as a design">+ Design</button>
   <label style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px;white-space:nowrap" id="secIndicator">
     <span id="secDot" style="width:9px;height:9px;border-radius:50%;display:inline-block;background:#aaa"></span>
-    <select id="activeSectionSelect" class="tb-select" onchange="switchActiveSection(this.value)" style="max-width:150px"></select>
+    <select id="activeSectionSelect" class="tb-select" onchange="switchActiveSection(this.value)" style="max-width:220px"></select>
+    <input id="designNameInput" class="tb-select" type="text" placeholder="Design name — Enter" autocomplete="off" style="display:none;width:160px;cursor:text"/>
   </label>
-  <button class="tool-btn sec-btn" id="secUpdateBtn" onclick="resnapshotActiveSection()" title="Save the current Product/Infill/Fixing/Post/Rail/Material settings to the active section">Update section</button>
+  <button class="tool-btn sec-btn" id="secUpdateBtn" onclick="resnapshotActiveSection()" title="Save the current Product / Infill / Fixing / Post / Rail / Material into the active design">Update design</button>
+  <button class="tool-btn sec-btn" id="secRenameBtn" onclick="startInlineRename('design')">Rename</button></span>
   <div class="sep"></div>
   <span style="font-size:10px;color:var(--text4)">Select: drag to move · R = rotate · DEL = delete</span>
   <div style="margin-left:auto">
@@ -368,7 +401,9 @@ const PRODUCTS = [
         <input type="text" id="selDim" placeholder="e.g. 5300" autocomplete="off"/>
         <label>Label (optional)</label>
         <input type="text" id="selLabel" placeholder="e.g. Leg A" autocomplete="off"/>
-        <label>Section</label>
+        <label>Area</label>
+        <select id="selArea"></select>
+        <label>Design</label>
         <select id="selSection"></select>
         <div id="stairDirRow" style="display:none">
           <label>Stair direction</label>
@@ -612,12 +647,47 @@ function buildSettingsBar(cfg){
   });
   const stairsBtn=document.getElementById('tool-stairs');if(stairsBtn)stairsBtn.style.display=cfg.showStairsTool?'':'none';
   const runBtn=document.getElementById('tool-run');if(runBtn)runBtn.style.display=cfg.showRunTool?'':'none';
-  ['secBtn','secIndicator','secSep','secUpdateBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=cfg.showSections?'':'none';});
+  ['secBtn','secIndicator','designSep','secUpdateBtn','secRenameBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=cfg.showSections?'':'none';});
   onSettingsChange();
 }
 
 const SEC_COLORS=['#4a90d9','#27ae60','#e67e22','#9b59b6','#e74c3c','#1abc9c','#f39c12','#2980b9','#8e44ad','#16a085'];
+// v1.32 — "Section" is shown to staff as DESIGN (a saved spec snapshot).
+// Internal names (sections / sectionId) are unchanged so the calculation,
+// corner resolution and drilling-sheet payload are untouched.
+// AREA = a physical place (Balcony 1, Stairwell). Name only, no settings.
 let sections=[],activeSectionId=null;
+let areas=[],activeAreaId=null;
+function findArea(id){return id?areas.find(a=>String(a.id)===String(id)):null;}
+function getAreaName(id){const a=findArea(id);return a?a.name:null;}
+function newArea(){
+  const id='a'+Date.now();areas.push({id,name:'Area '+(areas.length+1)});activeAreaId=id;
+  rebuildAreaDropdowns();redraw();startInlineRename('area');
+}
+function switchActiveArea(v){activeAreaId=v||null;rebuildAreaDropdowns();}
+function rebuildAreaDropdowns(){
+  const fill=(el,none,cur)=>{if(!el)return;el.innerHTML='';const o0=document.createElement('option');o0.value='';o0.textContent=none;el.appendChild(o0);areas.forEach(a=>{const o=document.createElement('option');o.value=String(a.id);o.textContent=a.name;el.appendChild(o);});el.value=cur?String(cur):'';};
+  fill(document.getElementById('activeAreaSelect'),'No area',activeAreaId);
+  const sa=document.getElementById('selArea');if(sa){const keep=sa.value;fill(sa,'— No area —',keep);}
+}
+function flashInstr(msg){const el=document.getElementById('instr');if(!el)return;const old=el.textContent;el.textContent='⚠ '+msg;el.style.color='#e74c3c';setTimeout(()=>{el.textContent=old;el.style.color='';},2500);}
+// Names are typed into a small box in the toolbar (no prompt() — browsers
+// block it when the tool runs inside a frame).
+function startInlineRename(kind){
+  const item=kind==='area'?findArea(activeAreaId):sections.find(x=>String(x.id)===String(activeSectionId));
+  if(!item){flashInstr(kind==='area'?'Pick an area first (or click + Area).':'Pick a design first (or click + Design).');return;}
+  const sel=document.getElementById(kind==='area'?'activeAreaSelect':'activeSectionSelect');
+  const inp=document.getElementById(kind==='area'?'areaNameInput':'designNameInput');
+  sel.style.display='none';inp.style.display='inline-block';inp.value=item.name;
+  let done=false;
+  const finish=save=>{if(done)return;done=true;
+    if(save&&inp.value.trim())item.name=inp.value.trim();
+    inp.style.display='none';sel.style.display='';inp.onkeydown=null;inp.onblur=null;
+    rebuildAreaDropdowns();rebuildSecDropdown();redraw();};
+  inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')finish(true);else if(e.key==='Escape')finish(false);};
+  inp.onblur=()=>finish(true);
+  inp.focus();inp.select();
+}
 let currentProductValue='8line';
 
 function computeConfigForProduct(value){
@@ -645,7 +715,7 @@ function resolveLine(l){
 }
 
 function newSection(){
-  const idx=sections.length;const name='Section '+String.fromCharCode(65+idx);const color=SEC_COLORS[idx%SEC_COLORS.length];const id=String(Date.now());
+  const idx=sections.length;const name='Design '+String.fromCharCode(65+(idx%26));const color=SEC_COLORS[idx%SEC_COLORS.length];const id=String(Date.now());
   sections.push({id,name,color,settings:snapshotCurrentSettings()});
   activeSectionId=id;updateSecIndicator();rebuildSecDropdown();
 }
@@ -667,10 +737,10 @@ function switchActiveSection(value){
   updateSecIndicator();
 }
 function resnapshotActiveSection(){
-  if(!activeSectionId){alert('No active section selected — use "+ Section" first, or pick one from the section list.');return;}
+  if(!activeSectionId){flashInstr('No active design — click + Design first, or pick one from the list.');return;}
   const s=sections.find(x=>x.id===activeSectionId);if(!s)return;
   s.settings=snapshotCurrentSettings();
-  showSettingsWarn();
+  rebuildSecDropdown();showSettingsWarn();
 }
 function updateSecIndicator(){
   const s=sections.find(x=>x.id===activeSectionId);
@@ -679,9 +749,9 @@ function updateSecIndicator(){
 }
 function rebuildSecDropdown(){
   const sel=document.getElementById('selSection');
-  if(sel){sel.innerHTML='<option value="">— None —</option>';sections.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name;sel.appendChild(o);});}
+  if(sel){const keep=sel.value;sel.innerHTML='<option value="">— No design (toolbar) —</option>';sections.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name;sel.appendChild(o);});sel.value=keep;}
   const asel=document.getElementById('activeSectionSelect');
-  if(asel){asel.innerHTML='<option value="">No section</option>';sections.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name+(s.settings?' — '+(computeConfigForProduct(s.settings.product).name):'');asel.appendChild(o);});asel.value=activeSectionId?String(activeSectionId):'';}
+  if(asel){asel.innerHTML='<option value="">No design (toolbar settings)</option>';sections.forEach(s=>{const o=document.createElement('option');o.value=String(s.id);o.textContent=s.name+(s.settings?' — '+(computeConfigForProduct(s.settings.product).name):'');asel.appendChild(o);});asel.value=activeSectionId?String(activeSectionId):'';}
 }
 function getSecColor(id){if(!id)return null;const s=sections.find(x=>String(x.id)===String(id));return s?s.color:null;}
 function getSecName(id){if(!id)return null;const s=sections.find(x=>String(x.id)===String(id));return s?s.name:null;}
@@ -865,7 +935,7 @@ canvas.addEventListener('mouseup',e=>{
   if(!drawing)return;drawing=false;if(dist(startX,startY,curX,curY)<4/zoom)return;
   pushHistory();
   const idx=lines.length;
-  lines.push({type:tool,x1:startX,y1:startY,x2:curX,y2:curY,dim:'',label:'',dir:'LH',startEnd:tool==='handrail'?'bracket':'wall',endEnd:tool==='handrail'?'stanchion':'wall',topType:'turn',bottomType:'free',hrStartFix:'drill-pin',hrEndFix:'top',sectionId:activeSectionId?String(activeSectionId):null});
+  lines.push({type:tool,x1:startX,y1:startY,x2:curX,y2:curY,dim:'',label:'',dir:'LH',startEnd:tool==='handrail'?'bracket':'wall',endEnd:tool==='handrail'?'stanchion':'wall',topType:'turn',bottomType:'free',hrStartFix:'drill-pin',hrEndFix:'top',sectionId:activeSectionId?String(activeSectionId):null,areaId:activeAreaId?String(activeAreaId):null});
   pendingIdx=idx;
   const scB=toScreen((startX+curX)/2,(startY+curY)/2);const sc=bufToCSS(scB.x,scB.y);
   if(tool==='stairs')openStairPopup(idx,sc.x,sc.y);else if(tool==='handrail')openHandrailPopup(idx,sc.x,sc.y);else openRunPopup(idx,sc.x,sc.y);
@@ -890,7 +960,7 @@ function openSelectPopup(idx,sx,sy){
   document.getElementById('selectTitle').textContent=isStair?'Edit stairs':isHr?'Edit handrail':'Edit run';
   document.getElementById('selDim').value=l.dim?l.dim.replace('mm',''):'';
   document.getElementById('selLabel').value=l.label||'';
-  rebuildSecDropdown();document.getElementById('selSection').value=l.sectionId?String(l.sectionId):'';
+  rebuildSecDropdown();document.getElementById('selSection').value=l.sectionId?String(l.sectionId):'';rebuildAreaDropdowns();document.getElementById('selArea').value=l.areaId&&findArea(l.areaId)?String(l.areaId):'';
   document.getElementById('stairDirRow').style.display=isStair?'block':'none';
   if(isStair){document.getElementById('selDir').value=l.dir||'LH';document.getElementById('selBottomType').value=l.bottomType||'free';document.getElementById('selTopType').value=l.topType||'turn';}
   const sEl=document.getElementById('selStartEnd'),eEl=document.getElementById('selEndEnd');
@@ -912,6 +982,7 @@ function saveSelect(){
   const v=document.getElementById('selDim').value.trim();
   lines[selectedIdx].dim=v?v.replace('mm','')+'mm':'';lines[selectedIdx].label=document.getElementById('selLabel').value.trim();
   lines[selectedIdx].sectionId=document.getElementById('selSection').value||null;
+  lines[selectedIdx].areaId=document.getElementById('selArea').value||null;
   if(lines[selectedIdx].type==='stairs'){lines[selectedIdx].dir=document.getElementById('selDir').value;lines[selectedIdx].bottomType=document.getElementById('selBottomType').value;lines[selectedIdx].topType=document.getElementById('selTopType').value;}
   if(lines[selectedIdx].type==='handrail'){
     const se=document.getElementById('selStartEnd').value,ee=document.getElementById('selEndEnd').value;
@@ -1074,7 +1145,7 @@ function undo(){
   }
   if(lines.length>0){lines.splice(lines.length-1,1);selectedIdx=null;closeAll();redraw();}
 }
-function clearCanvas(){lines=[];history=[];selectedIdx=null;pendingIdx=null;drawing=false;lastCalcText='';lastCalcLegs=[];lastCalcHrLegs=[];lastCalcHrLegRows=[];sections=[];activeSectionId=null;updateSecIndicator();rebuildSecDropdown();['selectPopup','runPopup','stairPopup','handrailPopup'].forEach(id=>document.getElementById(id).style.display='none');document.getElementById('popupBackdrop').style.display='none';document.getElementById('jcBody').innerHTML='';document.getElementById('jcBodySide').innerHTML='';document.getElementById('canvasSideJC').style.display='none';lastDsData=null;(function(){const _f=document.getElementById('dsFrame');if(_f)_f.src=_f.src;})();switchTab('canvas');setTimeout(resizeCanvas,50);}
+function clearCanvas(){lines=[];history=[];selectedIdx=null;pendingIdx=null;drawing=false;lastCalcText='';lastCalcLegs=[];lastCalcHrLegs=[];lastCalcHrLegRows=[];sections=[];activeSectionId=null;areas=[];activeAreaId=null;rebuildAreaDropdowns();updateSecIndicator();rebuildSecDropdown();['selectPopup','runPopup','stairPopup','handrailPopup'].forEach(id=>document.getElementById(id).style.display='none');document.getElementById('popupBackdrop').style.display='none';document.getElementById('jcBody').innerHTML='';document.getElementById('jcBodySide').innerHTML='';document.getElementById('canvasSideJC').style.display='none';lastDsData=null;(function(){const _f=document.getElementById('dsFrame');if(_f)_f.src=_f.src;})();switchTab('canvas');setTimeout(resizeCanvas,50);}
 function closeSideJC(){document.getElementById('canvasSideJC').style.display='none';setTimeout(resizeCanvas,50);}
 function switchTab(tab){['canvas','jobcard','drilling','layout'].forEach(t=>{document.getElementById('tab-'+t).classList.toggle('active',t===tab);document.getElementById('panel-'+t).classList.toggle('active',t===tab);});if(tab==='canvas')setTimeout(resizeCanvas,50);if(tab==='drilling')updateDsPreview();if(tab==='layout')renderLayout();}
 function toggleMode(){isLight=!isLight;document.body.classList.toggle('light',isLight);document.getElementById('modeToggle').textContent=isLight?'🌙':'☀️';redraw();}
@@ -1109,8 +1180,8 @@ function redraw(){
       if(l.type==='stairs'&&l.dir){const dfs=Math.max(8,10*Math.min(zoom,1.2));ctx.font=`bold ${dfs}px Courier New`;const dirLbl=l.dir+' up';const dtw=ctx.measureText(dirLbl).width;const gap=tw/2+dtw/2+10;const ddx=dlx+gap,ddy=dly;ctx.fillStyle=bg;ctx.fillRect(ddx-dtw/2-3,ddy-8,dtw+6,14);ctx.fillStyle=baseColor;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(dirLbl,ddx,ddy);}
       ctx.restore();
     }
-    const secName=getSecName(l.sectionId);
-    if(secName&&zoom>0.5){const secColor=getSecColor(l.sectionId);let slx,sly;if(horiz){slx=mx;sly=my+14;}else{slx=mx+52;sly=my+16;}ctx.save();const sfs=Math.max(8,9*Math.min(zoom,1.1));ctx.font=`${sfs}px Courier New`;const stw=ctx.measureText(secName).width;ctx.fillStyle=secColor+'33';ctx.fillRect(slx-stw/2-3,sly-7,stw+6,13);ctx.strokeStyle=secColor;ctx.lineWidth=0.5;ctx.strokeRect(slx-stw/2-3,sly-7,stw+6,13);ctx.fillStyle=secColor;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(secName,slx,sly);ctx.restore();}
+    const secName=[getAreaName(l.areaId),getSecName(l.sectionId)].filter(Boolean).join(' · ');
+    if(secName&&zoom>0.5){const secColor=getSecColor(l.sectionId)||'#888888';let slx,sly;if(horiz){slx=mx;sly=my+14;}else{slx=mx+52;sly=my+16;}ctx.save();const sfs=Math.max(8,9*Math.min(zoom,1.1));ctx.font=`${sfs}px Courier New`;const stw=ctx.measureText(secName).width;ctx.fillStyle=secColor+'33';ctx.fillRect(slx-stw/2-3,sly-7,stw+6,13);ctx.strokeStyle=secColor;ctx.lineWidth=0.5;ctx.strokeRect(slx-stw/2-3,sly-7,stw+6,13);ctx.fillStyle=secColor;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(secName,slx,sly);ctx.restore();}
   });
   if(isDraggingLine&&selectedIdx!==null){const sl=lines[selectedIdx];const sd2=20/zoom;for(let i=0;i<lines.length;i++){if(i===selectedIdx)continue;const ol=lines[i];for(const[ex,ey] of [[ol.x1,ol.y1],[ol.x2,ol.y2]]){if(Math.hypot(sl.x1-ex,sl.y1-ey)<sd2||Math.hypot(sl.x2-ex,sl.y2-ey)<sd2){const sp=toScreen(ex,ey);ctx.save();ctx.strokeStyle='#27ae60';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(sp.x,sp.y,10*Math.min(zoom,1.5),0,Math.PI*2);ctx.stroke();ctx.fillStyle='rgba(39,174,96,0.2)';ctx.fill();ctx.restore();}}}}
 }
@@ -1255,7 +1326,7 @@ function calculateHandrail(hrLegs){
     totalCoverPlates+=posts;
     if(sup.sReal!=='joined')endCaps++;if(sup.eReal!=='joined')endCaps++;
     if(sup.sReal==='joined')joinedEndsTotal++;if(sup.eReal==='joined')joinedEndsTotal++;
-    legRows.push({label:l.label||'Handrail',dim,mode:sup.mode,brackets,posts,sectionId:l.sectionId});
+    legRows.push({label:((areas.length&&getAreaName(l.areaId))?getAreaName(l.areaId)+' · ':'')+(l.label||'Handrail'),dim,mode:sup.mode,brackets,posts,sectionId:l.sectionId,areaId:(l.areaId&&findArea(l.areaId))?String(l.areaId):''});
   });
   const cornerJoints=Math.round(joinedEndsTotal/2);
   const tubeStock=Math.ceil(totalTube/STOCK);
@@ -1382,7 +1453,7 @@ function calculate(){
   // per area. Pass `accum` only on ONE of the two render passes (full/compact
   // render the same data twice for different verbosity) or totals double-count.
   const renderSecBlock=(sl,sid,mode,accum)=>{
-    const sName=getSecName(sid)||'Unsectioned';const sColor=getSecColor(sid)||'#888';
+    const sName=getSecName(sid)||'No design (toolbar settings)';const sColor=getSecColor(sid)||'#888';
     const sRes=sid?sl[0].res:{cfg:activeConfig,infill,infillFix,fixing,post,rail,material:mat,productValue:currentProductValue};
     const sIsGlassInfill=sRes.infill==='glass-8mm'||sRes.infill==='glass-10mm';
     const sIsCableInfill=sRes.infill==='cable-9';
@@ -1482,23 +1553,33 @@ function calculate(){
 
   const alerts=[];legs.forEach(l=>{if(l.dim>l.res.cfg.stockLength)alerts.push(`${l.label||l.type} (${toM(l.dim)}) exceeds ${toM(l.res.cfg.stockLength)} — joiner required`);});
   const alertHtml=alerts.length?`<div class="jc-alert">${alerts.join('<br>')}</div>`:'';
-  const settingsHtml=unsec.length?`<div class="jc-section"><div class="jc-section-title">Job settings — unsectioned lines</div><div class="jc-row"><span>Product</span><span class="val">${activeConfig.name}</span></div><div class="jc-row"><span>Infill</span><span class="val">${infillLbls[infill]||infill}</span></div><div class="jc-row"><span>Post</span><span class="val">${postLbls[post]||post}</span></div><div class="jc-row"><span>Top rail</span><span class="val">${railLbls[rail]||rail}</span></div><div class="jc-row"><span>Material</span><span class="val">${mat}</span></div></div>`:'';
+  const settingsHtml=unsec.length?`<div class="jc-section"><div class="jc-section-title">Toolbar settings — lines with no design</div><div class="jc-row"><span>Product</span><span class="val">${activeConfig.name}</span></div><div class="jc-row"><span>Infill</span><span class="val">${infillLbls[infill]||infill}</span></div><div class="jc-row"><span>Post</span><span class="val">${postLbls[post]||post}</span></div><div class="jc-row"><span>Top rail</span><span class="val">${railLbls[rail]||rail}</span></div><div class="jc-row"><span>Material</span><span class="val">${mat}</span></div></div>`:'';
 
   const accum={rail:0,infill:0,glassPanels:0,railBends:0,flexi:0,ec:0,infillEc:0,joiners:0,sage:newSageList()};
   let html=alertHtml+settingsHtml,htmlSide=alertHtml+settingsHtml;
   const sectionTexts=[];
-  sections.forEach(sec=>{
-    if(secGroups[sec.id]&&secGroups[sec.id].length>0){
-      const full=renderSecBlock(secGroups[sec.id],sec.id,'full',accum);
-      html+=full.html;sectionTexts.push(full.text);
-      htmlSide+=renderSecBlock(secGroups[sec.id],sec.id,'compact',null).html;
+  // v1.32: Area first, Design second. Lines tagged to an area that no longer
+  // exists fall back to "No area". With no areas at all this is identical to
+  // the old per-section output.
+  const areaOf=l=>(l.areaId&&findArea(l.areaId))?String(l.areaId):'';
+  const usedAreas=[...areas.map(a=>String(a.id)),''].filter(ak=>legs.some(l=>areaOf(l)===ak));
+  const showAreas=areas.length>0&&legs.some(l=>areaOf(l)!=='');
+  usedAreas.forEach(ak=>{
+    const aLegs=legs.filter(l=>areaOf(l)===ak);
+    if(showAreas){
+      const aName=ak?getAreaName(ak):'No area';
+      const banner=`<div class="jc-section-title sec-hdr" style="background:#333;border-color:#333;font-size:10px;margin-top:6px">AREA — ${jiEsc(aName.toUpperCase())}</div>`;
+      html+=banner;htmlSide+=banner;sectionTexts.push(`\n=== AREA: ${aName} ===`);
     }
+    const dKeys=[...sections.map(sec=>String(sec.id)),''];
+    dKeys.forEach(dk=>{
+      const sl=aLegs.filter(l=>String(l.sectionId||'')===dk);if(!sl.length)return;
+      const sid=dk||null;
+      const full=renderSecBlock(sl,sid,'full',accum);
+      html+=full.html;sectionTexts.push(full.text);
+      htmlSide+=renderSecBlock(sl,sid,'compact',null).html;
+    });
   });
-  if(unsec.length>0){
-    const full=renderSecBlock(unsec,null,'full',accum);
-    html+=full.html;sectionTexts.push(full.text);
-    htmlSide+=renderSecBlock(unsec,null,'compact',null).html;
-  }
 
   const STOCK=activeConfig.stockLength;
   const railStock=accum.rail>0?Math.ceil(accum.rail/STOCK):0;
@@ -1514,7 +1595,7 @@ function calculate(){
   totalsHtml+=`</div>`;
 
   let typeTotal=0;
-  let postTypesHtml=`<div class="jc-section"><div class="jc-section-title">Post types — drilling sheet (all sections)</div>`;
+  let postTypesHtml=`<div class="jc-section"><div class="jc-section-title">Post types — drilling sheet (all designs)</div>`;
   typeOrder.forEach(t=>{if(types[t]){postTypesHtml+=`<div class="jc-row"><span>${typeNames[t]||'Type '+t}</span><span class="val">${types[t]}</span></div>`;typeTotal+=types[t];}});
   postTypesHtml+=`<div class="jc-total"><span>Total</span><span>${typeTotal}</span></div></div>`;
 
@@ -1567,13 +1648,13 @@ function calculate(){
     lastSageItems=S.finish();
   }
 
-  document.getElementById('jcBody').innerHTML=html;
-  document.getElementById('jcBodySide').innerHTML=htmlSide;
+  document.getElementById('jcBody').innerHTML=jobInfoHtml()+html;
+  document.getElementById('jcBodySide').innerHTML=jobInfoHtml()+htmlSide;
   document.getElementById('canvasSideJC').style.display='flex';
   switchTab('canvas');setTimeout(resizeCanvas,50);
 
   const typeSummary=typeOrder.filter(t=>types[t]).map(t=>`  ${typeNames[t]||'Type '+t}: ${types[t]}`).join('\n');
-  lastCalcText=`JOB CARD\n${'─'.repeat(40)}\nTotal posts: ${totalPosts}\n${sectionTexts.join('')}\n\nPOST TYPES — ALL SECTIONS\n${'─'.repeat(20)}\n${typeSummary}\n`;
+  lastCalcText=`JOB CARD\n${'─'.repeat(40)}\nTotal posts: ${totalPosts}\n${sectionTexts.join('')}\n\nPOST TYPES — ALL DESIGNS\n${'─'.repeat(20)}\n${typeSummary}\n`;
   if(hrResult)lastCalcText+=hrResult.text;
   updateDsPreview();
 }
@@ -1626,7 +1707,7 @@ function updateDsPreview(){
   legs.forEach(l=>{if(l.sectionId){if(!secGroups[l.sectionId])secGroups[l.sectionId]=[];secGroups[l.sectionId].push(l);}else unsecLegs.push(l);});
 
   function groupDsSpec(sl,sid){
-    const sName=getSecName(sid)||'Unsectioned';
+    const sName=getSecName(sid)||'No design';
     const sRes=sid?sl[0].res:{cfg:activeConfig,infill:getInfill(),infillFix:getInfillFix(),fixing:getFixing(),post:getPost(),material:getMaterial(),productValue:currentProductValue};
     const sStairBtmConn=sl.filter(l=>l.type==='stairs'&&l.startEnd==='connected'&&(l.bottomType||'free')!=='free').length;
     const sRunAbsorbed=sl.filter(l=>l.type==='run').reduce((s,l)=>{
@@ -1653,7 +1734,7 @@ function updateDsPreview(){
   if(unsecLegs.length)dsSections.push(groupDsSpec(unsecLegs,null));
   const mixedProducts=dsSections.length>1;
 
-  lastDsData={type:'balustrader_jobcard',totalPosts,types,mixedProducts,sections:dsSections,summary:legs.map(l=>(l.label||l.type)+' '+l.dim+'mm'+(mixedProducts?' — '+l.res.cfg.name:'')).join('\n')};
+  lastDsData={type:'balustrader_jobcard',client:(jobInfo&&jobInfo.customer)||'',jobNo:(typeof jobLabel==='function'?jobLabel():''),totalPosts,types,mixedProducts,sections:dsSections,summary:legs.map(l=>(l.label||l.type)+' '+l.dim+'mm'+(mixedProducts?' — '+l.res.cfg.name:'')).join('\n')};
   sendDsData();
 }
 
@@ -1706,8 +1787,9 @@ function newSageList(){
 function sageEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function buildSageCopy(){
   const rows=lastSageItems;const date=new Date().toLocaleDateString('en-ZA');
-  let text=`MATERIALS LIST — ${date}\nItem\tSize / spec\tQty\tUnit\n`;
-  let html=`<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt"><tr><td colspan="4" style="font-weight:bold;font-size:11pt">MATERIALS LIST — ${date}</td></tr><tr style="background:#d9d9d9;font-weight:bold"><td>Item</td><td>Size / spec</td><td>Qty</td><td>Unit</td></tr>`;
+  const ji=jobInfoRows();
+  let text=`MATERIALS LIST — ${date}\n`+ji.map(([k,v])=>`${k.toUpperCase()}:\t${v}`).join('\n')+(ji.length?'\n\n':'')+`Item\tSize / spec\tQty\tUnit\n`;
+  let html=`<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt"><tr><td colspan="4" style="font-weight:bold;font-size:11pt">MATERIALS LIST — ${date}</td></tr>${ji.map(([k,v])=>`<tr><td style="font-weight:bold">${sageEsc(k)}</td><td colspan="3">${sageEsc(v)}</td></tr>`).join('')}<tr style="background:#d9d9d9;font-weight:bold"><td>Item</td><td>Size / spec</td><td>Qty</td><td>Unit</td></tr>`;
   let g='';
   rows.forEach(r=>{
     if(r.group!==g){g=r.group;text+=`\n${g.toUpperCase()}\n`;html+=`<tr style="background:#f2f2f2;font-weight:bold"><td colspan="4">${sageEsc(g.toUpperCase())}</td></tr>`;}
@@ -1811,33 +1893,49 @@ function renderLayout(){
   const svgStr=`<svg class="layout-svg" xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block;max-width:100%;border-radius:4px"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="#f8f8f8" rx="4"/>${svgParts.join('\n')}</svg>`;
   const legendItems=[{col:'#4a90d9',lbl:'End post (11)'},{col:'#27ae60',lbl:'Corner post (10)'},{col:'#888888',lbl:'Through post (12)'},{col:'#e67e22',lbl:'Stair posts'},{col:'#16a085',lbl:'Handrail bracket (B)'},{col:'#8e44ad',lbl:'Handrail post (P)'}];
   const legendHtml=`<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:6px 4px 10px 4px;font-family:'Courier New',monospace;font-size:10px;color:#333">${legendItems.map(it=>`<span style="display:inline-flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${it.col};border:1.5px solid #fff;box-shadow:0 0 0 1px #ccc"></span>${it.lbl}</span>`).join('')}</div>`;
-  const sectionMap=new Map();lastCalcLegs.forEach(leg=>{const sid=leg._src.sectionId||'';if(!sectionMap.has(sid))sectionMap.set(sid,[]);sectionMap.get(sid).push(leg);});
+  // v1.32: grouped Area → Design. Area banner + subtotal only when areas are used.
+  const lAreaOf=x=>(x.areaId&&findArea(x.areaId))?String(x.areaId):'';
+  const lShowAreas=areas.length>0&&(lastCalcLegs.some(leg=>lAreaOf(leg._src))||lastCalcHrLegRows.some(r=>r.areaId));
+  const lAreaKeys=[...areas.map(a=>String(a.id)),''];
   let tableBodyHtml='';let grandTotalPosts=0,grandTotalRail=0,grandTotalInfill=0;
-  sectionMap.forEach((sLegs,sid)=>{
-    const sec=sections.find(s=>String(s.id)===String(sid));const secName=sec?sec.name:'Unsectioned';const secColor=sec?sec.color:'#888';
-    tableBodyHtml+=`<tr><td colspan="7" style="padding:5px 10px;background:${secColor};color:#fff;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;border:1px solid ${secColor}">${secName.toUpperCase()}</td></tr>`;
+  lAreaKeys.forEach(ak=>{
+    const aLegs=lastCalcLegs.filter(leg=>lAreaOf(leg._src)===ak);if(!aLegs.length)return;
+    const aName=ak?getAreaName(ak):'No area';let aPosts=0,aRail=0,aInfill=0;
+    if(lShowAreas)tableBodyHtml+=`<tr><td colspan="7" style="padding:6px 10px;background:#333;color:#fff;font-family:'Courier New',monospace;font-size:12px;font-weight:bold;letter-spacing:1.5px;border:1px solid #333">AREA — ${jiEsc(aName.toUpperCase())}</td></tr>`;
+    [...sections.map(x=>String(x.id)),''].forEach(sid=>{
+    const sLegs=aLegs.filter(leg=>String(leg._src.sectionId||'')===sid);if(!sLegs.length)return;
+    const sec=sections.find(s=>String(s.id)===String(sid));const secName=sec?sec.name:'No design';const secColor=sec?sec.color:'#888';
+    tableBodyHtml+=`<tr><td colspan="7" style="padding:5px 10px;background:${secColor};color:#fff;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;border:1px solid ${secColor}">${jiEsc(secName.toUpperCase())}${sec&&sec.settings?' — '+jiEsc(computeConfigForProduct(sec.settings.product).name):''}</td></tr>`;
     let secRawTotal=0,secRail=0,secInfill=0;
     sLegs.forEach(leg=>{const l=leg._src;const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');secRawTotal+=leg.rawPosts;const railMm=parseInt(l.dim||0);const infillMm=railMm*8;secRail+=railMm;secInfill+=infillMm;tableBodyHtml+=`<tr style="background:#fff"><td style="padding:4px 8px;border:1px solid #e0e0e0;border-left:3px solid ${secColor};font-weight:bold">${lbl}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center;color:#666">${l.type==='stairs'?'Stairs':'Run'}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${l.dim||'—'}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center">${leg.rawPosts}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;font-size:10px">${leg._postTypesSummary||''}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${railMm}mm</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${infillMm}mm</td></tr>`;});
     const connEnds=sLegs.reduce((s,leg)=>{const l=leg._src;return s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0);},0);const secShared=Math.floor(connEnds/2);const secNet=secRawTotal-secShared;
-    tableBodyHtml+=`<tr style="background:#f8f6ee;font-weight:bold"><td colspan="3" style="padding:4px 10px;border:1px solid #ddd;color:${secColor};font-size:10px">${secName} total${secShared>0?' ('+secRawTotal+'-'+secShared+' shared)':''}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#b8860b">${secNet}</td><td style="padding:4px 8px;border:1px solid #ddd"></td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#b8860b">${secRail}mm</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#b8860b">${secInfill}mm</td></tr>`;
-    grandTotalPosts+=secNet;grandTotalRail+=secRail;grandTotalInfill+=secInfill;
+    tableBodyHtml+=`<tr style="background:#f8f6ee;font-weight:bold"><td colspan="3" style="padding:4px 10px;border:1px solid #ddd;color:${secColor};font-size:10px">${jiEsc(secName)} total${secShared>0?' ('+secRawTotal+'-'+secShared+' shared)':''}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#b8860b">${secNet}</td><td style="padding:4px 8px;border:1px solid #ddd"></td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#b8860b">${secRail}mm</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#b8860b">${secInfill}mm</td></tr>`;
+    aPosts+=secNet;aRail+=secRail;aInfill+=secInfill;
+    });
+    if(lShowAreas)tableBodyHtml+=`<tr style="background:#e8e8e8;font-weight:bold"><td colspan="3" style="padding:4px 10px;border:1px solid #ccc;font-size:10px">${jiEsc(aName)} total</td><td style="padding:4px 8px;border:1px solid #ccc;text-align:center">${aPosts}</td><td style="padding:4px 8px;border:1px solid #ccc"></td><td style="padding:4px 8px;border:1px solid #ccc;text-align:right">${aRail}mm</td><td style="padding:4px 8px;border:1px solid #ccc;text-align:right">${aInfill}mm</td></tr>`;
+    grandTotalPosts+=aPosts;grandTotalRail+=aRail;grandTotalInfill+=aInfill;
   });
   const tableHtml=`<table style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:11px;margin-top:2px"><thead><tr style="background:#e8e8e8"><th style="padding:5px 8px;border:1px solid #ccc;text-align:left">Leg</th><th style="padding:5px 8px;border:1px solid #ccc">Type</th><th style="padding:5px 8px;border:1px solid #ccc">Length</th><th style="padding:5px 8px;border:1px solid #ccc">Posts</th><th style="padding:5px 8px;border:1px solid #ccc;text-align:left">Post types</th><th style="padding:5px 8px;border:1px solid #ccc">Rail</th><th style="padding:5px 8px;border:1px solid #ccc">Infills (x8)</th></tr></thead><tbody>${tableBodyHtml}</tbody><tfoot><tr style="background:#fff3cd;font-weight:bold"><td colspan="3" style="padding:6px 10px;border:1px solid #ccc;font-size:12px">GRAND TOTAL</td><td style="padding:6px 8px;border:1px solid #ccc;text-align:center;color:#b8860b;font-size:13px">${grandTotalPosts}</td><td style="padding:6px 8px;border:1px solid #ccc"></td><td style="padding:6px 8px;border:1px solid #ccc;text-align:right;color:#b8860b">${grandTotalRail}mm</td><td style="padding:6px 8px;border:1px solid #ccc;text-align:right;color:#b8860b">${grandTotalInfill}mm</td></tr></tfoot></table>`;
   let hrTableHtml='';
   if(lastCalcHrLegRows.length){
-    const hrSectionMap=new Map();lastCalcHrLegRows.forEach(row=>{const sid=row.sectionId||'';if(!hrSectionMap.has(sid))hrSectionMap.set(sid,[]);hrSectionMap.get(sid).push(row);});
     let hrBodyHtml='';let hrGrandLen=0,hrGrandBrkt=0,hrGrandPost=0;
-    hrSectionMap.forEach((rows,sid)=>{
-      const sec=sections.find(s=>String(s.id)===String(sid));const secName=sec?sec.name:'Unsectioned';const secColor=sec?sec.color:'#16a085';
-      hrBodyHtml+=`<tr><td colspan="5" style="padding:5px 10px;background:${secColor};color:#fff;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;border:1px solid ${secColor}">${secName.toUpperCase()}</td></tr>`;
+    lAreaKeys.forEach(ak=>{
+      const aRows=lastCalcHrLegRows.filter(r=>(r.areaId||'')===ak);if(!aRows.length)return;
+      const aName=ak?getAreaName(ak):'No area';
+      if(lShowAreas)hrBodyHtml+=`<tr><td colspan="5" style="padding:6px 10px;background:#333;color:#fff;font-family:'Courier New',monospace;font-size:12px;font-weight:bold;letter-spacing:1.5px;border:1px solid #333">AREA — ${jiEsc(aName.toUpperCase())}</td></tr>`;
+    [...sections.map(x=>String(x.id)),''].forEach(sid=>{
+      const rows=aRows.filter(r=>String(r.sectionId||'')===sid);if(!rows.length)return;
+      const sec=sections.find(s=>String(s.id)===String(sid));const secName=sec?sec.name:'No design';const secColor=sec?sec.color:'#16a085';
+      hrBodyHtml+=`<tr><td colspan="5" style="padding:5px 10px;background:${secColor};color:#fff;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;border:1px solid ${secColor}">${jiEsc(secName.toUpperCase())}</td></tr>`;
       let secLen=0,secBrkt=0,secPost=0;
       rows.forEach(r=>{secLen+=r.dim;secBrkt+=r.brackets;secPost+=r.posts;hrBodyHtml+=`<tr style="background:#fff"><td style="padding:4px 8px;border:1px solid #e0e0e0;border-left:3px solid ${secColor};font-weight:bold">${r.label}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${r.dim}mm</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center">${r.brackets}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center">${r.posts}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;font-size:10px">${r.mode}</td></tr>`;});
-      hrBodyHtml+=`<tr style="background:#f0f9f6;font-weight:bold"><td colspan="1" style="padding:4px 10px;border:1px solid #ddd;color:${secColor};font-size:10px">${secName} total</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#0e7a5f">${secLen}mm</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#0e7a5f">${secBrkt}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#0e7a5f">${secPost}</td><td style="padding:4px 8px;border:1px solid #ddd"></td></tr>`;
+      hrBodyHtml+=`<tr style="background:#f0f9f6;font-weight:bold"><td colspan="1" style="padding:4px 10px;border:1px solid #ddd;color:${secColor};font-size:10px">${jiEsc(secName)} total</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#0e7a5f">${secLen}mm</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#0e7a5f">${secBrkt}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#0e7a5f">${secPost}</td><td style="padding:4px 8px;border:1px solid #ddd"></td></tr>`;
       hrGrandLen+=secLen;hrGrandBrkt+=secBrkt;hrGrandPost+=secPost;
+    });
     });
     hrTableHtml=`<div style="margin-top:14px;font-size:13px;font-weight:bold;color:#16a085;letter-spacing:1px">HANDRAIL BREAKDOWN</div><table style="width:100%;border-collapse:collapse;font-family:'Courier New',monospace;font-size:11px;margin-top:4px"><thead><tr style="background:#e0f2ee"><th style="padding:5px 8px;border:1px solid #b8ded4;text-align:left">Leg</th><th style="padding:5px 8px;border:1px solid #b8ded4">Length</th><th style="padding:5px 8px;border:1px solid #b8ded4">Brackets</th><th style="padding:5px 8px;border:1px solid #b8ded4">Posts</th><th style="padding:5px 8px;border:1px solid #b8ded4;text-align:left">Mode</th></tr></thead><tbody>${hrBodyHtml}</tbody><tfoot><tr style="background:#d4f0e8;font-weight:bold"><td style="padding:6px 10px;border:1px solid #b8ded4;font-size:12px">GRAND TOTAL</td><td style="padding:6px 8px;border:1px solid #b8ded4;text-align:right;color:#0e7a5f">${hrGrandLen}mm</td><td style="padding:6px 8px;border:1px solid #b8ded4;text-align:center;color:#0e7a5f;font-size:13px">${hrGrandBrkt}</td><td style="padding:6px 8px;border:1px solid #b8ded4;text-align:center;color:#0e7a5f;font-size:13px">${hrGrandPost}</td><td style="padding:6px 8px;border:1px solid #b8ded4"></td></tr></tfoot></table>`;
   }
-  const headerHtml=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333"><div><div style="font-size:15px;font-weight:bold;letter-spacing:1px">BALUSTRADER — RUN LAYOUT</div><div style="font-size:11px;color:#555;margin-top:3px">${prodName}${fixName?' — '+fixName:''}</div></div><div style="font-size:11px;color:#444;text-align:right;line-height:1.7"><b>Date:</b> ${dateStr}</div></div>`;
+  const headerHtml=`<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #333"><div><div style="font-size:15px;font-weight:bold;letter-spacing:1px">BALUSTRADER — RUN LAYOUT</div><div style="font-size:11px;color:#555;margin-top:3px">${prodName}${fixName?' — '+fixName:''}</div></div><div style="font-size:11px;color:#444;text-align:right;line-height:1.7">${jobInfoRows().map(([k,v])=>`<b>${k}:</b> ${jiEsc(v)}<br>`).join('')}<b>Date:</b> ${dateStr}</div></div>`;
   inner.innerHTML=headerHtml+svgStr+legendHtml+'<div style="margin-top:2px" class="layout-table-wrap">'+(lastCalcLegs.length?tableHtml:'')+hrTableHtml+'</div>';
 }
 
@@ -1848,6 +1946,267 @@ function printLayout(){
   if(!win){alert('Popup blocked.');return;}
   win.document.write(`<!DOCTYPE html><html><head><title>Layout</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Courier New',monospace;background:#fff;color:#111;padding:12mm 10mm;font-size:11px}table{border-collapse:collapse;width:100%}th,td{padding:4px 7px;border:1px solid #ccc;font-size:10px}thead{display:table-header-group}thead tr{background:#e8e8e8}tfoot{display:table-footer-group}tfoot tr{background:#fff3cd;font-weight:bold}tr,td,th{page-break-inside:avoid}.layout-table-wrap{page-break-before:always}svg.layout-svg{width:100%;height:auto;max-height:170mm}@media print{body{padding:7mm 7mm}@page{size:A4 landscape;margin:5mm}}</style></head><body>${html}</body></html>`);
   win.document.close();win.focus();setTimeout(()=>win.print(),500);
+}
+
+
+// ── Job details + launch specs from the launcher (v1.31) ────────────────
+// The launcher stores {job, specs} under localStorage 'balustrader_launch_<id>'
+// and opens this page with ?job=<id>. Read-only here (reloading keeps it).
+let jobInfo=null,launchSpecs=null;
+function loadLaunch(){
+  const params=new URLSearchParams(window.location.search);
+  try{
+    const id=params.get('job');
+    if(id){const d=JSON.parse(localStorage.getItem('balustrader_launch_'+id)||'null');if(d){jobInfo=d.job||null;launchSpecs=d.specs||null;}}
+  }catch(e){}
+  if(!jobInfo&&params.get('client'))jobInfo={customer:params.get('client')};
+  if(jobInfo&&!Object.keys(jobInfo).some(k=>k!=='location'&&jobInfo[k]))jobInfo=jobInfo.location?{location:jobInfo.location}:null;
+}
+function jiEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function jobInfoRows(){
+  const jn=(typeof jobLabel==='function')?jobLabel():'';
+  if(!jobInfo)return jn?[['Job no',jn]]:[];
+  const loc=jobInfo.location==='coastal'?'Coastal (316)':jobInfo.location==='inland'?'Inland (304)':'';
+  return[['Job no',jn],['Customer',jobInfo.customer],['Contact',jobInfo.contact],['Tel',jobInfo.phone],['Email',jobInfo.email],['Site',jobInfo.address],['Location',loc]].filter(r=>r[1]);
+}
+function jobInfoHtml(){
+  const rows=jobInfoRows();if(!rows.length)return'';
+  return`<div class="jc-section"><div class="jc-section-title">Customer</div>${rows.map(([k,v])=>`<div class="jc-row"><span>${k}</span><span class="val" style="white-space:normal;text-align:right;word-break:break-word">${jiEsc(v)}</span></div>`).join('')}</div>`;
+}
+function renderJobInfoBar(){
+  const bar=document.getElementById('jobInfoBar');if(!bar)return;
+  const rows=jobInfoRows();
+  if(!rows.length){bar.style.display='none';return;}
+  bar.innerHTML=rows.map(([k,v])=>`<span><span style="color:var(--text3)">${k}:</span> <b>${jiEsc(v)}</b></span>`).join('<span style="color:var(--text4)">·</span>');
+  bar.style.display='flex';
+}
+function applyLaunchSpecs(){
+  if(!launchSpecs)return;
+  const map={infillSelect:'infill',infillFixingSelect:'infillFix',postSelect:'post',railSelect:'rail',materialSelect:'material',hrProfileSelect:'hrProfile',hrMaterialSelect:'hrMaterial'};
+  Object.keys(map).forEach(id=>{
+    const el=document.getElementById(id);const v=launchSpecs[map[id]];
+    if(!el||v==null||v==='')return;
+    if([...el.options].some(o=>o.value===v))el.value=v;
+  });
+  onSettingsChange();
+  clearSettingsWarn();
+}
+
+// ── Save / Open job (v1.33) ───────────────────────────────────────────────
+// A job is saved as a small .balustrader file (JSON) holding the whole
+// drawing: lines, Areas, Designs, toolbar settings and customer details.
+// Opening it puts the canvas back exactly as it was. Nothing in the
+// calculation is touched — the file only stores the inputs.
+// Job number BAL-YYMMDD-HHMM is created on the first save and never
+// changes; every later save is the next revision (rev1, rev2 ...).
+const TEMPLATE_VERSION='v1.33';
+const JOB_FILE_FORMAT=1;
+const JOB_CONTROL_IDS=['infillSelect','infillFixingSelect','fixingSelect','postSelect','railSelect','materialSelect','hrProfileSelect','hrMaterialSelect','cvSubrail','cvSubrailSize','cvUpright','cvSpacing','cvLength'];
+let jobFile=null;          // {jobNo, rev, suburb, savedAt, revisions:[{rev,savedAt}]}
+let lastFileSig=null;      // signature of the drawing at last save/open
+let jobFileHandle=null;    // folder memory for Chrome/Edge save picker
+
+function jfPad(n){return String(n).padStart(2,'0');}
+function makeJobNo(d){d=d||new Date();return'BAL-'+String(d.getFullYear()).slice(2)+jfPad(d.getMonth()+1)+jfPad(d.getDate())+'-'+jfPad(d.getHours())+jfPad(d.getMinutes());}
+function jfSlug(s){return String(s||'').normalize('NFKD').replace(/[^\w\s-]/g,'').trim().replace(/[\s_]+/g,'-').replace(/-+/g,'-').slice(0,40);}
+function suburbFromAddress(a){const parts=String(a||'').split(',').map(s=>s.trim()).filter(Boolean);return parts.length>1?parts[parts.length-1].replace(/\b\d{4}\b/,'').trim():'';}
+function jobLabel(){return jobFile?jobFile.jobNo+' rev'+jobFile.rev:'';}
+
+function readControls(){
+  const o={};
+  JOB_CONTROL_IDS.forEach(id=>{const el=document.getElementById(id);if(el)o[id]=el.value;});
+  return o;
+}
+function writeControls(c){
+  if(!c)return;
+  JOB_CONTROL_IDS.forEach(id=>{
+    const el=document.getElementById(id);const v=c[id];
+    if(!el||v==null)return;
+    if(el.tagName==='SELECT'){if([...el.options].some(o=>o.value===v))el.value=v;}
+    else el.value=v;
+  });
+}
+// The drawing itself — what decides whether there are unsaved changes.
+function drawingState(){
+  return{product:currentProductValue,controls:readControls(),lines,sections,areas,activeSectionId,activeAreaId,jobInfo};
+}
+function drawingSig(){try{return JSON.stringify(drawingState());}catch(e){return'';}}
+function hasUnsaved(){return lines.length>0&&drawingSig()!==lastFileSig;}
+
+function buildJobPayload(){
+  return Object.assign({app:'balustrader_master',format:JOB_FILE_FORMAT,templateVersion:TEMPLATE_VERSION,
+    jobNo:jobFile.jobNo,rev:jobFile.rev,suburb:jobFile.suburb||'',savedAt:jobFile.savedAt,revisions:jobFile.revisions||[],
+    view:{panX,panY,zoom}},JSON.parse(JSON.stringify(drawingState())));
+}
+function jobFileName(){
+  const cust=jfSlug(jobInfo&&jobInfo.customer)||'Customer';
+  const sub=jfSlug(jobFile.suburb);
+  return jobFile.jobNo+'_'+cust+(sub?'_'+sub:'')+'_rev'+jobFile.rev+'.balustrader';
+}
+
+// ── Save dialog ──
+function openJobSaveDialog(){
+  if(!lines.length){flashInstr('Nothing to save yet — draw the job first.');return;}
+  const ov=document.getElementById('jobSaveOverlay');
+  const cust=(jobInfo&&jobInfo.customer)||'';
+  const sub=jobFile?(jobFile.suburb||''):suburbFromAddress(jobInfo&&jobInfo.address);
+  document.getElementById('jsCustomer').value=cust;
+  document.getElementById('jsSuburb').value=sub;
+  const nextRev=jobFile?jobFile.rev+1:1;
+  document.getElementById('jsJobNo').textContent=(jobFile?jobFile.jobNo:makeJobNo()+'  (new)')+'  ·  rev'+nextRev;
+  const note=document.getElementById('jsNote');
+  if(jobFile&&!hasUnsaved())note.textContent='No changes since rev'+jobFile.rev+'. Saving again makes rev'+nextRev+' as a copy.';
+  else if(jobFile)note.textContent='Saves as rev'+nextRev+'. rev'+jobFile.rev+' stays as it was, so you can compare.';
+  else note.textContent='First save — the job number is created now and stays with this job.';
+  ov.style.display='flex';
+  setTimeout(()=>{const f=document.getElementById(cust?'jsSuburb':'jsCustomer');f.focus();f.select();},30);
+}
+document.addEventListener('keydown',e=>{const ov=document.getElementById('jobSaveOverlay');if(!ov||ov.style.display!=='flex')return;e.stopPropagation();if(e.key==='Enter')confirmJobSave();else if(e.key==='Escape')closeJobSaveDialog();},true);
+function closeJobSaveDialog(){document.getElementById('jobSaveOverlay').style.display='none';}
+async function confirmJobSave(){
+  const cust=document.getElementById('jsCustomer').value.trim();
+  const sub=document.getElementById('jsSuburb').value.trim();
+  if(!cust){alert('Please enter the customer / company name.');return;}
+  if(!jobInfo)jobInfo={};
+  jobInfo.customer=cust;
+  const now=new Date();
+  const prev=jobFile;
+  jobFile={jobNo:prev?prev.jobNo:makeJobNo(now),rev:prev?prev.rev+1:1,suburb:sub,savedAt:now.toISOString(),revisions:(prev&&prev.revisions||[]).slice()};
+  jobFile.revisions.push({rev:jobFile.rev,savedAt:jobFile.savedAt});
+  const name=jobFileName();
+  const text=JSON.stringify(buildJobPayload(),null,1);
+  const ok=await writeJobFile(name,text);
+  if(!ok){jobFile=prev;return;}   // cancelled — nothing changes
+  lastFileSig=drawingSig();
+  closeJobSaveDialog();
+  renderJobInfoBar();
+  if(lastCalcText){try{calculate();}catch(e){}}   // job no onto job card / drilling sheet
+  autosaveNow(true);
+  flashOk('Saved '+name);
+}
+async function writeJobFile(name,text){
+  // Chrome / Edge: proper Save As box that remembers the jobs folder.
+  if(window.showSaveFilePicker&&window.self===window.top){
+    try{
+      const h=await window.showSaveFilePicker({id:'balustrader-jobs',suggestedName:name,startIn:jobFileHandle||'documents',
+        types:[{description:'Balustrader job',accept:{'application/json':['.balustrader']}}]});
+      const w=await h.createWritable();await w.write(text);await w.close();jobFileHandle=h;return true;
+    }catch(e){if(e&&e.name==='AbortError')return false;/* fall through to download */}
+  }
+  try{
+    const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+    return true;
+  }catch(e){alert('Could not save the file: '+e.message);return false;}
+}
+function flashOk(msg){const el=document.getElementById('instr');if(!el)return;const old=el.textContent;el.textContent='✔ '+msg;el.style.color='#27ae60';setTimeout(()=>{el.textContent=old;el.style.color='';},3500);}
+
+// ── Open ──
+async function openJobFilePicker(){
+  if(hasUnsaved()&&!confirm('The current drawing has unsaved changes. Open another job and replace it?'))return;
+  if(window.showOpenFilePicker&&window.self===window.top){
+    try{
+      const [h]=await window.showOpenFilePicker({id:'balustrader-jobs',startIn:jobFileHandle||'documents',
+        types:[{description:'Balustrader job',accept:{'application/json':['.balustrader','.json']}}]});
+      const f=await h.getFile();jobFileHandle=h;loadJobText(await f.text(),f.name);return;
+    }catch(e){if(e&&e.name==='AbortError')return;}
+  }
+  const inp=document.getElementById('jobFileInput');inp.value='';inp.click();
+}
+function onJobFileChosen(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>loadJobText(String(r.result),f.name);r.readAsText(f);
+}
+function loadJobText(text,name){
+  let d;
+  try{d=JSON.parse(text);}catch(e){alert('"'+name+'" is not a Balustrader job file.');return;}
+  if(d&&d.app==='balustrader_glass'){alert('"'+name+'" is a Frameless Glass job. Open it in the frameless glass tool.');return;}
+  if(!d||d.app!=='balustrader_master'||!Array.isArray(d.lines)){alert('"'+name+'" is not a Balustrader job file from this tool.');return;}
+  if(d.format>JOB_FILE_FORMAT)alert('This job was saved by a newer version of the tool. It will open, but check it carefully.');
+  applyJobState(d);
+  jobFile=d.jobNo?{jobNo:d.jobNo,rev:d.rev||1,suburb:d.suburb||'',savedAt:d.savedAt,revisions:d.revisions||[]}:null;
+  lastFileSig=drawingSig();
+  renderJobInfoBar();
+  if(lines.some(l=>l.dim)){try{calculate();}catch(e){}switchTab('canvas');}
+  flashOk('Opened '+(jobLabel()||name)+' — edit and Save job to make the next revision.');
+}
+function applyJobState(d){
+  // Reset everything the same way Clear does, then rebuild from the file.
+  clearCanvas();
+  jobInfo=d.jobInfo&&typeof d.jobInfo==='object'?d.jobInfo:null;
+  const prod=(d.product&&PRODUCTS.find(p=>p.value===d.product))?d.product:PRODUCTS[0].value;
+  const sel=document.getElementById('productSelect');if(sel)sel.value=prod;
+  switchProduct(prod);
+  writeControls(d.controls);onSettingsChange();writeControls(d.controls);onSettingsChange();
+  sections=Array.isArray(d.sections)?d.sections:[];
+  areas=Array.isArray(d.areas)?d.areas:[];
+  lines=d.lines;
+  activeSectionId=d.activeSectionId&&sections.some(s=>String(s.id)===String(d.activeSectionId))?d.activeSectionId:null;
+  activeAreaId=d.activeAreaId&&areas.some(a=>String(a.id)===String(d.activeAreaId))?d.activeAreaId:null;
+  history=[];selectedIdx=null;pendingIdx=null;
+  rebuildAreaDropdowns();rebuildSecDropdown();updateSecIndicator();
+  if(d.view){panX=+d.view.panX||0;panY=+d.view.panY||0;zoom=+d.view.zoom||1;}
+  clearSettingsWarn();
+  setTimeout(resizeCanvas,60);
+}
+
+// ── Autosave safety net (this computer only) ──
+// Keeps the latest drawing of each open tab so a refresh or closed tab
+// doesn't lose work. The .balustrader file is still the real save.
+const AUTOSAVE_KEY='balustrader_autosave_v1';
+let tabId=null,lastAutoSig=null;
+function getTabId(){
+  try{tabId=sessionStorage.getItem('balustrader_tab');if(!tabId){tabId=Date.now().toString(36)+Math.random().toString(36).slice(2,6);sessionStorage.setItem('balustrader_tab',tabId);}}
+  catch(e){tabId='t'+Date.now();}
+  return tabId;
+}
+function readAutosaves(){try{const a=JSON.parse(localStorage.getItem(AUTOSAVE_KEY)||'[]');return Array.isArray(a)?a:[];}catch(e){return[];}}
+function writeAutosaves(a){try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify(a));}catch(e){}}
+function autosaveNow(force){
+  if(!lines.length)return;
+  const sig=drawingSig();
+  if(!force&&sig===lastAutoSig)return;
+  lastAutoSig=sig;
+  const cutoff=Date.now()-14*864e5;
+  const list=readAutosaves().filter(x=>x.tab!==tabId&&x.at>cutoff);
+  const st=JSON.parse(JSON.stringify(drawingState()));
+  list.unshift({tab:tabId,at:Date.now(),unsaved:sig!==lastFileSig,jobFile,customer:(jobInfo&&jobInfo.customer)||'',lineCount:lines.length,state:st,view:{panX,panY,zoom}});
+  writeAutosaves(list.slice(0,6));
+}
+function initAutosave(){
+  getTabId();
+  // Offer to restore only when this tab opened empty and there is unsaved work.
+  if(!lines.length){
+    const list=readAutosaves().filter(x=>x.unsaved&&x.state&&x.lineCount);
+    const mine=list.find(x=>x.tab===tabId);
+    const pick=mine||list[0];
+    if(pick)showRestoreBanner(pick,!!mine);
+  }
+  setInterval(()=>autosaveNow(false),4000);
+  window.addEventListener('beforeunload',e=>{autosaveNow(true);if(hasUnsaved()){e.preventDefault();e.returnValue='';}});
+}
+function showRestoreBanner(item,isRefresh){
+  const bar=document.getElementById('restoreBar');if(!bar)return;
+  const when=new Date(item.at).toLocaleString('en-ZA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const who=item.customer?jiEsc(item.customer):'no customer name';
+  const jn=item.jobFile?' · '+jiEsc(item.jobFile.jobNo+' rev'+item.jobFile.rev+' + changes'):'';
+  bar.innerHTML=`<span>⚠ Unsaved drawing found${isRefresh?' from before this page reloaded':''}: <b>${who}</b>${jn} · ${item.lineCount} lines · ${when}</span>`+
+    `<button class="tool-btn" id="rbRestore">Restore it</button><button class="tool-btn" id="rbDiscard">Discard</button>`;
+  bar.style.display='flex';
+  document.getElementById('rbRestore').onclick=()=>{
+    const d=Object.assign({},item.state,{view:item.view});
+    applyJobState(d);
+    jobFile=item.jobFile||null;
+    lastFileSig=null;  // still unsaved until Save job
+    renderJobInfoBar();bar.style.display='none';
+    if(lines.some(l=>l.dim)){try{calculate();}catch(e){}switchTab('canvas');}
+    flashOk('Drawing restored — click Save job to keep it.');
+  };
+  document.getElementById('rbDiscard').onclick=()=>{
+    writeAutosaves(readAutosaves().filter(x=>!(x.tab===item.tab&&x.at===item.at)));
+    bar.style.display='none';
+  };
 }
 
 document.body.classList.add('light');
@@ -1862,6 +2221,7 @@ window.addEventListener('DOMContentLoaded',function(){
   resizeCanvas();
   switchProduct(startProduct);
   if(urlMount){const fixSel=document.getElementById('fixingSelect');const mountMap={top:'top',side:'side',flange:'flange',pinfix:'pinfix'};if(fixSel&&mountMap[urlMount]){fixSel.value=mountMap[urlMount];onSettingsChange();}}
+  loadLaunch();renderJobInfoBar();applyLaunchSpecs();rebuildAreaDropdowns();initAutosave();
 });
 </script>
 </body>
