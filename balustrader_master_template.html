@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Balustrader — Master Template v1.33</title>
+<title>Balustrader — Master Template v1.34</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -113,7 +113,7 @@ const HR_STANCHION_FIX_OPTIONS = [
 
 const PRODUCT = {
   name:    '8-Line Horizontal — Top Mount',
-  version: 'v1.32',
+  version: 'v1.34',
   showInfillSelect:      true,
   showInfillFixing:      true,
   showFixingSelect:      true,
@@ -401,6 +401,10 @@ const PRODUCTS = [
         <input type="text" id="selDim" placeholder="e.g. 5300" autocomplete="off"/>
         <label>Label (optional)</label>
         <input type="text" id="selLabel" placeholder="e.g. Leg A" autocomplete="off"/>
+        <div id="selWallWrap" style="display:none">
+        <label>Wall height under balustrade (mm)</label>
+        <input type="text" id="selWall" placeholder="0 = no wall" autocomplete="off"/>
+        </div>
         <label>Area</label>
         <select id="selArea"></select>
         <label>Design</label>
@@ -458,6 +462,8 @@ const PRODUCTS = [
         <input type="text" id="runDimVal" placeholder="e.g. 5300" autocomplete="off"/>
         <label>Label (optional)</label>
         <input type="text" id="runLabelVal" placeholder="e.g. Leg A" autocomplete="off"/>
+        <label>Wall height under balustrade (mm)</label>
+        <input type="text" id="runWallVal" placeholder="0 = no wall" autocomplete="off"/>
         <label>Start end</label>
         <select id="runStartEnd"></select>
         <label>Finish end</label>
@@ -962,6 +968,7 @@ function openSelectPopup(idx,sx,sy){
   document.getElementById('selLabel').value=l.label||'';
   rebuildSecDropdown();document.getElementById('selSection').value=l.sectionId?String(l.sectionId):'';rebuildAreaDropdowns();document.getElementById('selArea').value=l.areaId&&findArea(l.areaId)?String(l.areaId):'';
   document.getElementById('stairDirRow').style.display=isStair?'block':'none';
+  document.getElementById('selWallWrap').style.display=(!isStair&&!isHr)?'block':'none';document.getElementById('selWall').value=l.wallH?String(l.wallH):'';
   if(isStair){document.getElementById('selDir').value=l.dir||'LH';document.getElementById('selBottomType').value=l.bottomType||'free';document.getElementById('selTopType').value=l.topType||'turn';}
   const sEl=document.getElementById('selStartEnd'),eEl=document.getElementById('selEndEnd');
   if(isHr){
@@ -978,7 +985,9 @@ function openSelectPopup(idx,sx,sy){
 }
 function saveSelect(){
   if(selectedIdx===null)return;
+  let selWh=0;if(lines[selectedIdx].type==='run'){selWh=readWallInput('selWall');if(selWh===null)return;}
   pushHistory();
+  if(lines[selectedIdx].type==='run')lines[selectedIdx].wallH=selWh;
   const v=document.getElementById('selDim').value.trim();
   lines[selectedIdx].dim=v?v.replace('mm','')+'mm':'';lines[selectedIdx].label=document.getElementById('selLabel').value.trim();
   lines[selectedIdx].sectionId=document.getElementById('selSection').value||null;
@@ -1020,8 +1029,8 @@ function swapSelEnds(){
   if(selectedIdx!==null){const l=lines[selectedIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}
 }
 
-function openRunPopup(idx,sx,sy){document.getElementById('runDimVal').value='';document.getElementById('runLabelVal').value='';document.getElementById('runStartEnd').value='wall';document.getElementById('runEndEnd').value='wall';placePopup('runPopup',sx,sy);setTimeout(()=>document.getElementById('runDimVal').focus(),30);}
-function saveRun(){const idx=pendingIdx;if(idx===null)return;const v=document.getElementById('runDimVal').value.trim();lines[idx].dim=v?v.replace('mm','')+'mm':'';lines[idx].label=document.getElementById('runLabelVal').value.trim();lines[idx].startEnd=document.getElementById('runStartEnd').value;lines[idx].endEnd=document.getElementById('runEndEnd').value;closeAll();redraw();}
+function openRunPopup(idx,sx,sy){document.getElementById('runDimVal').value='';document.getElementById('runLabelVal').value='';document.getElementById('runWallVal').value='';document.getElementById('runStartEnd').value='wall';document.getElementById('runEndEnd').value='wall';placePopup('runPopup',sx,sy);setTimeout(()=>document.getElementById('runDimVal').focus(),30);}
+function saveRun(){const idx=pendingIdx;if(idx===null)return;const wh=readWallInput('runWallVal');if(wh===null)return;lines[idx].wallH=wh;const v=document.getElementById('runDimVal').value.trim();lines[idx].dim=v?v.replace('mm','')+'mm':'';lines[idx].label=document.getElementById('runLabelVal').value.trim();lines[idx].startEnd=document.getElementById('runStartEnd').value;lines[idx].endEnd=document.getElementById('runEndEnd').value;closeAll();redraw();}
 document.getElementById('runDimVal').addEventListener('keydown',e=>{if(e.key==='Enter')saveRun();if(e.key==='Escape')cancelPending();});
 function swapRunEnds(){const s=document.getElementById('runStartEnd').value,en=document.getElementById('runEndEnd').value;document.getElementById('runStartEnd').value=en;document.getElementById('runEndEnd').value=s;if(pendingIdx!==null){const l=lines[pendingIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}}
 
@@ -1174,7 +1183,7 @@ function redraw(){
     }
     if(l.dim&&zoom>0.35){
       const bg=isLight?'rgba(240,242,245,0.92)':'rgba(26,26,26,0.9)';
-      const dimTxt=l.label?`${l.label}  ${l.dim}`:l.dim;
+      const dimTxt=(l.label?`${l.label}  ${l.dim}`:l.dim)+(legWallH(l)?`  · wall ${legWallH(l)}`:'');
       let dlx,dly;if(horiz){dlx=mx;dly=my-18;}else{dlx=mx+52;dly=my;}
       ctx.save();const fs=Math.max(9,11*Math.min(zoom,1.3));ctx.font=`bold ${fs}px Courier New`;const tw=ctx.measureText(dimTxt).width;ctx.fillStyle=bg;ctx.fillRect(dlx-tw/2-4,dly-9,tw+8,16);ctx.fillStyle=sel?'#c8a028':baseColor;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(dimTxt,dlx,dly);
       if(l.type==='stairs'&&l.dir){const dfs=Math.max(8,10*Math.min(zoom,1.2));ctx.font=`bold ${dfs}px Courier New`;const dirLbl=l.dir+' up';const dtw=ctx.measureText(dirLbl).width;const gap=tw/2+dtw/2+10;const ddx=dlx+gap,ddy=dly;ctx.fillStyle=bg;ctx.fillRect(ddx-dtw/2-3,ddy-8,dtw+6,14);ctx.fillStyle=baseColor;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(dirLbl,ddx,ddy);}
@@ -1331,7 +1340,7 @@ function calculateHandrail(hrLegs){
   const cornerJoints=Math.round(joinedEndsTotal/2);
   const tubeStock=Math.ceil(totalTube/STOCK);
   let grout=0,rods=0,epoxy=0,flanges=0;
-  Object.keys(postCount).forEach(fix=>{const q=postCount[fix];if(fix==='top')grout+=Math.ceil(q/6)*2;else if(fix==='side'){rods+=q*2;epoxy+=Math.ceil(q/5);}else if(fix==='flange')flanges+=q;});
+  Object.keys(postCount).forEach(fix=>{const q=postCount[fix];if(fix==='top')grout+=Math.ceil(q/3)*2;else if(fix==='side'){rods+=q*2;epoxy+=Math.ceil(q/5);}else if(fix==='flange')flanges+=q;});
   let html=`<div class="jc-section"><div class="jc-section-title sec-hdr" style="background:#16a085aa;border-color:#16a085">HANDRAIL</div>`;
   html+=`<div class="jc-row"><span>Profile</span><span class="val">${profileLbls[profile]||profile}</span></div><div class="jc-row"><span>Material</span><span class="val">${material}</span></div>`;
   const hrLegGroups=new Map();const hrUngrouped=[];
@@ -1360,6 +1369,96 @@ function calculateHandrail(hrLegs){
     coverPlates:totalCoverPlates,grout,rods,epoxy,flanges};
   return {html,text,legRows,sage};
 }
+
+// ── Balustrade on top of a wall (v1.34) ───────────────────────────────────
+// Per-run wall height (mm, 0 = none). Finished height stays 1000mm from the
+// floor, so every post on that run is shorter by the wall height and fewer
+// infill lines fit. Holes stay at 100mm centres from the top; the bottom ones
+// are dropped (lines = base - floor(wall/100)). Stairs and handrails never
+// carry a wall height. Post COUNT and TYPES are unchanged.
+function readWallInput(id){
+  const raw=(document.getElementById(id).value||'').replace(/mm/i,'').trim();
+  if(!raw)return 0;
+  const n=parseInt(raw,10);
+  if(isNaN(n)||n<0||String(n)!==raw.replace(/^0+(?=\d)/,'')){alert('Wall height must be a whole number in mm (leave blank or 0 for no wall).');return null;}
+  if(n>=900){alert('A '+n+'mm wall leaves no room for a post under the 1000mm finished height. Check whether a balustrade is needed here at all, or draw this run without a wall.');return null;}
+  return n;
+}
+function legWallH(l){return l&&l.type==='run'?(parseInt(l.wallH,10)||0):0;}
+function wallLines(base,l){const w=legWallH(l);if(!w||!base)return base;return Math.max(0,base-Math.floor(w/100));}
+function basePostLen(fixing){return fixing==='top'?1000:fixing==='side'?1150:900;}
+// Base line count for a resolved leg: 9 cable, 0 glass, 8 otherwise (as before).
+function baseLinesFor(res){return res.infill==='cable-9'?9:((res.infill==='glass-8mm'||res.infill==='glass-10mm'||isVerticalInfill(res.infill))?0:8);}
+// Posts on wall runs, grouped by post length, using the same type rules and
+// corner sharing as the job card (absorbed connected ends are skipped so a
+// shared corner is only counted once).
+function wallPostGroups(sl,res,stairJunctionMap,cornerResolution){
+  const jKey=(x,y)=>`${Math.round(x*2)/2},${Math.round(y*2)/2}`;
+  const isPH=(res.infill==='15.88-8'||res.infill==='12.7-8')&&res.infillFix==='side';
+  const isCable=res.infill==='cable-9';
+  const cornerEnd=v=>v==='connected'||v==='outside-capped'||v==='outside-continuous';
+  const groups=new Map();const warn=[];
+  sl.filter(l=>legWallH(l)>0).forEach(l=>{
+    const w=legWallH(l);const len=basePostLen(res.fixing)-w;
+    if(!groups.has(len))groups.set(len,{len,wall:w,types:{},total:0,legs:[]});
+    const g=groups.get(len);g.legs.push(l.label||'Run');
+    const n=l.rawPosts;
+    for(let i=0;i<n;i++){
+      const isStart=i===0,isEnd=i===n-1;
+      if(isStart&&l.startEnd==='connected'&&!stairJunctionMap.get(jKey(l.x1,l.y1))&&cornerStatus(cornerResolution,l,'start')==='absorbed')continue;
+      if(isEnd&&l.endEnd==='connected'&&!stairJunctionMap.get(jKey(l.x2,l.y2))&&cornerStatus(cornerResolution,l,'end')==='absorbed')continue;
+      let t;
+      if(isPH)t='13';else if(isCable)t='12';
+      else if(isStart){const jt=stairJunctionMap.get(jKey(l.x1,l.y1));t=jt||(cornerEnd(l.startEnd)?'10':'11');}
+      else if(isEnd){const jt=stairJunctionMap.get(jKey(l.x2,l.y2));t=jt||(cornerEnd(l.endEnd)?'10':'11');}
+      else t='12';
+      g.types[t]=(g.types[t]||0)+1;g.total++;
+    }
+    // A corner joining runs on different wall heights: flag it, the post height there needs a site decision.
+    [['start',l.x1,l.y1],['end',l.x2,l.y2]].forEach(([which,x,y])=>{
+      if((which==='start'?l.startEnd:l.endEnd)!=='connected')return;
+      const other=lines.find(o=>o!==l&&o._src!==l&&o.type!=='handrail'&&o.dim&&((Math.abs(o.x1-x)<1&&Math.abs(o.y1-y)<1)||(Math.abs(o.x2-x)<1&&Math.abs(o.y2-y)<1))&&!(o.x1===l.x1&&o.y1===l.y1&&o.x2===l.x2&&o.y2===l.y2));
+      if(other&&legWallH(other)!==w){const k=(l.label||'Run')+'/'+(other.label||(other.type==='stairs'?'Stairs':'Run'));if(!warn.includes(k))warn.push(k);}
+    });
+  });
+  return{groups:[...groups.values()].sort((a,b)=>b.len-a.len),warn};
+}
+// ── Vertical balustrade (v1.34) ───────────────────────────────────────────
+// Locked June 2026: 2-hole stanchions, sub-rails top + bottom running between
+// stanchions (stop-start at every post, no bends, no joiners), vertical infills
+// evenly spaced with max 100mm air gap. Per opening, measured inside face to
+// inside face of the stanchions: gaps = ceil(opening / 100), infills = gaps - 1.
+// Infills are cut on site; stock is estimated from an 800mm cut (850mm side
+// mount), less any wall height. Sub-rail metres = sum of openings x sub-rails.
+function isVerticalInfill(inf){return typeof inf==='string'&&inf.startsWith('v-');}
+const POST_FACE_MM={round38:38.1,round50:50.8,sq40:40,sq50:50,rect50x25:25};
+function vertSpecFor(res){
+  const inf=res.infill;
+  if(inf==='v-25.1-12.7')return{subLbl:'25.1mm round',subCount:2,upLbl:'12.7mm round',upD:12.7,custom:false};
+  if(inf==='v-25x25-15x15')return{subLbl:'25x25mm square',subCount:2,upLbl:'15x15mm square',upD:15,custom:false};
+  if(inf==='v-custom'){
+    const g=id=>{const el=document.getElementById(id);return el?el.value:'';};
+    const sub=g('cvSubrail')||'topbtm';const size=g('cvSubrailSize')||'25.4r';const up=g('cvUpright')||'15.88';
+    const subLbls={'38.1r':'38.1mm round','31r':'31mm round','25.4r':'25.4mm round','40sq':'40x40mm square','25sq':'25x25mm square'};
+    const upD=up==='15sq'?15:parseFloat(up)||15.88;
+    return{subLbl:subLbls[size]||size,subCount:sub==='topbtm'?2:sub==='btmonly'?1:0,upLbl:up==='15sq'?'15x15mm square':up+'mm round',upD,custom:true,spacing:Math.min(100,parseInt(g('cvSpacing'),10)||80)};
+  }
+  return{subLbl:'25.1mm round',subCount:2,upLbl:'15.88mm round',upD:15.88,custom:false};
+}
+function vertCutLen(res,l){return (res.fixing==='side'?850:800)-legWallH(l);}
+function vertLeg(l,res,spec){
+  const face=POST_FACE_MM[res.post]||38.1;
+  const n=Math.max(1,l.openings);const cc=l.eff/n;const open=Math.max(0,cc-face);
+  let k;
+  if(spec.custom)k=Math.max(0,Math.ceil((open-spec.upD)/(spec.spacing+spec.upD)));
+  else k=Math.max(0,Math.ceil(open/100)-1);
+  const gap=(open-k*spec.upD)/(k+1);
+  const cut=vertCutLen(res,l);
+  return{n,open,k,gap,infills:k*n,cut,infillMm:k*n*cut,subMm:open*n*spec.subCount};
+}
+
+const WALL_TYPE_ORDER=['1LH','1RH','2LH','2RH','3LH','3RH','4','5','6','7','8','9','10','11','12','13'];
+function wallTypesText(types){return WALL_TYPE_ORDER.filter(t=>types[t]).map(t=>'Type '+t+' x'+types[t]).join(', ');}
 
 function calculate(){
   clearSettingsWarn();
@@ -1457,7 +1556,11 @@ function calculate(){
     const sRes=sid?sl[0].res:{cfg:activeConfig,infill,infillFix,fixing,post,rail,material:mat,productValue:currentProductValue};
     const sIsGlassInfill=sRes.infill==='glass-8mm'||sRes.infill==='glass-10mm';
     const sIsCableInfill=sRes.infill==='cable-9';
-    const sLc=sIsCableInfill?9:(sIsGlassInfill?0:8);
+    const sIsVert=isVerticalInfill(sRes.infill);const sVSpec=sIsVert?vertSpecFor(sRes):null;
+    const sLc=sIsCableInfill?9:((sIsGlassInfill||sIsVert)?0:8);
+    const sVLegs=sIsVert?sl.map(l=>({l,v:vertLeg(l,sRes,sVSpec)})):[];
+    const sVInfills=sVLegs.reduce((s,x)=>s+x.v.infills,0),sVInfillMm=sVLegs.reduce((s,x)=>s+x.v.infillMm,0),sVSubMm=sIsVert?Math.round(sVLegs.reduce((s,x)=>s+x.v.subMm,0)):0;
+    const sVGapFail=sVLegs.filter(x=>x.v.gap>100);
     const sSTOCK=sRes.cfg.stockLength;
     const sHasTopRail=sRes.infill!=='glass-10mm';
     const sIsDIY=sRes.cfg.showInfillFixing;
@@ -1477,7 +1580,8 @@ function calculate(){
     const sStairShared=sRes.cfg.sharedPosts?Math.round(sStairConnEnds/2):0;
     const sShared=sRunAbsorbed+sStairShared;const sTotal=sRaw-sShared;
     const sGlassPanels=sIsGlassInfill?sl.reduce((s,l)=>s+l.openings,0):0;const sGlassClamps=sGlassPanels*4;
-    const sRail=sl.reduce((s,l)=>s+l.dim,0);const sInfill=!sIsGlassInfill?sRail*sLc:0;
+    const sRail=sl.reduce((s,l)=>s+l.dim,0);const sInfill=!sIsGlassInfill?sl.reduce((s,l)=>s+l.dim*wallLines(sLc,l),0):0;
+    const sWallLegs=sl.filter(l=>legWallH(l)>0);const sWall=sWallLegs.length?wallPostGroups(sl,sRes,stairJunctionMap,cornerResolution):null;
     const sRailSt=Math.ceil(sRail/sSTOCK);const sInfillSt=sInfill>0?Math.ceil(sInfill/sSTOCK):0;
     const sOutsideCap=sl.reduce((s,l)=>s+(l.startEnd==='outside-capped'?1:0)+(l.endEnd==='outside-capped'?1:0),0);
     const sOutsideCont=sl.reduce((s,l)=>s+(l.startEnd==='outside-continuous'?1:0)+(l.endEnd==='outside-continuous'?1:0),0);
@@ -1485,40 +1589,58 @@ function calculate(){
     const sContCorners=Math.round(sOutsideCont/2);const sRailBends=sHasTopRail?sTotalOutside:0;
     const sFlexi=(sIsDIY&&sIsPD&&!sIsCableInfill&&!sIsGlassInfill&&sLc>0)?sContCorners*sLc:0;
     const sEC=sShowEC?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?1:0)+(l.endEnd==='wall'||l.endEnd==='free'?1:0),0):0;
-    const sInfillEC=(sIsDIY&&!sIsCableInfill&&!sIsGlassInfill&&sLc>0)?sl.reduce((s,l)=>s+(l.startEnd==='wall'||l.startEnd==='free'?sLc:0)+(l.endEnd==='wall'||l.endEnd==='free'?sLc:0)+(l.startEnd==='outside-capped'?sLc:0)+(l.endEnd==='outside-capped'?sLc:0),0):0;
+    const sInfillEC=(sIsDIY&&!sIsCableInfill&&!sIsGlassInfill&&sLc>0)?sl.reduce((s,l)=>{const lc=wallLines(sLc,l);return s+(l.startEnd==='wall'||l.startEnd==='free'?lc:0)+(l.endEnd==='wall'||l.endEnd==='free'?lc:0)+(l.startEnd==='outside-capped'?lc:0)+(l.endEnd==='outside-capped'?lc:0);},0):0;
     const sJoiners=sl.filter(l=>l.dim>sSTOCK).length;
     // v1.29 cable: swage on every termination end, 1 per hole (x9). Continuous
     // corners don't terminate — cable passes through a bend tube per line.
     const sCableEnds=sIsCableInfill?sl.reduce((s,l)=>s+(l.startEnd!=='outside-continuous'?1:0)+(l.endEnd!=='outside-continuous'?1:0),0):0;
-    const sSwages=sCableEnds*sLc;const sCableBends=sIsCableInfill?sContCorners*sLc:0;
+    const sSwages=sIsCableInfill?sl.reduce((s,l)=>s+((l.startEnd!=='outside-continuous'?1:0)+(l.endEnd!=='outside-continuous'?1:0))*wallLines(sLc,l),0):0;const sCableBends=sIsCableInfill?sContCorners*sLc:0;
     const sTypes=getPostTypes(sl,stairJunctionMap,cornerResolution);
     let h=`<div class="jc-section"><div class="jc-section-title sec-hdr" style="background:${sColor}aa;border-color:${sColor}">${sName}${sid?' — '+sRes.cfg.name:''}</div>`;
     if(sid){
       const legGroups=new Map();
-      sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');const key=lbl+'|'+l.dim+'|'+l.rawPosts;if(!legGroups.has(key))legGroups.set(key,{lbl,dim:l.dim,rawPosts:l.rawPosts,count:0});legGroups.get(key).count++;});
-      legGroups.forEach(g=>{const suf=g.count>1?` ×${g.count}`:'';h+=`<div class="jc-row"><span>${g.lbl} ${toM(g.dim)}${suf}</span><span class="val">${g.rawPosts*g.count} posts</span></div>`;});
+      sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');const key=lbl+'|'+l.dim+'|'+l.rawPosts+'|'+legWallH(l);if(!legGroups.has(key))legGroups.set(key,{lbl,dim:l.dim,rawPosts:l.rawPosts,wall:legWallH(l),count:0});legGroups.get(key).count++;});
+      legGroups.forEach(g=>{const suf=g.count>1?` ×${g.count}`:'';h+=`<div class="jc-row"><span>${g.lbl} ${toM(g.dim)}${suf}${g.wall?` · on ${g.wall}mm wall`:''}</span><span class="val">${g.rawPosts*g.count} posts</span></div>`;});
     }else{
-      sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');h+=`<div class="jc-row"><span>${lbl} ${toM(l.dim)}</span><span class="val">${l.rawPosts} posts</span></div>`;});
+      sl.forEach(l=>{const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');h+=`<div class="jc-row"><span>${lbl} ${toM(l.dim)}${legWallH(l)?` · on ${legWallH(l)}mm wall`:''}</span><span class="val">${l.rawPosts} posts</span></div>`;});
     }
     h+=`<div class="jc-row" style="font-size:10px"><span>Posts (${sRaw}-${sShared} shared)</span><span class="val">${sTotal}</span></div>`;
     const sShowCoverPlates=sRes.fixing!=='side';
     if(mode==='full'){const hasTypes=typeOrder.some(t=>sTypes[t]);if(hasTypes){h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Post types</div>`;typeOrder.forEach(t=>{if(!sTypes[t])return;h+=`<div class="jc-row"><span style="font-size:10px">${typeNames[t]||'Type '+t}</span><span class="val">${sTypes[t]}</span></div>`;});if(sShowCoverPlates)h+=`<div class="jc-row"><span>Cover plates (domed)</span><span class="val">${sTotal}</span></div>`;}}
     else{const typeParts=typeOrder.filter(t=>sTypes[t]).map(t=>`${t} x${sTypes[t]}`);if(typeParts.length){h+=`<div class="jc-row" style="font-size:10px"><span style="color:var(--text4)">Types:</span><span class="val" style="font-size:10px;white-space:normal;text-align:right">${typeParts.join('  ')}</span></div>`;}if(sShowCoverPlates)h+=`<div class="jc-row" style="font-size:10px"><span>Cover plates</span><span class="val">${sTotal}</span></div>`;}
     h+=`<div class="jc-row"><span>Top rail</span><span class="val">${toM(sRail)} / ${sRailSt}x${toM(sSTOCK)}</span></div>`;
-    if(sInfill>0){if(sIsCableInfill){h+=`<div class="jc-row"><span>Cable x${sLc} lines</span><span class="val">${toM(sInfill)}</span></div>`;if(sSwages>0)h+=`<div class="jc-row"><span>Cable swages (${sCableEnds} ends x${sLc})</span><span class="val">${sSwages}</span></div>`;if(sCableBends>0)h+=`<div class="jc-row"><span>Cable bend tubes (corners)</span><span class="val">${sCableBends}</span></div>`;}else h+=`<div class="jc-row"><span>Infill x${sLc} lines</span><span class="val">${toM(sInfill)} / ${sInfillSt}x${toM(sSTOCK)}</span></div>`;}
+    if(sInfill>0){if(sIsCableInfill){h+=`<div class="jc-row"><span>Cable x${sLc} lines</span><span class="val">${toM(sInfill)}</span></div>`;if(sSwages>0)h+=`<div class="jc-row"><span>Cable swages (${sCableEnds} ends x${sLc})</span><span class="val">${sSwages}</span></div>`;if(sCableBends>0)h+=`<div class="jc-row"><span>Cable bend tubes (corners)</span><span class="val">${sCableBends}</span></div>`;}else h+=`<div class="jc-row"><span>Infill x${sLc} lines${sWall?' (fewer on wall runs)':''}</span><span class="val">${toM(sInfill)} / ${sInfillSt}x${toM(sSTOCK)}</span></div>`;}
+    if(sIsVert){
+      if(mode==='full'){h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">Vertical infill per run</div>`;
+        sVLegs.forEach(({l,v})=>{h+=`<div class="jc-row" style="font-size:10px"><span>${l.label||(l.type==='stairs'?'Stairs':'Run')}: ${v.n} openings x ${Math.round(v.open)}mm clear, ${v.k} infills each, gap ${Math.round(v.gap)}mm</span><span class="val">${v.infills}</span></div>`;});}
+      h+=`<div class="jc-row"><span>Vertical infills ${sVSpec.upLbl}</span><span class="val">${sVInfills}</span></div>`;
+      if(sVInfillMm>0)h+=`<div class="jc-row"><span>Infill stock (cut on site, est. ${vertCutLen(sRes,{})}mm cuts)</span><span class="val">${toM(sVInfillMm)} / ${Math.ceil(sVInfillMm/sSTOCK)}x${toM(sSTOCK)}</span></div>`;
+      if(sVSubMm>0)h+=`<div class="jc-row"><span>Sub-rails ${sVSpec.subLbl} x${sVSpec.subCount}</span><span class="val">${toM(sVSubMm)} / ${Math.ceil(sVSubMm/sSTOCK)}x${toM(sSTOCK)}</span></div>`;
+      if(sVGapFail.length)h+=`<div class="jc-alert">Air gap over 100mm on ${sVGapFail.map(x=>x.l.label||'run').join(', ')} — reduce the custom spacing.</div>`;
+      if(sl.some(l=>l.type==='stairs'))h+=`<div class="jc-row" style="font-size:10px"><span>Stair runs measured along the rake — infill count is on the safe side; cut lengths confirmed on site.</span></div>`;
+    }
     if(sGlassPanels>0)h+=`<div class="jc-row"><span>Glass panels (est.)</span><span class="val">${sGlassPanels}</span></div><div class="jc-row"><span>D-clamps (${sGlassClampBack})</span><span class="val">${sGlassClamps}</span></div>`;
+    if(sWall){
+      h+=`<div style="margin:5px 0 3px 0;font-size:9px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:var(--text4);border-bottom:1px solid var(--border);padding-bottom:2px">On walls — included in the counts above</div>`;
+      sWall.groups.forEach(g=>{const lc=sIsGlassInfill?0:Math.max(0,sLc-Math.floor(g.wall/100));h+=`<div class="jc-row"><span style="font-size:10px">${g.legs.join(', ')} — ${g.wall}mm wall: ${wallTypesText(g.types)}</span><span class="val">${g.len}mm posts</span></div>`;if(sLc>0)h+=`<div class="jc-row" style="font-size:10px"><span>${sIsCableInfill?'Cables':'Infill lines'} on these runs</span><span class="val">${lc}</span></div>`;});
+      if(sIsGlassInfill)h+=`<div class="jc-row" style="font-size:10px"><span>Glass panels on walls are shorter — measure on site</span></div>`;
+      if(sIsVert)sWall.groups.forEach(g=>{h+=`<div class="jc-row" style="font-size:10px"><span>Vertical infill cut on ${g.wall}mm wall</span><span class="val">~${vertCutLen(sRes,{type:'run',wallH:g.wall})}mm</span></div>`;});
+      if(sRes.fixing==='top')h+=`<div class="jc-alert">Core drill on wall top: wall must be at least 160mm wide (post centred, min 80mm from centre to each edge).</div>`;
+      if(!sIsGlassInfill&&sLc>0)h+=`<div class="jc-row" style="font-size:10px"><span>Standard posts cut from the bottom (top holes kept), or order custom posts drilled evenly with max 100mm gaps.</span></div>`;
+      if(sWall.warn.length)h+=`<div class="jc-alert">Corner between runs on different wall heights (${sWall.warn.join('; ')}) — confirm the corner post height on site.</div>`;
+    }
     if(sRailBends>0)h+=`<div class="jc-row"><span>Top rail bends</span><span class="val">${sRailBends}</span></div>`;
     if(sFlexi>0)h+=`<div class="jc-row"><span>Infill flexi bends</span><span class="val">${sFlexi}</span></div>`;
     if(sEC>0)h+=`<div class="jc-row"><span>Rail end caps</span><span class="val">${sEC}</span></div>`;
     if(sInfillEC>0)h+=`<div class="jc-row"><span>Infill end caps ${sInfillEndCapSize}</span><span class="val">${sInfillEC}</span></div>`;
     let sFixHtml='',sFixText='';
-    if(sRes.fixing==='top'){const grout=Math.ceil(sTotal/6)*2;sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Core drill + grout</span></div><div class="jc-row"><span>Non-shrink grout</span><span class="val">${grout}kg</span></div>`;sFixText=`Fixing: Core drill + grout, ${grout}kg`;}
+    if(sRes.fixing==='top'){const grout=Math.ceil(sTotal/3)*2;sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Core drill + grout</span></div><div class="jc-row"><span>Non-shrink grout</span><span class="val">${grout}kg</span></div>`;sFixText=`Fixing: Core drill + grout, ${grout}kg`;}
     else if(sRes.fixing==='side'){const rods=sTotal*2,epoxy=Math.ceil(sTotal/5);sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Side mount — M10 rod</span></div><div class="jc-row"><span>M10 rods x2</span><span class="val">${rods}</span></div><div class="jc-row"><span>Epoxy 300ml</span><span class="val">${epoxy}</span></div>`;sFixText=`Fixing: Side mount, ${rods} rods, ${epoxy}x300ml epoxy`;}
     else if(sRes.fixing==='pinfix'){const rods=Math.ceil(sTotal/6),epoxy=Math.ceil(sTotal/10);sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Pin fix — M16 rod</span></div><div class="jc-row"><span>Rod stock</span><span class="val">${rods}x1m</span></div><div class="jc-row"><span>Epoxy 300ml</span><span class="val">${epoxy}</span></div><div class="jc-row"><span>Grommets</span><span class="val">${sTotal}</span></div>`;sFixText=`Fixing: Pin fix, ${rods}x1m rod, ${epoxy}x300ml epoxy, ${sTotal} grommets`;}
     else{sFixHtml=`<div class="jc-row"><span>Fixing</span><span class="val">Flange plate</span></div><div class="jc-row"><span>Flange plates</span><span class="val">${sTotal}</span></div>`;sFixText=`Fixing: Flange plate x${sTotal}`;}
     h+=sFixHtml;
     h+=`</div>`;
-    if(accum){accum.rail+=sRail;accum.infill+=sInfill;accum.glassPanels+=sGlassPanels;accum.railBends+=sRailBends;accum.flexi+=sFlexi;accum.ec+=sEC;accum.infillEc+=sInfillEC;accum.joiners+=sJoiners;}
+    if(accum){accum.rail+=sRail;accum.infill+=sInfill;accum.glassPanels+=sGlassPanels;accum.railBends+=sRailBends;accum.flexi+=sFlexi;accum.ec+=sEC;accum.infillEc+=sInfillEC;accum.joiners+=sJoiners;accum.vInfills+=sVInfills;accum.vInfillMm+=sVInfillMm;accum.vSubMm+=sVSubMm;}
     if(accum&&accum.sage){
       const S=accum.sage;const sMat=sRes.material;
       const sPostLbl=postLbls[sRes.post]||sRes.post;const sRailLbl=railLbls[sRes.rail]||sRes.rail;
@@ -1530,6 +1652,7 @@ function calculate(){
         if(sIsCableInfill){S.add('Infill','Cable 4mm 1x19','Grade 316 stainless',Math.ceil(sInfill/1000),'m');S.add('Infill','Cable swage fitting','4mm, Grade 316',sSwages,'ea');S.add('Infill','Cable bend tube (continuous corner)','4mm cable, Grade 316',sCableBends,'ea');}
         else{const iSize=sRes.infill==='15.88-8'?'15.88mm round':sRes.infill==='12.7-8'?'12.7mm round':(infillLbls[sRes.infill]||sRes.infill);S.tube(iSize,sMat,sInfill,'infill',sSTOCK);}
       }
+      if(sIsVert){if(sVInfillMm>0)S.tube(sVSpec.upLbl,sMat,sVInfillMm,'vertical infill',sSTOCK);if(sVSubMm>0)S.tube(sVSpec.subLbl,sMat,sVSubMm,'sub-rail',sSTOCK);}
       if(sGlassPanels>0){S.add('Glass','Glass panel',(sRes.infill==='glass-10mm'?'10mm':'8mm')+' TSG — estimate, confirm sizes on site',sGlassPanels,'ea');S.add('Glass','D-clamp '+sGlassClampBack,sMat,sGlassClamps,'ea');}
       if(sHasTopRail){
         S.add('Fittings','Top rail bend',sRailLbl+', '+sMat,sRailBends,'ea');
@@ -1540,12 +1663,14 @@ function calculate(){
       S.add('Fittings','End cap',sInfillEndCapSize+' round, '+sMat,sInfillEC,'ea');
     }
     let t=`\n${sName}${sid?' — '+sRes.cfg.name:''}\n${'─'.repeat(20)}\n`;
-    sl.forEach(l=>{t+=`  ${l.label||(l.type==='stairs'?'Stairs':'Run')} ${toM(l.dim)}\n`;});
+    sl.forEach(l=>{t+=`  ${l.label||(l.type==='stairs'?'Stairs':'Run')} ${toM(l.dim)}${legWallH(l)?` (on ${legWallH(l)}mm wall)`:''}\n`;});
     t+=`  Posts: ${sTotal} (${sRaw}-${sShared} shared)\n`;
     const sTypeSummary=typeOrder.filter(tt=>sTypes[tt]).map(tt=>`    ${typeNames[tt]||'Type '+tt}: ${sTypes[tt]}`).join('\n');
     if(sTypeSummary)t+=sTypeSummary+'\n';
     t+=`  Top rail: ${toM(sRail)}\n`;
-    if(sInfill>0)t+=`  Infill x${sLc}: ${toM(sInfill)}\n`;
+    if(sInfill>0)t+=`  Infill x${sLc}${sWall?' (fewer on wall runs)':''}: ${toM(sInfill)}\n`;
+    if(sWall)sWall.groups.forEach(g=>{t+=`  On ${g.wall}mm wall (${g.legs.join(', ')}): ${wallTypesText(g.types)} @ ${g.len}mm${sLc>0&&!sIsGlassInfill?`, ${Math.max(0,sLc-Math.floor(g.wall/100))} lines`:''}\n`;});
+    if(sIsVert){t+=`  Vertical infills ${sVSpec.upLbl}: ${sVInfills} (${toM(sVInfillMm)} stock, cut on site)\n`;if(sVSubMm>0)t+=`  Sub-rails ${sVSpec.subLbl} x${sVSpec.subCount}: ${toM(sVSubMm)}\n`;}
     if(sGlassPanels>0)t+=`  Glass panels: ${sGlassPanels} / D-clamps (${sGlassClampBack}): ${sGlassClamps}\n`;
     t+=`  ${sFixText}\n`;
     return{html:h,text:t};
@@ -1555,7 +1680,7 @@ function calculate(){
   const alertHtml=alerts.length?`<div class="jc-alert">${alerts.join('<br>')}</div>`:'';
   const settingsHtml=unsec.length?`<div class="jc-section"><div class="jc-section-title">Toolbar settings — lines with no design</div><div class="jc-row"><span>Product</span><span class="val">${activeConfig.name}</span></div><div class="jc-row"><span>Infill</span><span class="val">${infillLbls[infill]||infill}</span></div><div class="jc-row"><span>Post</span><span class="val">${postLbls[post]||post}</span></div><div class="jc-row"><span>Top rail</span><span class="val">${railLbls[rail]||rail}</span></div><div class="jc-row"><span>Material</span><span class="val">${mat}</span></div></div>`:'';
 
-  const accum={rail:0,infill:0,glassPanels:0,railBends:0,flexi:0,ec:0,infillEc:0,joiners:0,sage:newSageList()};
+  const accum={vInfills:0,vInfillMm:0,vSubMm:0,rail:0,infill:0,glassPanels:0,railBends:0,flexi:0,ec:0,infillEc:0,joiners:0,sage:newSageList()};
   let html=alertHtml+settingsHtml,htmlSide=alertHtml+settingsHtml;
   const sectionTexts=[];
   // v1.32: Area first, Design second. Lines tagged to an area that no longer
@@ -1585,6 +1710,8 @@ function calculate(){
   const railStock=accum.rail>0?Math.ceil(accum.rail/STOCK):0;
   const infillStock=accum.infill>0?Math.ceil(accum.infill/STOCK):0;
   let totalsHtml=`<div class="jc-section"><div class="jc-section-title">Job totals</div><div class="jc-total"><span>Total posts</span><span>${totalPosts}</span></div><div class="jc-row"><span>Top rail total</span><span class="val">${toM(accum.rail)} / ${railStock}x${toM(STOCK)}</span></div>`;
+  if(accum.vInfills>0)totalsHtml+=`<div class="jc-row"><span>Vertical infills</span><span class="val">${accum.vInfills} (${toM(accum.vInfillMm)})</span></div>`;
+  if(accum.vSubMm>0)totalsHtml+=`<div class="jc-row"><span>Sub-rail total</span><span class="val">${toM(accum.vSubMm)}</span></div>`;
   if(accum.infill>0)totalsHtml+=`<div class="jc-row"><span>Infill/cable total</span><span class="val">${toM(accum.infill)}${infillStock?' / '+infillStock+'x'+toM(STOCK):''}</span></div>`;
   if(accum.glassPanels>0)totalsHtml+=`<div class="jc-row"><span>Glass panels (est.)</span><span class="val">${accum.glassPanels}</span></div>`;
   if(accum.railBends>0)totalsHtml+=`<div class="jc-row"><span>Top rail bends</span><span class="val">${accum.railBends}</span></div>`;
@@ -1627,7 +1754,7 @@ function calculate(){
     });
     Object.entries(mountPosts).forEach(([mnt,n])=>{
       if(!n)return;
-      if(mnt==='top')S.add('Fixing','Non-shrink grout','',Math.ceil(n/6)*2,'kg');
+      if(mnt==='top')S.add('Fixing','Non-shrink grout','',Math.ceil(n/3)*2,'kg');
       else if(mnt==='side'){S.add('Fixing','Threaded rod M10 x 150mm','',n*2,'ea');S.add('Fixing','Chemical epoxy 300ml','',Math.ceil(n/5),'tubes');}
       else if(mnt==='pinfix'){S.add('Fixing','Threaded rod M16 x 1m','',Math.ceil(n/6),'ea');S.add('Fixing','Chemical epoxy 300ml','',Math.ceil(n/10),'tubes');S.add('Fixing','Grommet — pin fix','M16',n,'ea');}
     });
@@ -1724,9 +1851,18 @@ function updateDsPreview(){
     const isPH=(sRes.infill==='15.88-8'||sRes.infill==='12.7-8')&&sRes.infillFix==='side';
     const isGlass=sRes.infill==='glass-8mm'||sRes.infill==='glass-10mm';const isCable=sRes.infill==='cable-9';
     const postHeight=sRes.fixing==='top'?'1000':sRes.fixing==='side'?'1150':'900';
-    const numHoles=isGlass?'2':isCable?'9':isPH?'0':'8';
-    const holeSize=isGlass?'11':isCable?'5':isPH?'—':'16';
-    return{name:sName,product:sRes.cfg.name,totalPosts:sTotal,types:sTypes,postHeight,holeSize,numHoles,postSize:sRes.post,mount:sRes.fixing,material:sRes.material,noPin:isGlass,weldPin:!isGlass,legsSummary:sl.map(l=>(l.label||l.type)+' '+l.dim+'mm').join(', ')};
+    const isVert=isVerticalInfill(sRes.infill);const vSpec=isVert?vertSpecFor(sRes):null;
+    const numHoles=isVert?String(vSpec.subCount):isGlass?'2':isCable?'9':isPH?'0':'8';
+    const holeSize=isVert?'':isGlass?'11':isCable?'5':isPH?'—':'16';
+    let notes='';
+    if(sl.some(l=>legWallH(l)>0)){
+      const wg=wallPostGroups(sl,sRes,stairJunctionMap,cornerResolution);
+      const baseLc=numHoles==='9'?9:numHoles==='8'?8:0;
+      notes=wg.groups.map(g=>`${wallTypesText(g.types)} @ ${g.len}mm long (${g.wall}mm wall)${baseLc?`, keep top ${Math.max(0,baseLc-Math.floor(g.wall/100))} holes (cut from bottom)`:''}`).join('; ')+'. Quantities above include these.';
+      if(wg.warn.length)notes+=' Confirm corner post height where wall heights change.';
+    }
+    if(isVert&&vSpec.subCount>0)notes=(vSpec.subCount===2?'2 holes for '+vSpec.subLbl+' sub-rails: top sub-rail top face 50mm below cap, bottom sub-rail underside 50mm above floor finish. Hole size to suit sub-rail. ':'1 hole for '+vSpec.subLbl+' bottom sub-rail, underside 50mm above floor finish. ')+notes;
+    return{notes,name:sName,product:sRes.cfg.name,totalPosts:sTotal,types:sTypes,postHeight,holeSize,numHoles,postSize:sRes.post,mount:sRes.fixing,material:sRes.material,noPin:isGlass,weldPin:!isGlass,legsSummary:sl.map(l=>(l.label||l.type)+' '+l.dim+'mm').join(', ')};
   }
 
   const dsSections=[];
@@ -1907,7 +2043,7 @@ function renderLayout(){
     const sec=sections.find(s=>String(s.id)===String(sid));const secName=sec?sec.name:'No design';const secColor=sec?sec.color:'#888';
     tableBodyHtml+=`<tr><td colspan="7" style="padding:5px 10px;background:${secColor};color:#fff;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;border:1px solid ${secColor}">${jiEsc(secName.toUpperCase())}${sec&&sec.settings?' — '+jiEsc(computeConfigForProduct(sec.settings.product).name):''}</td></tr>`;
     let secRawTotal=0,secRail=0,secInfill=0;
-    sLegs.forEach(leg=>{const l=leg._src;const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');secRawTotal+=leg.rawPosts;const railMm=parseInt(l.dim||0);const infillMm=railMm*8;secRail+=railMm;secInfill+=infillMm;tableBodyHtml+=`<tr style="background:#fff"><td style="padding:4px 8px;border:1px solid #e0e0e0;border-left:3px solid ${secColor};font-weight:bold">${lbl}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center;color:#666">${l.type==='stairs'?'Stairs':'Run'}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${l.dim||'—'}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center">${leg.rawPosts}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;font-size:10px">${leg._postTypesSummary||''}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${railMm}mm</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${infillMm}mm</td></tr>`;});
+    sLegs.forEach(leg=>{const l=leg._src;const lbl=l.label||(l.type==='stairs'?'Stairs':'Run');secRawTotal+=leg.rawPosts;const railMm=parseInt(l.dim||0);const infillMm=(leg.res&&isVerticalInfill(leg.res.infill))?Math.round(vertLeg(leg,leg.res,vertSpecFor(leg.res)).infillMm):railMm*wallLines(leg.res?baseLinesFor(leg.res):8,l);secRail+=railMm;secInfill+=infillMm;tableBodyHtml+=`<tr style="background:#fff"><td style="padding:4px 8px;border:1px solid #e0e0e0;border-left:3px solid ${secColor};font-weight:bold">${lbl}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center;color:#666">${l.type==='stairs'?'Stairs':'Run'}${legWallH(l)?' · '+legWallH(l)+'mm wall':''}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${l.dim||'—'}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:center">${leg.rawPosts}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;font-size:10px">${leg._postTypesSummary||''}</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${railMm}mm</td><td style="padding:4px 8px;border:1px solid #e0e0e0;text-align:right">${infillMm}mm</td></tr>`;});
     const connEnds=sLegs.reduce((s,leg)=>{const l=leg._src;return s+(l.startEnd==='connected'?1:0)+(l.endEnd==='connected'?1:0);},0);const secShared=Math.floor(connEnds/2);const secNet=secRawTotal-secShared;
     tableBodyHtml+=`<tr style="background:#f8f6ee;font-weight:bold"><td colspan="3" style="padding:4px 10px;border:1px solid #ddd;color:${secColor};font-size:10px">${jiEsc(secName)} total${secShared>0?' ('+secRawTotal+'-'+secShared+' shared)':''}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;color:#b8860b">${secNet}</td><td style="padding:4px 8px;border:1px solid #ddd"></td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#b8860b">${secRail}mm</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:right;color:#b8860b">${secInfill}mm</td></tr>`;
     aPosts+=secNet;aRail+=secRail;aInfill+=secInfill;
@@ -1999,7 +2135,7 @@ function applyLaunchSpecs(){
 // calculation is touched — the file only stores the inputs.
 // Job number BAL-YYMMDD-HHMM is created on the first save and never
 // changes; every later save is the next revision (rev1, rev2 ...).
-const TEMPLATE_VERSION='v1.33';
+const TEMPLATE_VERSION='v1.34';
 const JOB_FILE_FORMAT=1;
 const JOB_CONTROL_IDS=['infillSelect','infillFixingSelect','fixingSelect','postSelect','railSelect','materialSelect','hrProfileSelect','hrMaterialSelect','cvSubrail','cvSubrailSize','cvUpright','cvSpacing','cvLength'];
 let jobFile=null;          // {jobNo, rev, suburb, savedAt, revisions:[{rev,savedAt}]}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Balustrader — Frameless Glass v14</title>
+<title>Balustrader — Frameless Glass v15</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -100,7 +100,7 @@ canvas{display:block;width:100%;height:100%}
 </head>
 <body>
 
-<div class="instr" id="instr">Balustrader — Frameless Glass v14 | Select a tool then click and drag to draw.</div>
+<div class="instr" id="instr">Balustrader — Frameless Glass v15 | Select a tool then click and drag to draw.</div>
 <div id="jobInfoBar" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;padding:4px 10px;margin-bottom:4px;border:1px solid var(--border);border-radius:3px;background:var(--bg2)"></div>
 <div id="restoreBar" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;padding:5px 10px;margin-bottom:4px;border:1px solid #e6a817;border-radius:3px;background:rgba(230,168,23,0.12);color:var(--text)"></div>
 <div id="jobSaveOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:900;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)closeJobSaveDialog()">
@@ -202,6 +202,10 @@ canvas{display:block;width:100%;height:100%}
         <input type="text" id="selDim" placeholder="e.g. 3600" autocomplete="off"/>
         <label>Label (optional)</label>
         <input type="text" id="selLabel" placeholder="e.g. Pool side" autocomplete="off"/>
+        <div id="selWallWrap">
+        <label>Wall height under glass (mm)</label>
+        <input type="text" id="selWall" placeholder="0 = no wall" autocomplete="off"/>
+        </div>
         <label>Area</label>
         <select id="selArea"></select>
         <label>Design</label>
@@ -265,6 +269,8 @@ canvas{display:block;width:100%;height:100%}
         <input type="text" id="runDim" placeholder="e.g. 3600" autocomplete="off"/>
         <label>Label (optional)</label>
         <input type="text" id="runLabel" placeholder="e.g. Pool side" autocomplete="off"/>
+        <label>Wall height under glass (mm)</label>
+        <input type="text" id="runWall" placeholder="0 = no wall" autocomplete="off"/>
         <label>Start end ➜</label>
         <select id="runStartEnd">
           <option value="wall">Wall end</option>
@@ -526,7 +532,7 @@ function onMountChange(){
   // aluminium (no option to pick).
 
   document.getElementById('instr').textContent=
-    'Frameless Glass v14 — '+getMountName()+'  |  Run: click and drag. Popup asks for length, end types, glass and top finish.';
+    'Frameless Glass v15 — '+getMountName()+'  |  Run: click and drag. Popup asks for length, end types, glass and top finish.';
   redraw();
 }
 
@@ -558,7 +564,7 @@ function setTool(t){
     select:'Select: click to select, drag body to move, drag an endpoint dot to stretch/shorten, R = rotate 90, DEL = delete, double-click to edit.',
     pan:'Pan: click and drag to move. Scroll to zoom.'
   };
-  document.getElementById('instr').textContent='Frameless Glass v14 — '+getMountName()+'  |  '+(m[t]||t);
+  document.getElementById('instr').textContent='Frameless Glass v15 — '+getMountName()+'  |  '+(m[t]||t);
   canvas.style.cursor=t==='pan'?'grab':t==='select'?'pointer':'crosshair';
   redraw();
 }
@@ -738,6 +744,7 @@ function openSelectPopup(idx,sx,sy){
   document.getElementById('selDim').value=l.dim.replace('mm','');
   document.getElementById('selLabel').value=l.label||'';
   document.getElementById('selStairRow').style.display=isStair?'block':'none';
+  document.getElementById('selWallWrap').style.display=isStair?'none':'block';document.getElementById('selWall').value=l.wallH?String(l.wallH):'';
   if(isStair){document.getElementById('selDir').value=l.dir||'LH';document.getElementById('selTopType').value=l.topType||'turn';}
   document.getElementById('selStartEnd').value=l.startEnd||'wall';
   document.getElementById('selEndEnd').value=l.endEnd||'wall';
@@ -756,7 +763,9 @@ function openSelectPopup(idx,sx,sy){
 }
 function saveSelect(){
   if(selectedIdx===null)return;
+  let selWh=0;if(lines[selectedIdx].type!=='stairs'){selWh=readWallInput('selWall');if(selWh===null)return;}
   pushHistory();
+  if(lines[selectedIdx].type!=='stairs')lines[selectedIdx].wallH=selWh;
   const v=document.getElementById('selDim').value.trim();
   lines[selectedIdx].dim=v?v.replace('mm','')+'mm':'';
   lines[selectedIdx].label=document.getElementById('selLabel').value.trim();
@@ -779,9 +788,22 @@ function deleteLine(){if(selectedIdx===null)return;pushHistory();lines.splice(se
 function swapSelEnds(){const s=document.getElementById('selStartEnd').value;document.getElementById('selStartEnd').value=document.getElementById('selEndEnd').value;document.getElementById('selEndEnd').value=s;if(selectedIdx!==null){const l=lines[selectedIdx];[l.x1,l.x2]=[l.x2,l.x1];[l.y1,l.y2]=[l.y2,l.y1];redraw();}}
 document.getElementById('selDim').addEventListener('keydown',e=>{if(e.key==='Enter')saveSelect();if(e.key==='Escape')closeAll();});
 
+// ── Glass on top of a wall (v15) ──
+// Wall height is advisory for glass: spigot/bolt counts don't change, panels
+// are shorter and measured on site. 1000mm finished height stays from the floor.
+function readWallInput(id){
+  const raw=(document.getElementById(id).value||'').replace(/mm/i,'').trim();
+  if(!raw)return 0;
+  const n=parseInt(raw,10);
+  if(isNaN(n)||n<0||String(n)!==raw.replace(/^0+(?=\d)/,'')){alert('Wall height must be a whole number in mm (leave blank or 0 for no wall).');return null;}
+  if(n>=1000){alert('A '+n+'mm wall already reaches the 1000mm finished height. Check whether a balustrade is needed here at all.');return null;}
+  return n;
+}
+function legWallH(l){return l&&l.type!=='stairs'?(parseInt(l.wallH,10)||0):0;}
+
 // ── RUN POPUP ──
 function openRunPopup(idx,sx,sy){
-  document.getElementById('runDim').value='';document.getElementById('runLabel').value='';
+  document.getElementById('runDim').value='';document.getElementById('runLabel').value='';document.getElementById('runWall').value='';
   document.getElementById('runStartEnd').value='wall';document.getElementById('runEndEnd').value='wall';
   document.getElementById('runGlass').value='12';document.getElementById('runFinish').value='toprail';
   document.getElementById('runRailProfile').value='25x25';document.getElementById('runRailSub').style.display='block';
@@ -792,6 +814,7 @@ function openRunPopup(idx,sx,sy){
 }
 function saveRun(){
   const idx=pendingIdx;if(idx===null)return;
+  const wh=readWallInput('runWall');if(wh===null)return;lines[idx].wallH=wh;
   const v=document.getElementById('runDim').value.trim();
   lines[idx].dim=v?v.replace('mm','')+'mm':'';
   lines[idx].label=document.getElementById('runLabel').value.trim();
@@ -882,14 +905,15 @@ function calcChannelFixing(dimMm){
 
 // Concrete channel — grouted: 12mm TSG, no edge offset, 20mm gaps
 // panels = ceil((dim - 20) / 1220)
-// channel void per metre: (50×100 - 12×100)mm² = 3800mm² = 0.38L/m
-// grout kg: total_channel_mm / 1000 * 0.38 / 11 * 25  (11L per 25kg bag)
+// channel void per metre: (50×100 - 12×100)mm² = 3800mm² × 1000mm = 3.8L/m
+// v15: was 0.38L/m (10x too low). +10% waste. Grout CEM 60: 25kg bag yields 11L.
+// grout kg: total_channel_mm / 1000 * 3.8 * 1.1 / 11 * 25  (≈ 9.5kg per metre)
 function calcGroutChannelPanels(dimMm){
   const panels=Math.ceil((dimMm-20)/1220);
   return{panels};
 }
 function calcGroutChannelGrout(totalChannelMm){
-  const litres=totalChannelMm/1000*0.38;
+  const litres=totalChannelMm/1000*3.8*1.1;
   const kgExact=litres/11*25;
   // Round up to whole bags: full 25kg bags + remainder in kg
   const fullBags=Math.floor(kgExact/25);
@@ -966,7 +990,7 @@ function redraw(){
         const finishTag=l.finish==='toprail'?'+rail':l.finish==='stiffeners'?'+stiff':'';
         const adjTag=l.adjStiff>0?` +${l.adjStiff}adj`:'';
         const lm=lineMountOf(l);const glassLbl=lm==='groutchannel'?'12mm TSG (conc. channel)':lm==='channel'?'12mm TSG (channel)':(l.glass||'12')+'mm TSG';
-        const tag=`${glassLbl}${finishTag?' '+finishTag:''}${adjTag}`;
+        const tag=`${glassLbl}${finishTag?' '+finishTag:''}${adjTag}${legWallH(l)?' · wall '+legWallH(l):''}`;
         ctx.save();const fs2=Math.max(8,9*Math.min(zoom,1.2));ctx.font=`${fs2}px Courier New`;
         const tw2=ctx.measureText(tag).width;
         ctx.fillStyle=isLight?'rgba(240,242,245,0.92)':'rgba(26,26,26,0.9)';ctx.fillRect(dlx-tw2/2-3,dly+5,tw2+6,13);
@@ -1086,7 +1110,7 @@ function calcBlock(active,opts){
   // ── SPIGOT FIXING ──
   let groutKg=0,pinRods=0,pinStock=0,pinEpoxy=0,flangePlates=0;
   if(!sm){
-    if(mount==='core')groutKg=Math.ceil(totalSpigots/6)*2;
+    if(mount==='core')groutKg=totalSpigots; // v15: 1kg per spigot (hole + 80-100mm of spigot cavity)
     else if(mount==='pin'){pinRods=totalSpigots;pinStock=Math.ceil(totalSpigots/6);pinEpoxy=Math.ceil(totalSpigots/10);}
     else flangePlates=totalSpigots;
   }
@@ -1104,8 +1128,9 @@ function calcBlock(active,opts){
       :ch
       ?`${l.panels} panels @ ${l.panelW}mm`
       :sm?`${l.panels} panels / ${l.bolts} bolts`:`${l.panels} panels / ${l.spigots} spigots`;
-    html+=`<div class="jc-row"><span>${lbl} ${l.dim}mm${dirTag}<br><span class="sub">${gc?'12mm TSG (grouted channel)':l.glass+'mm TSG'}${ft}${adjTag}</span></span><span class="val">${countTag}</span></div>`;
+    html+=`<div class="jc-row"><span>${lbl} ${l.dim}mm${dirTag}<br><span class="sub">${gc?'12mm TSG (grouted channel)':l.glass+'mm TSG'}${ft}${adjTag}${legWallH(l)?` · on ${legWallH(l)}mm wall — shorter panels, measure on site`:''}</span></span><span class="val">${countTag}</span></div>`;
   });
+  if(legs.some(l=>legWallH(l)>0)&&mount==='core')html+=`<div class="jc-alert" style="margin:4px 0">Core drill spigots on wall top: wall must be at least 160mm wide (spigot centred, min 80mm from centre to each edge).</div>`;
   const totalTag=gc?`${totalPanels} panels`:ch?`${totalPanels} panels`:sm?`${totalPanels} panels / ${totalBolts} bolts`:`${totalPanels} panels / ${totalSpigots} spigots`;
   html+=`<div class="jc-total"><span>Total</span><span>${totalTag}</span></div></div>`;
 
@@ -1243,7 +1268,7 @@ function calcBlock(active,opts){
     ps+=`<div style="display:flex;justify-content:space-between"><span>Non-shrink grout (Multi Grout CEM 60)</span><b>${gcGroutDesc}</b></div>`;
     ps+=`<div style="display:flex;justify-content:space-between"><span>Mixing water</span><b>${Math.round(gcKgExact*180)}ml</b></div>`;
     ps+=`<div style="font-size:10px;color:#666;margin-top:4px">180ml water per 1kg grout. Max 15min pot life. Do not re-temper.</div>`;
-    ps+=`<div style="font-size:10px;color:#666;margin-top:4px">Channel 100×50mm / 12mm glass / 0.38L grout per metre</div>`;
+    ps+=`<div style="font-size:10px;color:#666;margin-top:4px">Channel 100×50mm / 12mm glass / 3.8L grout per metre + 10% waste (about 9.5kg/m)</div>`;
     ps+=`<div style="font-size:10px;color:#666">U-channel liner — optional, order separately if required</div>`;
     ps+=`</div>`;
   } else if(ch){
@@ -1323,7 +1348,7 @@ function calcBlock(active,opts){
     `JOB CARD — FRAMELESS GLASS ${gc?'CONCRETE CHANNEL':ch?'CHANNEL':sm?'SIDE MOUNT':'SPIGOTS'}\n${'─'.repeat(38)}\n`+
     `MOUNT: ${mountName}\nMATERIAL: ${material}\n${(!sm&&!ch&&!gc)?'PROFILE: '+profileName+'\n':''}\n`+
     `TOTAL PANELS: ${totalPanels}${ch||gc?'':sm?'  |  TOTAL BOLTS: '+totalBolts:'  |  TOTAL SPIGOTS: '+totalSpigots}\n\nRUNS & STAIRS:\n`+
-    legs.map(l=>`  ${l.label||(l.type==='stairs'?'Stairs':'Run')} ${l.dim}mm${l.type==='stairs'?' '+l.dir+' up':''} — ${l.panels} panels (${gc?'12mm TSG grouted channel':l.glass+'mm TSG'})${l.adjStiff>0?' +'+l.adjStiff+' adj stiff':''}`).join('\n')+
+    legs.map(l=>`  ${l.label||(l.type==='stairs'?'Stairs':'Run')} ${l.dim}mm${l.type==='stairs'?' '+l.dir+' up':''}${legWallH(l)?' (on '+legWallH(l)+'mm wall)':''} — ${l.panels} panels (${gc?'12mm TSG grouted channel':l.glass+'mm TSG'})${l.adjStiff>0?' +'+l.adjStiff+' adj stiff':''}`).join('\n')+
     `\n\nFIXING:\n${fixTxt}`+railTxt+stiffTxt;
   return{html,ps,text,legs,mount,mountName,material,profile,profileName,channelFinish:getChannelFinish(),
     t:{totalPanels,totalSpigots,totalBolts,totalRods,totalKits,totalHoles,totalChannelEpoxy,channelEndCaps,totalChannelMm,
@@ -1372,7 +1397,7 @@ function calculate(){
   const railBy={},capsBy={};railLegs.forEach(l=>{const k=(RAIL_LABEL[l.railProfile]||l.railProfile)+', '+l._mat;railBy[k]=(railBy[k]||0)+l.dim;capsBy[k]=(capsBy[k]||0)+(l.startEnd!=='connected'?1:0)+(l.endEnd!=='connected'?1:0);});
   const spigBy={};groups.forEach(g=>{if(g.r.t.totalSpigots>0){const k=g.r.profileName+', '+g.r.material;spigBy[k]=(spigBy[k]||0)+g.r.t.totalSpigots;}});
   const glassBy={};allLegs.forEach(l=>{const k=l._mount==='groutchannel'||l._mount==='channel'?'12':(l.glass||'12');glassBy[k]=(glassBy[k]||0)+l.panels;});
-  const groutKg=spigotsBy.core>0?Math.ceil(spigotsBy.core/6)*2:0;
+  const groutKg=spigotsBy.core>0?spigotsBy.core:0;
   const pinStock=spigotsBy.pin>0?Math.ceil(spigotsBy.pin/6):0;
   const pinEpoxy=spigotsBy.pin>0?Math.ceil(spigotsBy.pin/10):0;
   const rodStock=T.rods>0?Math.ceil(T.rods/6):0;
@@ -1628,7 +1653,7 @@ function copyJobCard(){
 // calculation is touched — the file only stores the inputs.
 // Job number BAL-YYMMDD-HHMM is created on the first save and never
 // changes; every later save is the next revision (rev1, rev2 ...).
-const TEMPLATE_VERSION='glass v14';
+const TEMPLATE_VERSION='glass v15';
 const JOB_APP='balustrader_glass';
 const JOB_FILE_FORMAT=1;
 const JOB_CONTROL_IDS=['mountSelect','profileSelect','materialSelect','channelFinishSelect'];
